@@ -1,0 +1,6 @@
+{
+  "appTitle": "BusinessHub",
+  "@appTitle": {
+    "description": "The title of the application"
+  }
+}
