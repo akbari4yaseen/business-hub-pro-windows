@@ -5,7 +5,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('SettingsScreen'),
+        title: Text('تنظیمات'),
       ),
       body: Center(
         child: Text(

@@ -1,41 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/profile_screen.dart';
-import 'screens/school_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'providers/theme_provider.dart';
+import 'screens/reports_screen.dart';
+import 'screens/account_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
+import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 
 void main() {
-  runApp(MyApp());
-  // Set status bar color here
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.blue, // Set your desired status bar color here
-      statusBarBrightness:
-          Brightness.light, // For iOS: Light or Dark status bar text
-      statusBarIconBrightness:
-          Brightness.light, // For Android: Light or Dark icons
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    // Initialize system navigation bar color
+    themeProvider.updateSystemNavigationBarColor();
+
     return MaterialApp(
-      title: '#BusinessHub',
-      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: "Vazir"),
-      home: BottomNavigationApp(),
-      debugShowCheckedModeBanner: true,
+      theme: themeProvider.currentTheme, // Use the current theme
+      home: const BottomNavigationApp(),
+      // initialRoute: '/login',
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const BottomNavigationApp(),
+        '/journal': (context) => const JournalScreen(),
+        '/accounts': (context) => const AccountScreen(),
+        '/reports': (context) => const ReportsScreen(),
+      },
+      debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: const [
         Locale("fa", "IR"),
+        Locale("en", "US"),
       ],
       locale: const Locale("fa", "IR"),
     );
@@ -53,34 +69,41 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
   int _currentIndex = 0;
 
   // List of screens corresponding to each navigation item
-  final List<Widget> _screens = [
+  final List<Widget> _screens = const [
     HomeScreen(),
-    const JournalScreen(),
-    SchoolScreen(),
-    ProfileScreen(),
+    JournalScreen(),
+    AccountScreen(),
+    ReportsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('#بیزنیزهاب'),
+        title: Text(
+          AppLocalizations.of(context)!.appTitle,
+          style: TextStyle(
+            fontFamily: "IRANSans",
+            fontSize: 24,
+          ), // Use a fixed color or theme-based color
+        ),
       ),
       body: _screens[_currentIndex], // Display the selected screen
-      drawer: DrawerMenu(),
+      drawer: const DrawerMenu(),
       drawerEnableOpenDragGesture: false,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-
         onTap: (index) {
           setState(() {
             _currentIndex = index; // Update the selected index
           });
         },
-        backgroundColor: Colors.white, // Background color of the bottom nav bar
-        selectedItemColor: Colors.blue, // Color of the selected icon and text
-        unselectedItemColor:
-            Colors.black87.withOpacity(0.6), // Color of unselected items
+        backgroundColor: themeProvider.bottomNavBackgroundColor,
+        selectedItemColor: themeProvider.bottomNavSelectedItemColor,
+        unselectedItemColor: themeProvider.bottomNavUnselectedItemColor,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
