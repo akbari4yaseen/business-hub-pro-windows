@@ -157,14 +157,26 @@ class HomeScreen extends StatelessWidget {
                     fontSize: 16, color: Colors.red, fontFamily: "IRANSans"),
               ),
             const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implement Google Drive backup functionality
-              },
-              icon: const Icon(Icons.cloud_upload),
-              label: const Text('پشتیبان‌گیری در گوگل درایو'),
-              style: ElevatedButton.styleFrom(foregroundColor: Colors.blue),
-            ),
+            Row(
+              children: [
+                // ElevatedButton.icon(
+                //   onPressed: () {
+                //     // TODO: Implement Google Drive backup functionality
+                //   },
+                //   icon: const Icon(Icons.cloud_upload),
+                //   label: const Text('پشتیبان‌گیری آنلاین'),
+                //   style: ElevatedButton.styleFrom(foregroundColor: Colors.blue),
+                // ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // TODO: Implement backup functionality
+                  },
+                  icon: const Icon(Icons.backup_outlined),
+                  label: const Text('پشتیبان‌گیری'),
+                  style: ElevatedButton.styleFrom(foregroundColor: Colors.blue),
+                ),
+              ],
+            )
           ],
         ),
       ),
