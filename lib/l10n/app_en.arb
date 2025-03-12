@@ -1,8 +1,27 @@
 {
   "appTitle": "#BusinessHub",
   "home": "Home",
+  "journal": "Journal",
+  "accounts": "Accounts",
+  "reports": "Reports",
   "password": "Password",
   "login": "Login",
   "enterPassword": "Please enter your password",
-  "invalidPassword": "Invalid password"
+  "invalidPassword": "Invalid password",
+  "addAccount": "Add Account",
+  "accountName": "Account Name",
+  "accountType": "Account Type",
+  "customer": "Customer",
+  "supplier": "Supplier",
+  "exchanger": "Exchanger",
+  "phone": "Phone",
+  "address": "Address",
+  "saveAccount": "Save Account",
+  "nameRequired": "Name is required!",
+  "treasure": "Treasure",
+  "noTreasure": "No Treasure",
+  "asset": "Asset",
+  "profit": "Profit",
+  "loss": "Loss",
+  "expenses": "Expenses"
 }

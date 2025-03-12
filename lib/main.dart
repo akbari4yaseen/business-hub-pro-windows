@@ -80,10 +80,12 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)!.appTitle,
+          localizations.appTitle,
           style: TextStyle(
             fontFamily: "IRANSans",
             fontSize: 24,
@@ -104,22 +106,22 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
         selectedItemColor: themeProvider.bottomNavSelectedItemColor,
         unselectedItemColor: themeProvider.bottomNavUnselectedItemColor,
         type: BottomNavigationBarType.fixed,
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
-            label: 'صفحه اصلی',
+            label: localizations.home,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book_outlined),
-            label: 'روزنامچه',
+            label: localizations.journal,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.supervisor_account_outlined),
-            label: 'حساب‌ها',
+            label: localizations.accounts,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.insert_chart_outlined_rounded),
-            label: 'گزارشات',
+            label: localizations.reports,
           ),
         ],
       ),

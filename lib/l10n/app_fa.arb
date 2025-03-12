@@ -1,8 +1,27 @@
 {
   "appTitle": "#بیزنیزهاب",
   "home": "صفحه اصلی",
+  "journal": "روزنامچه",
+  "accounts": "حساب‌ها",
+  "reports": "گزارشات",
   "password": "رمزعبور",
   "login": "ورود",
   "enterPassword": "لطفا رمزعبور را درج کنید",
-  "invalidPassword": "رمزعبور اشتباه است"
+  "invalidPassword": "رمزعبور اشتباه است",
+  "addAccount": "افزودن حساب",
+  "accountName": "نام حساب",
+  "accountType": "نوع حساب",
+  "customer": "مشتری",
+  "supplier": "فراهم‌کننده",
+  "exchanger": "صراف",
+  "phone": "تلفن",
+  "address": "آدرس",
+  "saveAccount": "ذخیره حساب",
+  "nameRequired": "نام الزامی است!",
+  "treasure": "خزانه",
+  "noTreasure": "بدون خزانه",
+  "asset": "سرمایه",
+  "profit": "مفاد",
+  "loss": "ضرر",
+  "expenses": "مصارف"
 }

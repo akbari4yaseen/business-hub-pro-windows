@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'transactions_screen.dart';
 import 'edit_account_screen.dart';
+import 'add_account_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../database//database_helper.dart';
+import '../../utils/transaction_helper.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -20,12 +22,14 @@ class _AccountScreenState extends State<AccountScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
 
-  late Future<List<Map<String, dynamic>>> _accounts;
+  List<Map<String, dynamic>> _activeAccounts = [];
+  List<Map<String, dynamic>> _deactivatedAccounts = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadAccounts();
 
     _scrollController.addListener(() {
       if (mounted) {
@@ -203,10 +207,17 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _shareBalances(Map<String, dynamic> account,
       {bool viaWhatsApp = false}) {
-    String balanceText = account['balances']
-        .entries
+    Map<String, dynamic> balances =
+        account['balances'] ?? {}; // Ensure balances is not null
+
+    if (balances.isEmpty) {
+      balances = {'USD': 0.00}; // Provide a default balance
+    }
+
+    String balanceText = balances.entries
         .map((e) => "${e.key}: ${NumberFormat('#,###.##').format(e.value)}")
         .join(", ");
+
     String message = "${account['name']} - Balances: $balanceText";
 
     if (viaWhatsApp) {
@@ -230,9 +241,20 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> _loadAccounts() async {
-    final data = await DatabaseHelper().getActiveAccounts();
+    final List<Map<String, dynamic>> rawAccounts =
+        await DatabaseHelper().getActiveAccounts();
+
     setState(() {
-      _accounts = data as Future<List<Map<String, dynamic>>>;
+      _activeAccounts = rawAccounts.map((account) {
+        return {
+          ...account,
+          'balances': aggregateTransactions(
+            (account['account_details'] as List?)
+                    ?.cast<Map<String, dynamic>>() ??
+                [],
+          ),
+        };
+      }).toList();
     });
   }
 
@@ -247,6 +269,17 @@ class _AccountScreenState extends State<AccountScreen>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
     );
+  }
+
+  void _addAccount() async {
+    final newAccount = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddAccountScreen()),
+    );
+
+    if (newAccount != null) {
+      _loadAccounts(); // Refresh list after adding
+    }
   }
 
   @override
@@ -292,19 +325,6 @@ class _AccountScreenState extends State<AccountScreen>
       ),
     );
   }
-
-  void _addAccount() {
-    // Add a dummy account for testing
-    setState(() {
-      _activeAccounts.add({
-        'name': 'حساب جدید',
-        'account_type': 'New',
-        'phone': '',
-        'address': '',
-        'balances': {'USD': 0.00}
-      });
-    });
-  }
 }
 
 class AccountList extends StatelessWidget {
@@ -343,8 +363,12 @@ class AccountList extends StatelessWidget {
               children: [
                 Text('${account['account_type']}',
                     style: const TextStyle(fontSize: 14)),
-                Text('${account['phone']}',
-                    style: const TextStyle(fontSize: 14)),
+                Text(
+                  '${account['phone']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
                 Text('${account['address']}',
                     style: const TextStyle(fontSize: 14)),
               ],
@@ -362,15 +386,17 @@ class AccountList extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: account['balances'].entries.map<Widget>((e) {
+                      children: (account['balances'] as Map<String, dynamic>)
+                          .entries
+                          .map((entry) {
                         return Text(
-                          '${e.key}: ${NumberFormat('#,###.##').format(e.value)}',
+                          '${entry.value['currency']}: ${NumberFormat('#,###.##').format(entry.value['summary']['balance'])}',
                           style: TextStyle(
-                              color: isActive
-                                  ? Colors.green[700]
-                                  : Colors.red[700],
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600),
+                            color:
+                                isActive ? Colors.green[700] : Colors.red[700],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         );
                       }).toList(),
                     ),
@@ -389,44 +415,3 @@ class AccountList extends StatelessWidget {
     );
   }
 }
-
-final List<Map<String, dynamic>> _activeAccounts = [
-  {
-    'name': 'یاسین اکبری',
-    'account_type': 'Customer',
-    'phone': '+93793828948',
-    'address': '',
-    'balances': {'USD': 1500.75, 'EUR': 1300.50, 'AFN': 420078000}
-  },
-  {
-    'name': 'رحمت الله اکبری',
-    'account_type': 'Customer',
-    'phone': '09876543210',
-    'address': 'قلعه شهاده',
-    'balances': {'USD': 1500.75, 'EUR': 1300.50}
-  },
-  {
-    'name': 'اسماعیل اکبری',
-    'account_type': 'Customer',
-    'phone': '09765432109',
-    'address': 'قلعه شهادهشهادهشهادهشهادهشهادهشهادهشهاده',
-    'balances': {'USD': 15000.75, 'EUR': 1300.50}
-  },
-  {
-    'name': 'خزانه',
-    'account_type': 'System',
-    'phone': '09432109876',
-    'address': 'قلعه شهاده',
-    'balances': {'AFN': 9800.00}
-  },
-];
-
-final List<Map<String, dynamic>> _deactivatedAccounts = [
-  {
-    'name': 'کریم امیری',
-    'account_type': 'Customer',
-    'phone': '09210987654',
-    'address': 'قلعه شهاده',
-    'balances': {'IRR': 0.00, 'EUR': 0.00}
-  },
-];
