@@ -45,7 +45,7 @@ class DatabaseHelper {
         'id': 1,
         'username': 'Admin',
         'password': '8833560',
-        'is_logged_in': 0,
+        'is_logged_in': 0
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -71,7 +71,7 @@ class DatabaseHelper {
         'whats_app': '',
         'phone': '',
         'address': 'Default Address',
-        'logo': '',
+        'logo': ''
       },
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
@@ -87,6 +87,18 @@ class DatabaseHelper {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     ''');
+
+     await db.insert(
+      'accounts',
+      {
+        'id': 1,
+        'name': 'خزانه',
+        'account_type': 'System',
+        'phone': '',
+        'address': ''
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS account_details (

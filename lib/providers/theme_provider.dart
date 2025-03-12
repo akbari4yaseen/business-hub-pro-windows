@@ -50,6 +50,11 @@ class ThemeProvider with ChangeNotifier {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: Colors.white,
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          splashColor: Colors.blue[900],
+          hoverColor: Colors.blue[300]),
       tabBarTheme: TabBarTheme(
         labelColor: Colors.blue,
         indicatorColor: Colors.blue,
@@ -68,6 +73,11 @@ class ThemeProvider with ChangeNotifier {
       labelColor: Colors.blue,
       indicatorColor: Colors.blue,
     ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        splashColor: Colors.blue[900],
+        hoverColor: Colors.blue[300]),
     scaffoldBackgroundColor: Colors.grey[900],
     appBarTheme: AppBarTheme(
       color: Colors.grey[900],

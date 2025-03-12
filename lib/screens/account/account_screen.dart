@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'transactions_screen.dart';
+import 'edit_account_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../database//database_helper.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -15,17 +17,35 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ScrollController _scrollController = ScrollController();
+  bool _isAtTop = true;
+
+  late Future<List<Map<String, dynamic>>> _accounts;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _isAtTop = _scrollController.position.pixels <= 0;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(0.0,
+        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
 
   void _showOptions(
@@ -196,6 +216,26 @@ class _AccountScreenState extends State<AccountScreen>
     }
   }
 
+  void _editAccount(BuildContext context, Map<String, dynamic> account) async {
+    final updatedAccount = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditAccountScreen(account: account),
+      ),
+    );
+
+    if (updatedAccount != null) {
+      _loadAccounts();
+    }
+  }
+
+  Future<void> _loadAccounts() async {
+    final data = await DatabaseHelper().getActiveAccounts();
+    setState(() {
+      _accounts = data as Future<List<Map<String, dynamic>>>;
+    });
+  }
+
   Widget _buildOption(IconData icon, String text, VoidCallback onTap) {
     return ListTile(
       leading: FaIcon(
@@ -227,19 +267,43 @@ class _AccountScreenState extends State<AccountScreen>
               controller: _tabController,
               children: [
                 AccountList(
-                    accounts: _activeAccounts,
-                    isActive: true,
-                    onMoreOptions: _showOptions),
+                  accounts: _activeAccounts,
+                  isActive: true,
+                  onMoreOptions: _showOptions,
+                  scrollController: _scrollController,
+                ),
                 AccountList(
-                    accounts: _deactivatedAccounts,
-                    isActive: false,
-                    onMoreOptions: _showOptions),
+                  accounts: _deactivatedAccounts,
+                  isActive: false,
+                  onMoreOptions: _showOptions,
+                  scrollController: _scrollController,
+                ),
               ],
             ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _isAtTop ? _addAccount : _scrollToTop,
+        child: FaIcon(
+            size: 18,
+            _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp),
+        mini: _isAtTop ? false : true,
+      ),
     );
+  }
+
+  void _addAccount() {
+    // Add a dummy account for testing
+    setState(() {
+      _activeAccounts.add({
+        'name': 'حساب جدید',
+        'account_type': 'New',
+        'phone': '',
+        'address': '',
+        'balances': {'USD': 0.00}
+      });
+    });
   }
 }
 
@@ -247,16 +311,20 @@ class AccountList extends StatelessWidget {
   final List<Map<String, dynamic>> accounts;
   final bool isActive;
   final Function(BuildContext, Map<String, dynamic>, bool) onMoreOptions;
+  final ScrollController scrollController;
 
-  const AccountList(
-      {required this.accounts,
-      required this.isActive,
-      required this.onMoreOptions,
-      super.key});
+  const AccountList({
+    required this.accounts,
+    required this.isActive,
+    required this.onMoreOptions,
+    required this.scrollController,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: scrollController,
       itemCount: accounts.length,
       padding: const EdgeInsets.symmetric(vertical: 5),
       itemBuilder: (context, index) {
@@ -289,7 +357,6 @@ class AccountList extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  // width: 90, // Adjust width as needed
                   child: SingleChildScrollView(
                     scrollDirection: Axis.vertical,
                     child: Column(
