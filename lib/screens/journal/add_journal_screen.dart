@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../database/database_helper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../constants/currencies.dart';
 
 class AddJournalScreen extends StatefulWidget {
   const AddJournalScreen({super.key});
@@ -18,6 +21,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   int? _selectedTrack;
   String _transactionType = 'Credit';
   String _currency = 'USD';
+  DateTime _selectedDate = DateTime.now(); // Default to today
 
   @override
   void initState() {
@@ -42,10 +46,10 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
     try {
       await DatabaseHelper().insertJournal(
-        date: DateTime.now(),
+        date: _selectedDate, // Use selected date
         accountId: _selectedAccount!,
         trackId: _selectedTrack!,
-        amount: double.parse(_amountController.text),
+        amount: double.parse(_amountController.text.replaceAll(',', '')),
         currency: _currency,
         transactionType: _transactionType.toLowerCase(),
         description: _descriptionController.text.isNotEmpty
@@ -58,6 +62,19 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving journal: $e")),
       );
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      setState(() => _selectedDate = pickedDate);
     }
   }
 
@@ -104,8 +121,25 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Journal")),
+      appBar: AppBar(
+        title: const Text("Add Journal"),
+        actions: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.save),
+            label: Text(localizations.save),
+            onPressed: _saveJournal,
+            style: ButtonStyle(
+                padding: WidgetStateProperty.all(
+                    EdgeInsets.only(left: 10, right: 10, top: 0, bottom: 0))),
+          ),
+          SizedBox(
+            width: 10,
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -121,12 +155,45 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
               onSelected: (id) => setState(() => _selectedTrack = id),
             ),
             const SizedBox(height: 10),
-            TextFormField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: "Amount"),
-              keyboardType: TextInputType.number,
-              validator: (value) =>
-                  value!.isEmpty ? "Amount is required" : null,
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _amountController,
+                    decoration: const InputDecoration(labelText: "Amount"),
+                    keyboardType: TextInputType.number,
+                    validator: (value) =>
+                        value!.isEmpty ? "Amount is required" : null,
+                    onChanged: (value) {
+                      if (value.isNotEmpty) {
+                        final formatter = NumberFormat("#,###");
+                        final parsedValue =
+                            double.tryParse(value.replaceAll(',', ''));
+                        if (parsedValue != null) {
+                          _amountController.value = TextEditingValue(
+                            text: formatter.format(parsedValue),
+                            selection: TextSelection.collapsed(
+                                offset: formatter.format(parsedValue).length),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 100, // Set a smaller width for currency
+                  child: DropdownButtonFormField<String>(
+                    value: _currency,
+                    items: currencies.map((currency) {
+                      return DropdownMenuItem(
+                          value: currency, child: Text(currency));
+                    }).toList(),
+                    onChanged: (value) => setState(() => _currency = value!),
+                    decoration: const InputDecoration(labelText: "Currency"),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             _buildDropdown<String>(
@@ -136,16 +203,11 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
               onChanged: (value) => setState(() => _transactionType = value!),
             ),
             const SizedBox(height: 10),
-            _buildDropdown<String>(
-              label: "Currency",
-              value: _currency,
-              items: ["USD", "EUR", "PKR"],
-              onChanged: (value) => setState(() => _currency = value!),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveJournal,
-              child: const Text("Save"),
+            ListTile(
+              title: const Text("Select Date"),
+              subtitle: Text(DateFormat.yMMMd().format(_selectedDate)),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: _pickDate,
             ),
           ],
         ),

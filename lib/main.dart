@@ -34,6 +34,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: themeProvider.currentTheme, // Use the current theme
       home: const BottomNavigationApp(),
+      
       // initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),

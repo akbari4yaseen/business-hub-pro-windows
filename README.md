@@ -1,4 +1,5 @@
-flutter_project/
+```
+BusinessHub/
 │
 ├── lib/
 │ ├── main.dart # Entry point of the application
@@ -35,11 +36,12 @@ flutter_project/
 │ └── l10n/ # Internationalization (i18n) files
 │
 ├── assets/ # Static assets like images, fonts
-│ ├── images/  
-│ └── fonts/  
+│ ├── images/
+│ └── fonts/
 │
 ├── test/ # Unit and widget tests
 │
 ├── android/ # Android-specific configuration
 ├── ios/ # iOS-specific configuration
 └── pubspec.yaml # Project dependencies and configuration
+```

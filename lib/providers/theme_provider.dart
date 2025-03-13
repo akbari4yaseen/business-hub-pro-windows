@@ -43,6 +43,7 @@ class ThemeProvider with ChangeNotifier {
 
   static final ThemeData _lightTheme = ThemeData(
       primarySwatch: Colors.blue,
+      primaryColor: Colors.blue,
       cardTheme: CardTheme(color: Colors.white),
       brightness: Brightness.light,
       fontFamily: "Vazir",
@@ -75,6 +76,7 @@ class ThemeProvider with ChangeNotifier {
 
   static final ThemeData _darkTheme = ThemeData(
       primarySwatch: Colors.blue,
+      primaryColor: Colors.blue,
       brightness: Brightness.dark,
       fontFamily: "Vazir",
       tabBarTheme: TabBarTheme(

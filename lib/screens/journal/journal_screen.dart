@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
+import 'package:intl/intl.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -53,8 +54,9 @@ class _JournalScreenState extends State<JournalScreen> {
                   itemBuilder: (context, index) {
                     final journal = _journals[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      shape: BeveledRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.zero)),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor:
@@ -76,7 +78,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "${journal['date']} - ${journal['amount']} ${journal['currency']} (${journal['transaction_type']})",
+                              "${journal['date']} - ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']} (${journal['transaction_type']})",
                               style: const TextStyle(fontSize: 14),
                             ),
                             Text(
