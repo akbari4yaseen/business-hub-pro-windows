@@ -294,6 +294,105 @@ class DatabaseHelper {
     return await db.query('account_details',
         orderBy: 'date DESC', limit: limit);
   }
+
+// Fetch all journal entries (ordered by date)
+  Future<List<Map<String, dynamic>>> getJournals() async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+    SELECT 
+      j.*, 
+      acc_account.name AS account_name, 
+      acc_track.name AS track_name 
+    FROM 
+      journal j 
+    INNER JOIN 
+      accounts acc_account 
+    ON 
+      j.account_id = acc_account.id 
+    INNER JOIN 
+      accounts acc_track 
+    ON 
+      j.track_id = acc_track.id 
+    ORDER BY 
+      j.id DESC;
+  ''');
+    return result;
+  }
+
+// Fetch a single journal entry by ID
+  Future<Map<String, dynamic>?> getJournalById(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> result = await db.query(
+      'journal',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+// Insert a new journal entry
+  Future<int> insertJournal({
+    required DateTime date,
+    required int accountId,
+    required int trackId,
+    required double amount,
+    required String currency,
+    required String transactionType,
+    String? description,
+  }) async {
+    final db = await database;
+    return await db.insert(
+      'journal',
+      {
+        'date': date.toIso8601String(),
+        'account_id': accountId,
+        'track_id': trackId,
+        'amount': amount,
+        'currency': currency,
+        'transaction_type': transactionType,
+        'description': description ?? '',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+// Update an existing journal entry
+  Future<int> updateJournal({
+    required int id,
+    required DateTime date,
+    required int accountId,
+    required int trackId,
+    required double amount,
+    required String currency,
+    required String transactionType,
+    String? description,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'journal',
+      {
+        'date': date.toIso8601String(),
+        'account_id': accountId,
+        'track_id': trackId,
+        'amount': amount,
+        'currency': currency,
+        'transaction_type': transactionType,
+        'description': description ?? '',
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+// Delete a journal entry by ID
+  Future<int> deleteJournal(int id) async {
+    final db = await database;
+    return await db.delete(
+      'journal',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }
 
 /// Insert Multiple Accounts Using Batch**

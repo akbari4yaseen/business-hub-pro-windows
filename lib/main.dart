@@ -6,7 +6,7 @@ import 'providers/theme_provider.dart';
 import 'screens/reports_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/journal_screen.dart';
+import 'screens/journal/journal_screen.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 
@@ -87,7 +87,6 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
         title: Text(
           localizations.appTitle,
           style: TextStyle(
-            fontFamily: "IRANSans",
             fontSize: 24,
           ), // Use a fixed color or theme-based color
         ),

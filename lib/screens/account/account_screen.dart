@@ -289,7 +289,7 @@ class _AccountScreenState extends State<AccountScreen>
         children: [
           TabBar(
             controller: _tabController,
-            labelStyle: const TextStyle(fontSize: 16, fontFamily: "IRANSans"),
+            labelStyle: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
             tabs: const [
               Tab(text: 'حساب‌های فعال'),
               Tab(text: 'حساب‌های غیرفعال'),
@@ -357,20 +357,20 @@ class AccountList extends StatelessWidget {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             title: Text(account['name'],
-                style: const TextStyle(fontSize: 16, fontFamily: "IRANSans")),
+                style: const TextStyle(fontSize: 14, fontFamily: "IRANSans")),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${account['account_type']}',
-                    style: const TextStyle(fontSize: 14)),
+                    style: const TextStyle(fontSize: 13)),
                 Text(
                   '${account['phone']}',
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
                 Text('${account['address']}',
-                    style: const TextStyle(fontSize: 14)),
+                    style: const TextStyle(fontSize: 13)),
               ],
             ),
             leading: Icon(
@@ -394,7 +394,7 @@ class AccountList extends StatelessWidget {
                           style: TextStyle(
                             color:
                                 isActive ? Colors.green[700] : Colors.red[700],
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         );

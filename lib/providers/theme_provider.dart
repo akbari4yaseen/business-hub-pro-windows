@@ -62,27 +62,42 @@ class ThemeProvider with ChangeNotifier {
       appBarTheme: AppBarTheme(
         color: Colors.white,
         iconTheme: IconThemeData(color: Colors.grey[900]),
-        titleTextStyle: TextStyle(color: Colors.grey[900]),
-      ));
+        titleTextStyle: TextStyle(
+            color: Colors.grey[900], fontFamily: "IRANSans", fontSize: 14),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+              elevation: WidgetStatePropertyAll(0),
+              backgroundColor: WidgetStatePropertyAll(Colors.blue),
+              foregroundColor: WidgetStatePropertyAll(Colors.white),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(6)))))));
 
   static final ThemeData _darkTheme = ThemeData(
-    primarySwatch: Colors.blue,
-    brightness: Brightness.dark,
-    fontFamily: "Vazir",
-    tabBarTheme: TabBarTheme(
-      labelColor: Colors.blue,
-      indicatorColor: Colors.blue,
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        splashColor: Colors.blue[900],
-        hoverColor: Colors.blue[300]),
-    scaffoldBackgroundColor: Colors.grey[900],
-    appBarTheme: AppBarTheme(
-      color: Colors.grey[900],
-      iconTheme: IconThemeData(color: Colors.white),
-      titleTextStyle: TextStyle(color: Colors.white),
-    ),
-  );
+      primarySwatch: Colors.blue,
+      brightness: Brightness.dark,
+      fontFamily: "Vazir",
+      tabBarTheme: TabBarTheme(
+        labelColor: Colors.blue,
+        indicatorColor: Colors.blue,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          splashColor: Colors.blue[900],
+          hoverColor: Colors.blue[300]),
+      scaffoldBackgroundColor: Colors.grey[900],
+      appBarTheme: AppBarTheme(
+        color: Colors.grey[900],
+        iconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(
+            color: Colors.white, fontFamily: "IRANSans", fontSize: 14),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+              elevation: WidgetStatePropertyAll(0),
+              backgroundColor: WidgetStatePropertyAll(Colors.blue),
+              foregroundColor: WidgetStatePropertyAll(Colors.white),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(6)))))));
 }
