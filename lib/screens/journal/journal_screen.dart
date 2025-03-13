@@ -43,75 +43,81 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _journals.isEmpty
               ? const Center(child: Text("No journal entries found."))
-              : ListView.builder(
-                  itemCount: _journals.length,
-                  itemBuilder: (context, index) {
-                    final journal = _journals[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      shape: BeveledRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.zero)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
+              : RefreshIndicator(
+                  onRefresh: _loadJournals,
+                  child: ListView.builder(
+                    itemCount: _journals.length,
+                    itemBuilder: (context, index) {
+                      final journal = _journals[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 5),
+                        shape: BeveledRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.zero)),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                journal['transaction_type'] == 'credit'
+                                    ? Colors.green
+                                    : Colors.red,
+                            child: Icon(
                               journal['transaction_type'] == 'credit'
-                                  ? Colors.green
-                                  : Colors.red,
-                          child: Icon(
-                            journal['transaction_type'] == 'credit'
-                                ? Icons.arrow_upward
-                                : Icons.arrow_downward,
-                            color: Colors.white,
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              color: Colors.white,
+                            ),
+                          ),
+                          title: Text(
+                            journal['description'] ?? "No Description",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${journal['date']} - ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']} (${journal['transaction_type']})",
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                "From: ${journal['account_name']} → To: ${journal['track_name']}",
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          EditJournalScreen(journal: journal),
+                                    ),
+                                  ).then((_) => _loadJournals());
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteJournal(journal['id']),
+                              ),
+                            ],
                           ),
                         ),
-                        title: Text(
-                          journal['description'] ?? "No Description",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${journal['date']} - ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']} (${journal['transaction_type']})",
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            Text(
-                              "From: ${journal['account_name']} → To: ${journal['track_name']}",
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        EditJournalScreen(journal: journal),
-                                  ),
-                                ).then((_) => _loadJournals());
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteJournal(journal['id']),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),

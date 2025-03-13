@@ -119,6 +119,34 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     );
   }
 
+  Widget _buildTransactionTypeToggle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Transaction Type"),
+        const SizedBox(height: 5),
+        ToggleButtons(
+          borderRadius: BorderRadius.circular(10),
+          isSelected: [
+            _transactionType == "Credit",
+            _transactionType == "Debit"
+          ],
+          onPressed: (index) {
+            setState(() => _transactionType = index == 0 ? "Credit" : "Debit");
+          },
+          children: const [
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text("Credit")),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text("Debit")),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -196,12 +224,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            _buildDropdown<String>(
-              label: "Transaction Type",
-              value: _transactionType,
-              items: ["Credit", "Debit"],
-              onChanged: (value) => setState(() => _transactionType = value!),
-            ),
+            _buildTransactionTypeToggle(),
             const SizedBox(height: 10),
             ListTile(
               title: const Text("Select Date"),
