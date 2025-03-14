@@ -116,7 +116,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
           ),
         ],
       ),
-      backgroundColor: Colors.white70,
+      // backgroundColor: Colors.white70,
       body: SingleChildScrollView(
         child: Form(
           key: _formKey,

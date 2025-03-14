@@ -295,6 +295,24 @@ class DatabaseHelper {
         orderBy: 'date DESC', limit: limit);
   }
 
+  Future<int> insertAccountDetail(Map<String, dynamic> details) async {
+    Database db = await database;
+    return await db.insert('account_details', details,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<int> updateAccountDetail(
+      int id, Map<String, dynamic> updatedData) async {
+    Database db = await database;
+    return await db.update('account_details', updatedData,
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> deleteAccountDetail(int id) async {
+    Database db = await database;
+    return await db.delete('account_details', where: 'id = ?', whereArgs: [id]);
+  }
+
 // Fetch all journal entries (ordered by date)
   Future<List<Map<String, dynamic>>> getJournals() async {
     final db = await database;

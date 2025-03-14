@@ -3,6 +3,7 @@ import '../../database/database_helper.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -13,12 +14,21 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   List<Map<String, dynamic>> _journals = [];
+  final ScrollController _scrollController = ScrollController();
+  bool _isAtTop = true;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadJournals();
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _isAtTop = _scrollController.position.pixels <= 0;
+        });
+      }
+    });
   }
 
   Future<void> _loadJournals() async {
@@ -43,6 +53,17 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(0.0,
+        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,6 +75,7 @@ class _JournalScreenState extends State<JournalScreen> {
                   onRefresh: _loadJournals,
                   child: ListView.builder(
                     itemCount: _journals.length,
+                    controller: _scrollController,
                     itemBuilder: (context, index) {
                       final journal = _journals[index];
                       return Card(
@@ -120,13 +142,20 @@ class _JournalScreenState extends State<JournalScreen> {
                   ),
                 ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddJournalScreen()),
-          ).then((_) => _loadJournals());
-        },
+        child: FaIcon(
+          _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+          size: 18,
+        ),
+        mini: !_isAtTop,
+        onPressed: _isAtTop
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AddJournalScreen()),
+                ).then((_) => _loadJournals());
+              }
+            : _scrollToTop,
       ),
     );
   }

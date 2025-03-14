@@ -21,6 +21,7 @@ class _AccountScreenState extends State<AccountScreen>
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
+  bool _isLoading = false;
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
@@ -76,7 +77,9 @@ class _AccountScreenState extends State<AccountScreen>
                 }),
               if (isActive) Divider(),
               if (isActive)
-                _buildOption(FontAwesomeIcons.userPen, 'ویرایش حساب', () {}),
+                _buildOption(FontAwesomeIcons.userPen, 'ویرایش حساب', () {
+                  _editAccount(context, account);
+                }),
               if (isActive)
                 _buildOption(FontAwesomeIcons.userSlash, 'غیرفعال کردن حساب',
                     () {
@@ -241,6 +244,10 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> _loadAccounts() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final List<Map<String, dynamic>> rawAccounts =
         await DatabaseHelper().getActiveAccounts();
 
@@ -255,6 +262,7 @@ class _AccountScreenState extends State<AccountScreen>
           ),
         };
       }).toList();
+      _isLoading = false;
     });
   }
 
@@ -299,18 +307,28 @@ class _AccountScreenState extends State<AccountScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                AccountList(
-                  accounts: _activeAccounts,
-                  isActive: true,
-                  onMoreOptions: _showOptions,
-                  scrollController: _scrollController,
-                ),
-                AccountList(
-                  accounts: _deactivatedAccounts,
-                  isActive: false,
-                  onMoreOptions: _showOptions,
-                  scrollController: _scrollController,
-                ),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _loadAccounts,
+                        child: AccountList(
+                          accounts: _activeAccounts,
+                          isActive: true,
+                          onMoreOptions: _showOptions,
+                          scrollController: _scrollController,
+                        ),
+                      ),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _loadAccounts,
+                        child: AccountList(
+                          accounts: _deactivatedAccounts,
+                          isActive: false,
+                          onMoreOptions: _showOptions,
+                          scrollController: _scrollController,
+                        ),
+                      ),
               ],
             ),
           ),
@@ -321,7 +339,7 @@ class _AccountScreenState extends State<AccountScreen>
         child: FaIcon(
             size: 18,
             _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp),
-        mini: _isAtTop ? false : true,
+        mini: !_isAtTop,
       ),
     );
   }
