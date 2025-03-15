@@ -237,7 +237,7 @@ class _AccountScreenState extends State<AccountScreen>
     final updatedAccount = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditAccountScreen(account: account),
+        builder: (context) => EditAccountScreen(accountData: account),
       ),
     );
 
