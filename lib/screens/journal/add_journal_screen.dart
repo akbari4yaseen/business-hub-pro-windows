@@ -1,3 +1,4 @@
+import '../../database/journal_db.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../database/database_helper.dart';
@@ -20,7 +21,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   int? _selectedAccount;
   int? _selectedTrack;
   String _transactionType = 'Credit';
-  String _currency = 'USD';
+  String _currency = 'AFN';
   DateTime _selectedDate = DateTime.now(); // Default to today
 
   @override
@@ -30,7 +31,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Future<void> _loadAccounts() async {
-    final accounts = await DatabaseHelper().getAllAccounts();
+    final accounts = await DatabaseHelper().getOptionAccounts();
     setState(() => _accounts = accounts);
   }
 
@@ -45,7 +46,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     }
 
     try {
-      await DatabaseHelper().insertJournal(
+      await JournalDBHelper().insertJournal(
         date: _selectedDate, // Use selected date
         accountId: _selectedAccount!,
         trackId: _selectedTrack!,
@@ -206,6 +207,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                         }
                       }
                     },
+                    
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -226,9 +228,21 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
             const SizedBox(height: 10),
             _buildTransactionTypeToggle(),
             const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                    child: TextFormField(
+                  decoration: const InputDecoration(labelText: "Description"),
+                  maxLength: 256,
+                  maxLines: 16,
+                  minLines: 2,
+                ))
+              ],
+            ),
+            const SizedBox(height: 10),
             ListTile(
               title: const Text("Select Date"),
-              subtitle: Text(DateFormat.yMMMd().format(_selectedDate)),
+              subtitle: Text(DateFormat.yMd().format(_selectedDate)),
               trailing: const Icon(Icons.calendar_today),
               onTap: _pickDate,
             ),

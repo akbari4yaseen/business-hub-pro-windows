@@ -8,6 +8,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../database//database_helper.dart';
 import '../../utils/transaction_helper.dart';
+import '../../utils/utilities.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -292,15 +294,16 @@ class _AccountScreenState extends State<AccountScreen>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Column(
         children: [
           TabBar(
             controller: _tabController,
             labelStyle: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
-            tabs: const [
-              Tab(text: 'حساب‌های فعال'),
-              Tab(text: 'حساب‌های غیرفعال'),
+            tabs: [
+              Tab(text: localizations.activeAccounts),
+              Tab(text: localizations.deactivatedAccounts),
             ],
           ),
           Expanded(
@@ -374,12 +377,16 @@ class AccountList extends StatelessWidget {
           child: ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            title: Text(account['name'],
+            title: Text(
+                account["id"] <= 10
+                    ? getLocalizedSystemAccountName(context, account['name'])
+                    : account['name'],
                 style: const TextStyle(fontSize: 14, fontFamily: "IRANSans")),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${account['account_type']}',
+                Text(
+                    '${getLocalizedAccountType(context, account['account_type'])}',
                     style: const TextStyle(fontSize: 13)),
                 Text(
                   '${account['phone']}',

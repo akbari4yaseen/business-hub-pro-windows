@@ -1,3 +1,4 @@
+import 'package:BusinessHub/database/journal_db.dart';
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 
@@ -39,8 +40,10 @@ class _EditJournalScreenState extends State<EditJournalScreen> {
   }
 
   Future<void> _loadAccountsAndTracks() async {
-    List<Map<String, dynamic>> accounts = await DatabaseHelper().getActiveAccounts();
-    List<Map<String, dynamic>> tracks = await DatabaseHelper().getActiveAccounts();
+    List<Map<String, dynamic>> accounts =
+        await DatabaseHelper().getActiveAccounts();
+    List<Map<String, dynamic>> tracks =
+        await DatabaseHelper().getActiveAccounts();
 
     setState(() {
       _accounts = accounts;
@@ -52,7 +55,7 @@ class _EditJournalScreenState extends State<EditJournalScreen> {
     if (_formKey.currentState!.validate() &&
         _selectedAccount != null &&
         _selectedTrack != null) {
-      await DatabaseHelper().updateJournal(
+      await JournalDBHelper().updateJournal(
         id: widget.journal['id'],
         date: _selectedDate,
         accountId: _selectedAccount!,

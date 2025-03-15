@@ -7,6 +7,7 @@ import 'screens/reports_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
+import 'screens/journal/add_journal_screen.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 
@@ -34,12 +35,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: themeProvider.currentTheme, // Use the current theme
       home: const BottomNavigationApp(),
-      
+
       // initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const BottomNavigationApp(),
         '/journal': (context) => const JournalScreen(),
+        '/journal/add': (context) => const AddJournalScreen(),
         '/accounts': (context) => const AccountScreen(),
         '/reports': (context) => const ReportsScreen(),
       },

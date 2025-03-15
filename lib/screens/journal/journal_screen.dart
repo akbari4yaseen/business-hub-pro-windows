@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
+import '../../database/journal_db.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import 'package:intl/intl.dart';
@@ -22,48 +22,59 @@ class _JournalScreenState extends State<JournalScreen> {
   void initState() {
     super.initState();
     _loadJournals();
-    _scrollController.addListener(() {
-      if (mounted) {
-        setState(() {
-          _isAtTop = _scrollController.position.pixels <= 0;
-        });
-      }
-    });
+    _scrollController.addListener(_updateScrollPosition);
   }
 
-  Future<void> _loadJournals() async {
-    try {
-      List<Map<String, dynamic>> journals =
-          await DatabaseHelper().getJournals();
+  void _updateScrollPosition() {
+    if (!mounted) return;
+    // Update _isAtTop only if the value changes to avoid unnecessary rebuilds
+    final atTop = _scrollController.position.pixels <= 0;
+    if (atTop != _isAtTop) {
       setState(() {
-        _journals = journals;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print("Error loading journals: $e");
-      setState(() {
-        _isLoading = false;
+        _isAtTop = atTop;
       });
     }
   }
 
+  Future<void> _loadJournals() async {
+    try {
+      final journals = await JournalDBHelper().getJournals();
+      if (mounted) {
+        setState(() {
+          _journals = journals;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error loading journals: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _deleteJournal(int id) async {
-    await DatabaseHelper().deleteJournal(id);
+    await JournalDBHelper().deleteJournal(id);
     _loadJournals();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_updateScrollPosition);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToTop() {
-    _scrollController.animateTo(0.0,
-        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    _scrollController.animateTo(
+      0.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+    );
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,20 +85,21 @@ class _JournalScreenState extends State<JournalScreen> {
               : RefreshIndicator(
                   onRefresh: _loadJournals,
                   child: ListView.builder(
-                    itemCount: _journals.length,
                     controller: _scrollController,
+                    itemCount: _journals.length,
                     itemBuilder: (context, index) {
                       final journal = _journals[index];
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 5),
-                        shape: BeveledRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.zero)),
+                        shape: const BeveledRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.zero),
+                        ),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor:
                                 journal['transaction_type'] == 'credit'
-                                    ? Colors.green
-                                    : Colors.red,
+                                    ? Colors.green[400]
+                                    : Colors.red[400],
                             child: Icon(
                               journal['transaction_type'] == 'credit'
                                   ? Icons.arrow_upward
@@ -130,8 +142,8 @@ class _JournalScreenState extends State<JournalScreen> {
                                 },
                               ),
                               IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent),
                                 onPressed: () => _deleteJournal(journal['id']),
                               ),
                             ],
@@ -152,7 +164,8 @@ class _JournalScreenState extends State<JournalScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const AddJournalScreen()),
+                    builder: (context) => const AddJournalScreen(),
+                  ),
                 ).then((_) => _loadJournals());
               }
             : _scrollToTop,
