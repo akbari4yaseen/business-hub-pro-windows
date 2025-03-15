@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
+import '../../database/account_db.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AddAccountScreen extends StatefulWidget {
   final Map<String, dynamic>? accountData;
-
-  AddAccountScreen({this.accountData});
+  const AddAccountScreen({Key? key, this.accountData}) : super(key: key);
 
   @override
   State<AddAccountScreen> createState() => _AddAccountScreenState();
@@ -16,9 +15,8 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
-  String _selectedAccountType = "customer";
-
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  String _selectedAccountType = 'customer';
+  final AccountDBHelper _dbHelper = AccountDBHelper();
 
   @override
   void initState() {
@@ -27,11 +25,12 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     _phoneController = TextEditingController();
     _addressController = TextEditingController();
 
-    if (widget.accountData != null) {
-      _nameController.text = widget.accountData!["name"] ?? "";
-      _phoneController.text = widget.accountData!["phone"] ?? "";
-      _addressController.text = widget.accountData!["address"] ?? "";
-      _selectedAccountType = widget.accountData!["account_type"] ?? "customer";
+    final data = widget.accountData;
+    if (data != null) {
+      _nameController.text = data['name'] ?? '';
+      _phoneController.text = data['phone'] ?? '';
+      _addressController.text = data['address'] ?? '';
+      _selectedAccountType = data['account_type'] ?? 'customer';
     }
   }
 
@@ -44,6 +43,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   }
 
   Future<void> _saveAccount() async {
+    // Validate form before saving.
     if (!_formKey.currentState!.validate()) return;
 
     final newAccount = {
@@ -53,24 +53,30 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       'address': _addressController.text.trim(),
     };
 
-    if (widget.accountData == null) {
-      await _dbHelper.insertAccount(newAccount);
-    } else {
-      await _dbHelper.updateAccount(widget.accountData!["id"], newAccount);
+    try {
+      if (widget.accountData == null) {
+        // Insert new account; update functionality can be added here if needed.
+        await _dbHelper.insertAccount(newAccount);
+      }
+      if (mounted) Navigator.pop(context, newAccount);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.existsAccountError),
+        ),
+      );
     }
-
-    Navigator.pop(context, newAccount);
   }
 
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
-    String? Function(String?)? validator,
+    int maxLength = 32,
     IconData? icon,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
     bool isLTR = false,
     bool autoFocus = false,
-    required int maxLength,
   }) {
     return TextFormField(
       controller: controller,
@@ -81,9 +87,6 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon != null ? Icon(icon) : null,
-        // border: OutlineInputBorder(
-        //   borderRadius: BorderRadius.circular(10),
-        // ),
       ),
       validator: validator,
     );
@@ -92,11 +95,10 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
-    final Map<String, String> _accountTypes = {
-      "customer": localizations.customer,
-      "supplier": localizations.supplier,
-      "exchanger": localizations.exchanger,
+    final accountTypes = {
+      'customer': localizations.customer,
+      'supplier': localizations.supplier,
+      'exchanger': localizations.exchanger,
     };
 
     return Scaffold(
@@ -104,77 +106,87 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         title: Text(localizations.addAccount),
         actions: [
           ElevatedButton.icon(
+            onPressed: _saveAccount,
             icon: const Icon(Icons.save),
             label: Text(localizations.save),
-            onPressed: _saveAccount,
-            style: ButtonStyle(
-                padding: WidgetStateProperty.all(
-                    EdgeInsets.only(left: 10, right: 10, top: 0, bottom: 0))),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
           ),
-          SizedBox(
-            width: 10,
-          ),
+          const SizedBox(width: 10),
         ],
       ),
-      // backgroundColor: Colors.white70,
       body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0)),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      _buildTextField(
-                        label: localizations.accountName,
-                        controller: _nameController,
-                        icon: Icons.person,
-                        autoFocus: true,
-                        maxLength: 32,
-                        validator: (value) =>
-                            value!.isEmpty ? localizations.nameRequired : null,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: _selectedAccountType,
-                        decoration: InputDecoration(
-                          labelText: localizations.accountType,
-                        ),
-                        items: _accountTypes.entries.map((entry) {
-                          return DropdownMenuItem<String>(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          );
-                        }).toList(),
-                        onChanged: (value) =>
-                            setState(() => _selectedAccountType = value!),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTextField(
-                        label: localizations.phone,
-                        controller: _phoneController,
-                        icon: Icons.phone,
-                        keyboardType: TextInputType.phone,
-                        isLTR: true,
-                        maxLength: 13,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTextField(
-                          label: localizations.address,
-                          controller: _addressController,
-                          icon: Icons.location_on,
-                          maxLength: 128),
-                      const SizedBox(height: 12),
-                    ],
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildTextField(
+                    label: localizations.accountName,
+                    controller: _nameController,
+                    icon: Icons.person,
+                    autoFocus: true,
+                    maxLength: 32,
+                    validator: (value) =>
+                        (value == null || value.trim().length < 2)
+                            ? localizations.nameRequired
+                            : null,
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _selectedAccountType,
+                    decoration: InputDecoration(
+                      labelText: localizations.accountType,
+                      prefixIcon: const Icon(Icons.supervisor_account_outlined),
+                    ),
+                    items: accountTypes.entries
+                        .map((entry) => DropdownMenuItem<String>(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedAccountType = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    label: localizations.phone,
+                    controller: _phoneController,
+                    icon: Icons.phone,
+                    keyboardType: TextInputType.phone,
+                    isLTR: true,
+                    maxLength: 16,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final phoneRegExp = RegExp(r'^\+?\d{0,3}?\d{9,}$');
+                        if (!phoneRegExp.hasMatch(value)) {
+                          return localizations.invalidPhone;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    label: localizations.address,
+                    controller: _addressController,
+                    icon: Icons.location_on,
+                    maxLength: 128,
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

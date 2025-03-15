@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../database//database_helper.dart';
+import '../../database/account_db.dart';
 import '../../utils/transaction_helper.dart';
 import '../../utils/utilities.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -251,7 +252,7 @@ class _AccountScreenState extends State<AccountScreen>
     });
 
     final List<Map<String, dynamic>> rawAccounts =
-        await DatabaseHelper().getActiveAccounts();
+        await AccountDBHelper().getActiveAccounts();
 
     setState(() {
       _activeAccounts = rawAccounts.map((account) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
+import '../../database/account_db.dart';
 
 class EditAccountScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -36,7 +36,7 @@ Future<void> _updateAccount() async {
     };
 
     // Update account in SQLite database
-    await DatabaseHelper().updateAccount(widget.account['id'], updatedAccount);
+    await AccountDBHelper().updateAccount(widget.account['id'], updatedAccount);
 
     // Close screen and return updated data
     Navigator.pop(context, updatedAccount);

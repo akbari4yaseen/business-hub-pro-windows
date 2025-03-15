@@ -1,7 +1,7 @@
 import '../../database/journal_db.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../database/database_helper.dart';
+import '../../database/account_db.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../constants/currencies.dart';
 
@@ -31,7 +31,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Future<void> _loadAccounts() async {
-    final accounts = await DatabaseHelper().getOptionAccounts();
+    final accounts = await AccountDBHelper().getOptionAccounts();
     setState(() => _accounts = accounts);
   }
 

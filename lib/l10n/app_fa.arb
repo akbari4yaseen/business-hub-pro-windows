@@ -40,5 +40,8 @@
   "deactivate": "غیرفعال کردن",
   "reactivate": "فعال‌سازی",
   "shareBalance": "اشتراک گذاری بیلانس",
-  "sendBalance": "ارسال بیلانس"
+  "sendBalance": "ارسال بیلانس",
+  "invalidPhone": "شماره تماس نادرست است",
+  "saveError": "خطا در ثبت اطلاعات",
+  "existsAccountError": "حسابی با این نام از قبل وجود دارد"
 }

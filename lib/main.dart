@@ -91,7 +91,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
           localizations.appTitle,
           style: TextStyle(
             fontSize: 24,
-          ), // Use a fixed color or theme-based color
+          ),
         ),
       ),
       body: _screens[_currentIndex], // Display the selected screen

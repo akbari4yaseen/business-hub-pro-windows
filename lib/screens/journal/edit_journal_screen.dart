@@ -1,6 +1,6 @@
 import 'package:BusinessHub/database/journal_db.dart';
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
+import '../../database/account_db.dart';
 
 class EditJournalScreen extends StatefulWidget {
   final Map<String, dynamic> journal;
@@ -41,9 +41,9 @@ class _EditJournalScreenState extends State<EditJournalScreen> {
 
   Future<void> _loadAccountsAndTracks() async {
     List<Map<String, dynamic>> accounts =
-        await DatabaseHelper().getActiveAccounts();
+        await AccountDBHelper().getActiveAccounts();
     List<Map<String, dynamic>> tracks =
-        await DatabaseHelper().getActiveAccounts();
+        await AccountDBHelper().getActiveAccounts();
 
     setState(() {
       _accounts = accounts;

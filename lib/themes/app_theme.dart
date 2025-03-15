@@ -6,6 +6,7 @@ class AppTheme {
     primaryColor: Colors.blue,
     cardTheme: CardTheme(color: Colors.white),
     brightness: Brightness.light,
+    drawerTheme: DrawerThemeData(backgroundColor: Colors.white),
     fontFamily: "Vazir",
     scaffoldBackgroundColor: Colors.white70,
     bottomSheetTheme: BottomSheetThemeData(backgroundColor: Colors.white),
