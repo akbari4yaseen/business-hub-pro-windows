@@ -1,38 +1,88 @@
-import '../../database/journal_db.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../database/account_db.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../constants/currencies.dart';
 
-class AddJournalScreen extends StatefulWidget {
-  const AddJournalScreen({super.key});
+import '../../constants/currencies.dart';
+import '../../database/account_db.dart';
+import '../../database/journal_db.dart';
+
+/// A custom [TextInputFormatter] that formats numeric input with thousand separators.
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  final NumberFormat _formatter = NumberFormat("#,###");
 
   @override
-  _AddJournalScreenState createState() => _AddJournalScreenState();
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+    final numericString = newValue.text.replaceAll(',', '');
+    final value = double.tryParse(numericString);
+    if (value == null) return oldValue;
+    final newText = _formatter.format(value);
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}
+
+class AddJournalScreen extends StatefulWidget {
+  const AddJournalScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AddJournalScreen> createState() => _AddJournalScreenState();
 }
 
 class _AddJournalScreenState extends State<AddJournalScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _faDateController = TextEditingController();
 
   List<Map<String, dynamic>> _accounts = [];
   int? _selectedAccount;
   int? _selectedTrack;
-  String _transactionType = 'Credit';
+  String _transactionType = 'credit';
   String _currency = 'AFN';
-  DateTime _selectedDate = DateTime.now(); // Default to today
+
+  // Track option state: 'treasure', 'noTreasure', or 'track'
+  String _selectedTrackOption = 'treasure';
+  final int _treasureTrackId = 1;
+  final int _noTreasureTrackId = 2;
+  String _customTrackName = "Track";
+
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _loadAccounts();
+
+    // Initialize Persian date field with the current Jalali date.
+    final currentJalali = Jalali.now();
+    _faDateController.text = currentJalali.toJalaliDateTime();
+    _selectedDate = currentJalali.toDateTime();
+
+    // Set default track to treasure.
+    _selectedTrack = _treasureTrackId;
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    _faDateController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAccounts() async {
     final accounts = await AccountDBHelper().getOptionAccounts();
-    setState(() => _accounts = accounts);
+    if (mounted) {
+      setState(() => _accounts = accounts);
+    }
   }
 
   Future<void> _saveJournal() async {
@@ -46,11 +96,12 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     }
 
     try {
+      final amount = double.parse(_amountController.text.replaceAll(',', ''));
       await JournalDBHelper().insertJournal(
-        date: _selectedDate, // Use selected date
+        date: _selectedDate,
         accountId: _selectedAccount!,
         trackId: _selectedTrack!,
-        amount: double.parse(_amountController.text.replaceAll(',', '')),
+        amount: amount,
         currency: _currency,
         transactionType: _transactionType.toLowerCase(),
         description: _descriptionController.text.isNotEmpty
@@ -58,7 +109,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
             : null,
       );
 
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving journal: $e")),
@@ -66,19 +117,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() => _selectedDate = pickedDate);
-    }
-  }
-
+  /// Returns a reusable Autocomplete field for account selection.
   Widget _buildAutocompleteField({
     required String label,
     required Function(int) onSelected,
@@ -86,63 +125,200 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     return Autocomplete<Map<String, dynamic>>(
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text.isEmpty) return _accounts;
-        return _accounts.where((item) => item['name']
+        return _accounts.where((item) => (item['name'] as String)
             .toLowerCase()
             .contains(textEditingValue.text.toLowerCase()));
       },
-      displayStringForOption: (item) => item['name'],
-      onSelected: (item) => onSelected(item['id']),
+      displayStringForOption: (item) => item['name'] as String,
+      onSelected: (item) => onSelected(item['id'] as int),
       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(labelText: label),
-          validator: (value) => value!.isEmpty ? "Please select $label" : null,
+          validator: (value) =>
+              (value == null || value.isEmpty) ? "Please select $label" : null,
         );
       },
     );
   }
 
-  Widget _buildDropdown<T>({
-    required String label,
-    required T value,
-    required List<T> items,
-    required Function(T?) onChanged,
-  }) {
-    return DropdownButtonFormField<T>(
-      value: value,
-      items: items
-          .map((item) =>
-              DropdownMenuItem(value: item, child: Text(item.toString())))
-          .toList(),
-      onChanged: onChanged,
-      decoration: InputDecoration(labelText: label),
+  /// Helper method to generate toggle button styles.
+  ButtonStyle _toggleButtonStyle(bool isSelected,
+      {Color? unselectedTextColor}) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
+      foregroundColor:
+          isSelected ? Colors.white : (unselectedTextColor ?? Colors.grey[900]),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
     );
   }
 
   Widget _buildTransactionTypeToggle() {
+    const types = ['credit', 'debit'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Transaction Type"),
         const SizedBox(height: 5),
-        ToggleButtons(
-          borderRadius: BorderRadius.circular(10),
-          isSelected: [
-            _transactionType == "Credit",
-            _transactionType == "Debit"
+        SizedBox(
+          width: double.infinity,
+          child: Row(
+            children: types.map((type) {
+              bool isSelected = _transactionType == type;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: ElevatedButton(
+                    onPressed: () => setState(() => _transactionType = type),
+                    style: _toggleButtonStyle(isSelected),
+                    child: Text(
+                      "${type[0].toUpperCase()}${type.substring(1)}",
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAmountWithCurrency() {
+    return TextFormField(
+      controller: _amountController,
+      decoration: InputDecoration(
+        labelText: "Amount",
+        suffixIcon: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _currency,
+            items: currencies
+                .map((currency) => DropdownMenuItem(
+                      value: currency,
+                      child: Text(currency),
+                    ))
+                .toList(),
+            onChanged: (value) => setState(() => _currency = value!),
+          ),
+        ),
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [ThousandsSeparatorInputFormatter()],
+      validator: (value) =>
+          (value == null || value.isEmpty) ? "Amount is required" : null,
+      maxLength: 9,
+    );
+  }
+
+  Future<void> _showTrackDialog() async {
+    Map<String, dynamic>? dialogSelectedAccount;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Select Track"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Autocomplete<Map<String, dynamic>>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text.isEmpty) return _accounts;
+                return _accounts.where((account) => (account['name'] as String)
+                    .toLowerCase()
+                    .contains(textEditingValue.text.toLowerCase()));
+              },
+              displayStringForOption: (option) => option['name'] as String,
+              onSelected: (option) {
+                dialogSelectedAccount = option;
+              },
+              fieldViewBuilder:
+                  (context, controller, focusNode, onEditingComplete) {
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  decoration: const InputDecoration(
+                    hintText: "Type to search track",
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (dialogSelectedAccount != null) {
+                  setState(() {
+                    _selectedTrack = dialogSelectedAccount!['id'] as int;
+                    _selectedTrackOption = 'track';
+                    _customTrackName = dialogSelectedAccount!['name'] as String;
+                  });
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please select a track")),
+                  );
+                }
+              },
+              child: const Text("Confirm"),
+            ),
           ],
-          onPressed: (index) {
-            setState(() => _transactionType = index == 0 ? "Credit" : "Debit");
+        );
+      },
+    );
+  }
+
+  Widget _buildTrackSegmentedControl() {
+    // Helper function for creating a single-line label.
+    Widget buildSegmentLabel(String text) => FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SegmentedButton<String>(
+          segments: <ButtonSegment<String>>[
+            ButtonSegment<String>(
+              value: 'treasure',
+              label: buildSegmentLabel("Treasure"),
+            ),
+            ButtonSegment<String>(
+              value: 'noTreasure',
+              label: buildSegmentLabel("No Treasure"),
+            ),
+            ButtonSegment<String>(
+              value: 'track',
+              label: buildSegmentLabel(
+                _selectedTrackOption == 'track' ? _customTrackName : "Track",
+              ),
+            ),
+          ],
+          selected: <String>{_selectedTrackOption},
+          onSelectionChanged: (Set<String> newSelection) async {
+            final selected = newSelection.first;
+            if (selected == 'track') {
+              // Trigger the dialog for a custom track.
+              await _showTrackDialog();
+              setState(() => _selectedTrackOption = 'track');
+            } else {
+              setState(() {
+                _selectedTrackOption = selected;
+                _selectedTrack = (selected == 'treasure')
+                    ? _treasureTrackId
+                    : _noTreasureTrackId;
+              });
+            }
           },
-          children: const [
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text("Credit")),
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text("Debit")),
-          ],
         ),
       ],
     );
@@ -160,93 +336,86 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
             icon: const Icon(Icons.save),
             label: Text(localizations.save),
             onPressed: _saveJournal,
-            style: ButtonStyle(
-                padding: WidgetStateProperty.all(
-                    EdgeInsets.only(left: 10, right: 10, top: 0, bottom: 0))),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
           ),
-          SizedBox(
-            width: 10,
-          ),
+          const SizedBox(width: 10),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            _buildAutocompleteField(
-              label: "Select Account",
-              onSelected: (id) => setState(() => _selectedAccount = id),
-            ),
-            const SizedBox(height: 10),
-            _buildAutocompleteField(
-              label: "Select Track",
-              onSelected: (id) => setState(() => _selectedTrack = id),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _amountController,
-                    decoration: const InputDecoration(labelText: "Amount"),
-                    keyboardType: TextInputType.number,
-                    validator: (value) =>
-                        value!.isEmpty ? "Amount is required" : null,
-                    onChanged: (value) {
-                      if (value.isNotEmpty) {
-                        final formatter = NumberFormat("#,###");
-                        final parsedValue =
-                            double.tryParse(value.replaceAll(',', ''));
-                        if (parsedValue != null) {
-                          _amountController.value = TextEditingValue(
-                            text: formatter.format(parsedValue),
-                            selection: TextSelection.collapsed(
-                                offset: formatter.format(parsedValue).length),
-                          );
-                        }
-                      }
-                    },
-                    
+      body: SingleChildScrollView(
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // Persian date picker field
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _faDateController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: "Jalali Date",
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          onTap: () async {
+                            Jalali? picked = await showPersianDatePicker(
+                              context: context,
+                              initialDate: Jalali.now(),
+                              firstDate: Jalali(1390, 1),
+                              lastDate: Jalali.fromDateTime(
+                                DateTime.now().add(const Duration(days: 2)),
+                              ),
+                              initialEntryMode:
+                                  PersianDatePickerEntryMode.calendarOnly,
+                              initialDatePickerMode: PersianDatePickerMode.day,
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _faDateController.text =
+                                    picked.toJalaliDateTime();
+                                _selectedDate = picked.toDateTime();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 100, // Set a smaller width for currency
-                  child: DropdownButtonFormField<String>(
-                    value: _currency,
-                    items: currencies.map((currency) {
-                      return DropdownMenuItem(
-                          value: currency, child: Text(currency));
-                    }).toList(),
-                    onChanged: (value) => setState(() => _currency = value!),
-                    decoration: const InputDecoration(labelText: "Currency"),
+                  const SizedBox(height: 10),
+                  _buildAutocompleteField(
+                    label: "Select Account",
+                    onSelected: (id) => setState(() => _selectedAccount = id),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  _buildAmountWithCurrency(),
+                  const SizedBox(height: 10),
+                  _buildTransactionTypeToggle(),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: "Description",
+                    ),
+                    maxLength: 256,
+                    minLines: 2,
+                    maxLines: 5,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTrackSegmentedControl(),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
-            const SizedBox(height: 10),
-            _buildTransactionTypeToggle(),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                    child: TextFormField(
-                  decoration: const InputDecoration(labelText: "Description"),
-                  maxLength: 256,
-                  maxLines: 16,
-                  minLines: 2,
-                ))
-              ],
-            ),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text("Select Date"),
-              subtitle: Text(DateFormat.yMd().format(_selectedDate)),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _pickDate,
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -109,7 +109,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           ),
                           title: Text(
                             journal['description'] ?? "No Description",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 13),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +119,7 @@ class _JournalScreenState extends State<JournalScreen> {
                                 style: const TextStyle(fontSize: 14),
                               ),
                               Text(
-                                "From: ${journal['account_name']} → To: ${journal['track_name']}",
+                                "${journal['account_name']} →  ${journal['track_name']}",
                                 style: const TextStyle(
                                     fontSize: 12, color: Colors.grey),
                               ),

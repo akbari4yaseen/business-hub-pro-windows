@@ -10,6 +10,7 @@ import 'screens/journal/journal_screen.dart';
 import 'screens/journal/add_journal_screen.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,15 +49,17 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [
         AppLocalizations.delegate,
+        DariMaterialLocalizations.delegate,
+        DariCupertinoLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale("fa", "IR"),
+        Locale("fa", "AF"),
         Locale("en", "US"),
       ],
-      locale: const Locale("fa", "IR"),
+      locale: const Locale("fa", "AF"),
     );
   }
 }
