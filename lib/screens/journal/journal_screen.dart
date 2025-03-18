@@ -27,7 +27,6 @@ class _JournalScreenState extends State<JournalScreen> {
 
   void _updateScrollPosition() {
     if (!mounted) return;
-    // Update _isAtTop only if the value changes to avoid unnecessary rebuilds
     final atTop = _scrollController.position.pixels <= 0;
     if (atTop != _isAtTop) {
       setState(() {
@@ -100,11 +99,12 @@ class _JournalScreenState extends State<JournalScreen> {
                                 journal['transaction_type'] == 'credit'
                                     ? Colors.green[400]
                                     : Colors.red[400],
-                            child: Icon(
+                            child: FaIcon(
                               journal['transaction_type'] == 'credit'
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
+                                  ? FontAwesomeIcons.plus
+                                  : FontAwesomeIcons.minus,
                               color: Colors.white,
+                              size: 18,
                             ),
                           ),
                           title: Text(
@@ -125,13 +125,13 @@ class _JournalScreenState extends State<JournalScreen> {
                               ),
                             ],
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () {
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              switch (value) {
+                                case 'share':
+                                  // TODO: Implement share functionality
+                                  break;
+                                case 'edit':
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -139,12 +139,46 @@ class _JournalScreenState extends State<JournalScreen> {
                                           EditJournalScreen(journal: journal),
                                     ),
                                   ).then((_) => _loadJournals());
-                                },
+                                  break;
+                                case 'delete':
+                                  await _deleteJournal(journal['id']);
+                                  break;
+                                case 'print':
+                                  // Print is disabled, do nothing
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'share',
+                                child: ListTile(
+                                  leading: Icon(Icons.share),
+                                  title: Text('Share'),
+                                ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent),
-                                onPressed: () => _deleteJournal(journal['id']),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: ListTile(
+                                  leading: Icon(Icons.edit, color: Colors.blue),
+                                  title: Text('Edit'),
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: ListTile(
+                                  leading: Icon(Icons.delete,
+                                      color: Colors.redAccent),
+                                  title: Text('Delete'),
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'print',
+                                enabled: false, // Disable the Print option
+                                child: ListTile(
+                                  leading:
+                                      Icon(Icons.print, color: Colors.grey),
+                                  title: Text('Print (Disabled)'),
+                                ),
                               ),
                             ],
                           ),

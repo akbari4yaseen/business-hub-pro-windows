@@ -27,6 +27,7 @@ class AccountDBHelper {
       name,
       account_type
     FROM accounts
+    WHERE id <> 2 AND active = 1 
     ORDER BY 
       id DESC;
   ''');
@@ -100,11 +101,20 @@ class AccountDBHelper {
   }
 
   Future<void> updateAccount(int id, Map<String, dynamic> updatedData) async {
+    // do not update system accounts
+    if (id < 11) {
+      return;
+    }
+
     Database db = await database;
     await db.update('accounts', updatedData, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deleteAccount(int id) async {
+    // do not delete system accounts
+    if (id < 11) {
+      return;
+    }
     Database db = await database;
     await db.delete('accounts', where: 'id = ?', whereArgs: [id]);
   }

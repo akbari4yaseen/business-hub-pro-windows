@@ -128,8 +128,10 @@ class _AccountScreenState extends State<AccountScreen>
               setState(() {
                 if (isActive) {
                   _activeAccounts.remove(account);
+                  AccountDBHelper().deleteAccount(account["id"]);
                 } else {
                   _deactivatedAccounts.remove(account);
+                  AccountDBHelper().deleteAccount(account["id"]);
                 }
               });
               Navigator.pop(context);

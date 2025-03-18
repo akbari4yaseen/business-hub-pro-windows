@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 import '../../constants/currencies.dart';
 import '../../database/account_db.dart';
 import '../../database/journal_db.dart';
@@ -61,13 +60,20 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     super.initState();
     _loadAccounts();
 
-    // Initialize Persian date field with the current Jalali date.
-    final currentJalali = Jalali.now();
-    _faDateController.text = currentJalali.toJalaliDateTime();
-    _selectedDate = currentJalali.toDateTime();
-
     // Set default track to treasure.
-    _selectedTrack = _treasureTrackId;
+    _selectedTrack = _noTreasureTrackId;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize Persian date field with the current Jalali date and time.
+    final currentJalali = Jalali.now();
+    final currentTime = TimeOfDay.now();
+
+    _selectedDate = currentJalali.toDateTime();
+    _faDateController.text =
+        '${currentJalali.formatCompactDate()} ${currentTime.format(context)}';
   }
 
   @override
@@ -85,15 +91,67 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     }
   }
 
+// Combined date and time picker method.
+  Future<void> _pickDateTime() async {
+    final locale = Localizations.localeOf(context);
+    DateTime? date;
+
+    // Pick the date based on the current locale.
+    if (locale.languageCode == 'fa') {
+      Jalali? picked = await showPersianDatePicker(
+        context: context,
+        initialDate: Jalali.now(),
+        firstDate: Jalali(1390, 1),
+        lastDate: Jalali.fromDateTime(
+          DateTime.now().add(const Duration(days: 2)),
+        ),
+        initialEntryMode: PersianDatePickerEntryMode.calendarOnly,
+        initialDatePickerMode: PersianDatePickerMode.day,
+      );
+      if (picked == null) return; // User canceled the picker.
+      date = picked.toDateTime();
+    } else {
+      date = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now().add(Duration(days: 2)),
+      );
+      if (date == null) return; // User canceled the picker.
+    }
+
+    // Pick the time with default set to current time.
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(), // Ensure current time is set
+    );
+    if (time == null) return; // User canceled the picker.
+
+    // Combine the picked date and time.
+    final combinedDateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    // Update the field and selected date.
+    setState(() {
+      _selectedDate = combinedDateTime;
+      if (locale.languageCode == 'fa') {
+        final jalali = Jalali.fromDateTime(combinedDateTime);
+        _faDateController.text =
+            '${jalali.formatCompactDate()} ${time.format(context)}';
+      } else {
+        _faDateController.text =
+            DateFormat.yMd().add_jm().format(combinedDateTime);
+      }
+    });
+  }
+
   Future<void> _saveJournal() async {
     if (!_formKey.currentState!.validate()) return;
-
-    if (_selectedAccount == null || _selectedTrack == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select both account and track")),
-      );
-      return;
-    }
 
     try {
       final amount = double.parse(_amountController.text.replaceAll(',', ''));
@@ -122,6 +180,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     required String label,
     required Function(int) onSelected,
   }) {
+    final localizations = AppLocalizations.of(context)!;
     return Autocomplete<Map<String, dynamic>>(
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text.isEmpty) return _accounts;
@@ -136,8 +195,9 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(labelText: label),
-          validator: (value) =>
-              (value == null || value.isEmpty) ? "Please select $label" : null,
+          validator: (value) => (value == null || value.isEmpty)
+              ? localizations.pleaseSelectAccount
+              : null,
         );
       },
     );
@@ -157,6 +217,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Widget _buildTransactionTypeToggle() {
+    final localizations = AppLocalizations.of(context)!;
     const types = ['credit', 'debit'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +235,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                     onPressed: () => setState(() => _transactionType = type),
                     style: _toggleButtonStyle(isSelected),
                     child: Text(
-                      "${type[0].toUpperCase()}${type.substring(1)}",
+                      "${type == "credit" ? localizations.credit : localizations.debit}",
                     ),
                   ),
                 ),
@@ -187,10 +248,11 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Widget _buildAmountWithCurrency() {
+    final localizations = AppLocalizations.of(context)!;
     return TextFormField(
       controller: _amountController,
       decoration: InputDecoration(
-        labelText: "Amount",
+        labelText: localizations.amount,
         suffixIcon: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: _currency,
@@ -206,19 +268,21 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [ThousandsSeparatorInputFormatter()],
-      validator: (value) =>
-          (value == null || value.isEmpty) ? "Amount is required" : null,
+      validator: (value) => (value == null || value.isEmpty)
+          ? localizations.amountRequired
+          : null,
       maxLength: 9,
     );
   }
 
   Future<void> _showTrackDialog() async {
+    final localizations = AppLocalizations.of(context)!;
     Map<String, dynamic>? dialogSelectedAccount;
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Select Track"),
+          title: Text(localizations.selectTrack),
           content: SizedBox(
             width: double.maxFinite,
             child: Autocomplete<Map<String, dynamic>>(
@@ -237,8 +301,8 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                 return TextField(
                   controller: controller,
                   focusNode: focusNode,
-                  decoration: const InputDecoration(
-                    hintText: "Type to search track",
+                  decoration: InputDecoration(
+                    hintText: localizations.typeToSearchTrack,
                   ),
                 );
               },
@@ -247,7 +311,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(localizations.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -260,11 +324,11 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                   Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please select a track")),
+                    SnackBar(content: Text(localizations.pleaseSelectTrack)),
                   );
                 }
               },
-              child: const Text("Confirm"),
+              child: Text(localizations.confirm),
             ),
           ],
         );
@@ -273,6 +337,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Widget _buildTrackSegmentedControl() {
+    final localizations = AppLocalizations.of(context)!;
     // Helper function for creating a single-line label.
     Widget buildSegmentLabel(String text) => FittedBox(
           fit: BoxFit.scaleDown,
@@ -290,16 +355,18 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
           segments: <ButtonSegment<String>>[
             ButtonSegment<String>(
               value: 'treasure',
-              label: buildSegmentLabel("Treasure"),
+              label: buildSegmentLabel(localizations.treasure),
             ),
             ButtonSegment<String>(
               value: 'noTreasure',
-              label: buildSegmentLabel("No Treasure"),
+              label: buildSegmentLabel(localizations.noTreasure),
             ),
             ButtonSegment<String>(
               value: 'track',
               label: buildSegmentLabel(
-                _selectedTrackOption == 'track' ? _customTrackName : "Track",
+                _selectedTrackOption == 'track'
+                    ? _customTrackName
+                    : localizations.track,
               ),
             ),
           ],
@@ -330,7 +397,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Journal"),
+        title: Text(localizations.addJournal),
         actions: [
           ElevatedButton.icon(
             icon: const Icon(Icons.save),
@@ -363,36 +430,16 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                           controller: _faDateController,
                           readOnly: true,
                           decoration: const InputDecoration(
-                            labelText: "Jalali Date",
                             prefixIcon: Icon(Icons.calendar_today),
                           ),
-                          onTap: () async {
-                            Jalali? picked = await showPersianDatePicker(
-                              context: context,
-                              initialDate: Jalali.now(),
-                              firstDate: Jalali(1390, 1),
-                              lastDate: Jalali.fromDateTime(
-                                DateTime.now().add(const Duration(days: 2)),
-                              ),
-                              initialEntryMode:
-                                  PersianDatePickerEntryMode.calendarOnly,
-                              initialDatePickerMode: PersianDatePickerMode.day,
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                _faDateController.text =
-                                    picked.toJalaliDateTime();
-                                _selectedDate = picked.toDateTime();
-                              });
-                            }
-                          },
+                          onTap: _pickDateTime,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   _buildAutocompleteField(
-                    label: "Select Account",
+                    label: localizations.selectAccount,
                     onSelected: (id) => setState(() => _selectedAccount = id),
                   ),
                   const SizedBox(height: 10),
@@ -402,8 +449,8 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: "Description",
+                    decoration: InputDecoration(
+                      labelText: localizations.description,
                     ),
                     maxLength: 256,
                     minLines: 2,
