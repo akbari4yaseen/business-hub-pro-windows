@@ -23,7 +23,6 @@ class _AccountScreenState extends State<AccountScreen>
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
-  bool _isLoading = false;
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
@@ -33,14 +32,17 @@ class _AccountScreenState extends State<AccountScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadAccounts();
+    _scrollController.addListener(_updateScrollPosition);
+  }
 
-    _scrollController.addListener(() {
-      if (mounted) {
-        setState(() {
-          _isAtTop = _scrollController.position.pixels <= 0;
-        });
-      }
-    });
+  void _updateScrollPosition() {
+    if (!mounted) return;
+    final atTop = _scrollController.position.pixels <= 0;
+    if (atTop != _isAtTop) {
+      setState(() {
+        _isAtTop = atTop;
+      });
+    }
   }
 
   @override
@@ -51,207 +53,14 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   void _scrollToTop() {
-    _scrollController.animateTo(0.0,
-        duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
-  }
-
-  void _showOptions(
-      BuildContext context, Map<String, dynamic> account, bool isActive) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
-      ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isActive)
-                _buildOption(FontAwesomeIcons.listUl, 'معاملات حساب', () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            TransactionsScreen(account: account)),
-                  );
-                }),
-              if (isActive) Divider(),
-              if (isActive)
-                _buildOption(FontAwesomeIcons.userPen, 'ویرایش حساب', () {
-                  _editAccount(context, account);
-                }),
-              if (isActive)
-                _buildOption(FontAwesomeIcons.userSlash, 'غیرفعال کردن حساب',
-                    () {
-                  _confirmDeactivate(context, account);
-                }),
-              if (!isActive)
-                _buildOption(FontAwesomeIcons.userCheck, 'فعال‌سازی مجدد حساب',
-                    () {
-                  _confirmReactivate(context, account);
-                }),
-              _buildOption(FontAwesomeIcons.trash, 'حذف حساب', () {
-                _confirmDelete(context, account, isActive);
-              }),
-              Divider(),
-              _buildOption(FontAwesomeIcons.shareNodes, 'اشتراک گذاری بیلانس',
-                  () {
-                _shareBalances(account);
-              }),
-              _buildOption(FontAwesomeIcons.whatsapp, 'ارسال بیلانس', () {
-                _shareBalances(account, viaWhatsApp: true);
-              }),
-            ],
-          ),
-        );
-      },
+    _scrollController.animateTo(
+      0.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
     );
-  }
-
-  void _confirmDelete(
-      BuildContext context, Map<String, dynamic> account, bool isActive) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("تأیید حذف"),
-        content: Text(
-            "آیا مطمئن هستید که می‌خواهید ${account['name']} را حذف کنید؟"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("لغو"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                if (isActive) {
-                  _activeAccounts.remove(account);
-                  AccountDBHelper().deleteAccount(account["id"]);
-                } else {
-                  _deactivatedAccounts.remove(account);
-                  AccountDBHelper().deleteAccount(account["id"]);
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: Text("حذف", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDeactivate(BuildContext context, Map<String, dynamic> account) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("تأیید غیرفعالسازی"),
-        content: Text(
-            "آیا مطمئن هستید که می‌خواهید حساب ${account['name']} را غیرفعال کنید؟"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("لغو"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _activeAccounts.remove(account);
-                _deactivatedAccounts.add(account);
-              });
-              Navigator.pop(context);
-              Navigator.pop(context); // Close bottom sheet
-            },
-            child: Text("غیرفعال کردن", style: TextStyle(color: Colors.orange)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmReactivate(BuildContext context, Map<String, dynamic> account) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("تأیید فعالسازی مجدد"),
-        content:
-            Text("آیا می‌خواهید حساب ${account['name']} را دوباره فعال کنید؟"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("لغو"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _deactivatedAccounts.remove(account);
-                _activeAccounts.add(account);
-              });
-              Navigator.pop(context);
-              Navigator.pop(context); // Close bottom sheet
-            },
-            child: Text("فعال‌سازی", style: TextStyle(color: Colors.green)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void sendWhatsAppMessage(String phoneNumber, String message) async {
-    // Create the WhatsApp URL
-    final url =
-        'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
-
-    // Try to launch the URL
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
-  void _shareBalances(Map<String, dynamic> account,
-      {bool viaWhatsApp = false}) {
-    Map<String, dynamic> balances =
-        account['balances'] ?? {}; // Ensure balances is not null
-
-    if (balances.isEmpty) {
-      balances = {'USD': 0.00}; // Provide a default balance
-    }
-
-    String balanceText = balances.entries
-        .map((e) => "${e.key}: ${NumberFormat('#,###.##').format(e.value)}")
-        .join(", ");
-
-    String message = "${account['name']} - Balances: $balanceText";
-
-    if (viaWhatsApp) {
-      sendWhatsAppMessage(account['phone'], message);
-    } else {
-      Share.share(message);
-    }
-  }
-
-  void _editAccount(BuildContext context, Map<String, dynamic> account) async {
-    final updatedAccount = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditAccountScreen(accountData: account),
-      ),
-    );
-
-    if (updatedAccount != null) {
-      _loadAccounts();
-    }
   }
 
   Future<void> _loadAccounts() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     final List<Map<String, dynamic>> rawAccounts =
         await AccountDBHelper().getActiveAccounts();
 
@@ -266,21 +75,137 @@ class _AccountScreenState extends State<AccountScreen>
           ),
         };
       }).toList();
-      _isLoading = false;
     });
   }
 
-  Widget _buildOption(IconData icon, String text, VoidCallback onTap) {
-    return ListTile(
-      leading: FaIcon(
-        icon,
-        size: 16,
+  void _confirmDelete(
+      BuildContext context, Map<String, dynamic> account, bool isActive) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تأیید حذف"),
+        content: Text(
+            "آیا مطمئن هستید که می‌خواهید ${account['name']} را حذف کنید؟"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("لغو"),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                if (isActive) {
+                  _activeAccounts.remove(account);
+                } else {
+                  _deactivatedAccounts.remove(account);
+                }
+                AccountDBHelper().deleteAccount(account["id"]);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("حذف", style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
-      title: Text(text, style: TextStyle(fontSize: 16)),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
     );
+  }
+
+  void _confirmDeactivate(BuildContext context, Map<String, dynamic> account) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تأیید غیرفعالسازی"),
+        content: Text(
+            "آیا مطمئن هستید که می‌خواهید حساب ${account['name']} را غیرفعال کنید؟"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("لغو"),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _activeAccounts.remove(account);
+                _deactivatedAccounts.add(account);
+              });
+              AccountDBHelper().deactivateAccount(account["id"]);
+              Navigator.pop(context);
+            },
+            child: const Text("غیرفعال کردن",
+                style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReactivate(BuildContext context, Map<String, dynamic> account) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تأیید فعالسازی مجدد"),
+        content:
+            Text("آیا می‌خواهید حساب ${account['name']} را دوباره فعال کنید؟"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("لغو"),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _deactivatedAccounts.remove(account);
+                _activeAccounts.add(account);
+              });
+              AccountDBHelper().activateAccount(account["id"]);
+              Navigator.pop(context);
+            },
+            child:
+                const Text("فعال‌سازی", style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _shareBalances(Map<String, dynamic> account,
+      {bool viaWhatsApp = false}) {
+    final balances = account['balances'] ?? {'USD': 0.00};
+    final balanceText = balances.entries
+        .map((e) => "${e.key}: ${NumberFormat('#,###.##').format(e.value)}")
+        .join(", ");
+
+    final message = "${account['name']} - Balances: $balanceText";
+
+    if (viaWhatsApp) {
+      sendWhatsAppMessage(account['phone'], message);
+    } else {
+      Share.share(message);
+    }
+  }
+
+  Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
+    final url =
+        'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  Future<void> _editAccount(
+      BuildContext context, Map<String, dynamic> account) async {
+    final updatedAccount = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditAccountScreen(accountData: account),
+      ),
+    );
+
+    if (updatedAccount != null) {
+      _loadAccounts();
+    }
   }
 
   void _addAccount() async {
@@ -290,8 +215,59 @@ class _AccountScreenState extends State<AccountScreen>
     );
 
     if (newAccount != null) {
-      _loadAccounts(); // Refresh list after adding
+      _loadAccounts();
     }
+  }
+
+  Widget _buildAccountList(List<Map<String, dynamic>> accounts, bool isActive) {
+    return RefreshIndicator(
+      onRefresh: _loadAccounts,
+      child: accounts.isEmpty
+          ? Center(child: Text("No accounts available"))
+          : ListView.builder(
+              controller: _scrollController,
+              itemCount: accounts.length,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              itemBuilder: (context, index) {
+                final account = accounts[index];
+                return AccountTile(
+                  account: account,
+                  isActive: isActive,
+                  onActionSelected: (action) {
+                    switch (action) {
+                      case 'transactions':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                TransactionsScreen(account: account),
+                          ),
+                        );
+                        break;
+                      case 'edit':
+                        _editAccount(context, account);
+                        break;
+                      case 'deactivate':
+                        _confirmDeactivate(context, account);
+                        break;
+                      case 'reactivate':
+                        _confirmReactivate(context, account);
+                        break;
+                      case 'delete':
+                        _confirmDelete(context, account, isActive);
+                        break;
+                      case 'share':
+                        _shareBalances(account);
+                        break;
+                      case 'whatsapp':
+                        _shareBalances(account, viaWhatsApp: true);
+                        break;
+                    }
+                  },
+                );
+              },
+            ),
+    );
   }
 
   @override
@@ -312,28 +288,8 @@ class _AccountScreenState extends State<AccountScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : RefreshIndicator(
-                        onRefresh: _loadAccounts,
-                        child: AccountList(
-                          accounts: _activeAccounts,
-                          isActive: true,
-                          onMoreOptions: _showOptions,
-                          scrollController: _scrollController,
-                        ),
-                      ),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : RefreshIndicator(
-                        onRefresh: _loadAccounts,
-                        child: AccountList(
-                          accounts: _deactivatedAccounts,
-                          isActive: false,
-                          onMoreOptions: _showOptions,
-                          scrollController: _scrollController,
-                        ),
-                      ),
+                _buildAccountList(_activeAccounts, true),
+                _buildAccountList(_deactivatedAccounts, false),
               ],
             ),
           ),
@@ -350,95 +306,136 @@ class _AccountScreenState extends State<AccountScreen>
   }
 }
 
-class AccountList extends StatelessWidget {
-  final List<Map<String, dynamic>> accounts;
+class AccountTile extends StatelessWidget {
+  final Map<String, dynamic> account;
   final bool isActive;
-  final Function(BuildContext, Map<String, dynamic>, bool) onMoreOptions;
-  final ScrollController scrollController;
+  final Function(String) onActionSelected;
 
-  const AccountList({
-    required this.accounts,
+  const AccountTile({
+    required this.account,
     required this.isActive,
-    required this.onMoreOptions,
-    required this.scrollController,
+    required this.onActionSelected,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: scrollController,
-      itemCount: accounts.length,
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      itemBuilder: (context, index) {
-        final account = accounts[index];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            title: Text(
-                account["id"] <= 10
-                    ? getLocalizedSystemAccountName(context, account['name'])
-                    : account['name'],
-                style: const TextStyle(fontSize: 14, fontFamily: "IRANSans")),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                    '${getLocalizedAccountType(context, account['account_type'])}',
-                    style: const TextStyle(fontSize: 13)),
-                Text(
-                  '${account['phone']}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                  ),
-                ),
-                Text('${account['address']}',
-                    style: const TextStyle(fontSize: 13)),
-              ],
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        title: Text(
+            account["id"] <= 10
+                ? getLocalizedSystemAccountName(context, account['name'])
+                : account['name'],
+            style: const TextStyle(fontSize: 14, fontFamily: "IRANSans")),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${getLocalizedAccountType(context, account['account_type'])}',
+                style: const TextStyle(fontSize: 13)),
+            Text(
+              '\u200E${account['phone']}', // Add the LRM character before the phone number
+              style: const TextStyle(fontSize: 13),
             ),
-            leading: Icon(
-                isActive ? Icons.account_circle : Icons.no_accounts_outlined,
-                size: 40,
-                color: isActive ? Colors.blue : Colors.grey),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: (account['balances'] as Map<String, dynamic>)
-                          .entries
-                          .map((entry) {
-                        return Text(
-                          '${entry.value['currency']}: ${NumberFormat('#,###.##').format(entry.value['summary']['balance'])}',
-                          style: TextStyle(
-                            color:
-                                isActive ? Colors.green[700] : Colors.red[700],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+            Text('${account['address']}', style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+        leading: Icon(
+            isActive ? Icons.account_circle : Icons.no_accounts_outlined,
+            size: 40,
+            color: isActive ? Colors.blue : Colors.grey),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: (account['balances'] as Map<String, dynamic>)
+                      .entries
+                      .map((entry) {
+                    return Text(
+                      '${entry.value['currency']}: ${NumberFormat('#,###.##').format(entry.value['summary']['balance'])}',
+                      style: TextStyle(
+                        color: isActive ? Colors.green[700] : Colors.red[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(width: 10),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () => onMoreOptions(context, account, isActive),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 10),
+            PopupMenuButton<String>(
+              onSelected: onActionSelected,
+              itemBuilder: (BuildContext context) {
+                return [
+                  if (isActive) ...[
+                    PopupMenuItem(
+                        value: 'transactions',
+                        child: Row(children: [
+                          FaIcon(FontAwesomeIcons.listUl, size: 16),
+                          SizedBox(width: 8),
+                          Text('معاملات حساب'),
+                        ])),
+                    PopupMenuItem(
+                        value: 'edit',
+                        child: Row(children: [
+                          FaIcon(FontAwesomeIcons.userPen,
+                              size: 16, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('ویرایش حساب'),
+                        ])),
+                    PopupMenuItem(
+                        value: 'deactivate',
+                        child: Row(children: [
+                          FaIcon(FontAwesomeIcons.userSlash, size: 16),
+                          SizedBox(width: 8),
+                          Text('غیرفعال کردن حساب'),
+                        ])),
+                  ] else
+                    PopupMenuItem(
+                        value: 'reactivate',
+                        child: Row(children: [
+                          FaIcon(FontAwesomeIcons.userCheck, size: 16),
+                          SizedBox(width: 8),
+                          Text('فعال‌سازی مجدد حساب'),
+                        ])),
+                  PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        FaIcon(FontAwesomeIcons.trash,
+                            size: 16, color: Colors.redAccent),
+                        SizedBox(width: 8),
+                        Text('حذف حساب'),
+                      ])),
+                  PopupMenuItem(
+                      value: 'share',
+                      child: Row(children: [
+                        FaIcon(FontAwesomeIcons.shareNodes, size: 16),
+                        SizedBox(width: 8),
+                        Text('اشتراک گذاری بیلانس'),
+                      ])),
+                  PopupMenuItem(
+                      value: 'whatsapp',
+                      child: Row(children: [
+                        FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                        SizedBox(width: 8),
+                        Text('ارسال بیلانس'),
+                      ])),
+                ];
+              },
+              icon: Icon(Icons.more_vert),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

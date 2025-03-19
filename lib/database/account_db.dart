@@ -136,4 +136,31 @@ class AccountDBHelper {
     Database db = await database;
     return await db.delete('account_details', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<void> activateAccount(int id) async {
+    if (id < 11) {
+      return; // Prevent modifying system accounts
+    }
+    Database db = await database;
+    await db.update(
+      'accounts',
+      {'active': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Method to deactivate an account
+  Future<void> deactivateAccount(int id) async {
+    if (id < 11) {
+      return; // Prevent modifying system accounts
+    }
+    Database db = await database;
+    await db.update(
+      'accounts',
+      {'active': 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }

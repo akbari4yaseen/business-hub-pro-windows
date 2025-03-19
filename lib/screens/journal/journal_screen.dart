@@ -1,3 +1,4 @@
+import '../../utils/utilities.dart';
 import 'package:flutter/material.dart';
 import '../../database/journal_db.dart';
 import 'add_journal_screen.dart';
@@ -59,6 +60,43 @@ class _JournalScreenState extends State<JournalScreen> {
     _loadJournals();
   }
 
+  void _showJournalDetails(Map<String, dynamic> journal) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Journal Details"),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                    "Description: ${journal['description'] ?? 'No Description'}"),
+                Text("Date: ${journal['date']}"),
+                Text(
+                    "Amount: ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']}"),
+                Text("Transaction Type: ${journal['transaction_type']}"),
+                Text(
+                  "Account: ${journal['account_name']}",
+                ),
+                Text(
+                  "Track: ${journal['track_name']}",
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _scrollController.removeListener(_updateScrollPosition);
@@ -80,7 +118,9 @@ class _JournalScreenState extends State<JournalScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _journals.isEmpty
-              ? const Center(child: Text("No journal entries found."))
+              ? const Center(
+                  child: Text("No journal entries found."),
+                )
               : RefreshIndicator(
                   onRefresh: _loadJournals,
                   child: ListView.builder(
@@ -108,18 +148,24 @@ class _JournalScreenState extends State<JournalScreen> {
                             ),
                           ),
                           title: Text(
-                            journal['description'] ?? "No Description",
-                            style: const TextStyle(fontSize: 13),
+                            "${journal['account_name']} — ${journal['track_name']}",
+                            style: const TextStyle(fontSize: 14),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "${journal['date']} - ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']} (${journal['transaction_type']})",
+                                "${NumberFormat('#,###.##').format(journal['amount'])} ${journal['currency']}",
                                 style: const TextStyle(fontSize: 14),
                               ),
                               Text(
-                                "${journal['account_name']} →  ${journal['track_name']}",
+                                formatJalaliDate(journal['date']),
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              Text(
+                                journal['description'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     fontSize: 12, color: Colors.grey),
                               ),
@@ -128,6 +174,9 @@ class _JournalScreenState extends State<JournalScreen> {
                           trailing: PopupMenuButton<String>(
                             onSelected: (value) async {
                               switch (value) {
+                                case 'details':
+                                  _showJournalDetails(journal);
+                                  break;
                                 case 'share':
                                   // TODO: Implement share functionality
                                   break;
@@ -149,6 +198,13 @@ class _JournalScreenState extends State<JournalScreen> {
                               }
                             },
                             itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'details',
+                                child: ListTile(
+                                  leading: Icon(Icons.info),
+                                  title: Text('Details'),
+                                ),
+                              ),
                               const PopupMenuItem(
                                 value: 'share',
                                 child: ListTile(
@@ -173,7 +229,7 @@ class _JournalScreenState extends State<JournalScreen> {
                               ),
                               const PopupMenuItem(
                                 value: 'print',
-                                enabled: false, // Disable the Print option
+                                enabled: false,
                                 child: ListTile(
                                   leading:
                                       Icon(Icons.print, color: Colors.grey),

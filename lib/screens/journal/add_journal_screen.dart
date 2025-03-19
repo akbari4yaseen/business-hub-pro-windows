@@ -9,7 +9,7 @@ import '../../database/journal_db.dart';
 
 /// A custom [TextInputFormatter] that formats numeric input with thousand separators.
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
-  final NumberFormat _formatter = NumberFormat("#,###");
+  final NumberFormat _formatter = NumberFormat("#,###.##");
 
   @override
   TextEditingValue formatEditUpdate(
@@ -48,7 +48,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   String _currency = 'AFN';
 
   // Track option state: 'treasure', 'noTreasure', or 'track'
-  String _selectedTrackOption = 'treasure';
+  String _selectedTrackOption = 'noTreasure';
   final int _treasureTrackId = 1;
   final int _noTreasureTrackId = 2;
   String _customTrackName = "Track";
