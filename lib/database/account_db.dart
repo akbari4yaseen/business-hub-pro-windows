@@ -87,8 +87,55 @@ class AccountDBHelper {
   }
 
   Future<List<Map<String, dynamic>>> getDeactivatedAccounts() async {
-    Database db = await database;
-    return await db.query('accounts', where: 'active = ?', whereArgs: [0]);
+    final db = await database;
+    final List<Map<String, dynamic>> rows = await db.rawQuery('''
+      SELECT 
+        accounts.id, 
+        accounts.name, 
+        accounts.phone, 
+        accounts.account_type, 
+        accounts.address, 
+        accounts.active, 
+        accounts.created_at,
+        SUM(account_details.amount) AS amount, 
+        account_details.currency, 
+        account_details.transaction_type 
+      FROM accounts 
+      LEFT JOIN account_details ON accounts.id = account_details.account_id 
+      WHERE accounts.active = 0 
+      GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
+      ORDER BY accounts.id DESC;
+    ''');
+
+    Map<int, Map<String, dynamic>> accountDataMap = {};
+
+    for (var row in rows) {
+      int accountId = row['id'] as int;
+      accountDataMap.putIfAbsent(accountId, () {
+        return {
+          'id': row['id'],
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'address': row['address'],
+          'active': row['active'],
+          'created_at': row['created_at'],
+          'account_details': [],
+        };
+      });
+
+      if (row['amount'] != null &&
+          row['currency'] != null &&
+          row['transaction_type'] != null) {
+        accountDataMap[accountId]!['account_details'].add({
+          'amount': row['amount'],
+          'currency': row['currency'],
+          'transaction_type': row['transaction_type'],
+        });
+      }
+    }
+
+    return accountDataMap.values.toList();
   }
 
   Future<void> insertAccount(Map<String, dynamic> account) async {

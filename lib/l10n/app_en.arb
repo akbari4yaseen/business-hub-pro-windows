@@ -57,5 +57,8 @@
   "typeToSearchTrack": "Type to search track",
   "pleaseSelectTrack": "Please select a track",
   "pleaseSelectAccount": "Please select an account",
-  "amountRequired": "Amount is required"
+  "amountRequired": "Amount is required",
+  "search": "Search",
+  "all": "All",
+  "noAccountsAvailable": "No accounts available"
 }

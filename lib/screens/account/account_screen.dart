@@ -23,6 +23,7 @@ class _AccountScreenState extends State<AccountScreen>
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
+  bool _isLoading = true;
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
@@ -61,21 +62,48 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> _loadAccounts() async {
-    final List<Map<String, dynamic>> rawAccounts =
-        await AccountDBHelper().getActiveAccounts();
-
-    setState(() {
-      _activeAccounts = rawAccounts.map((account) {
-        return {
-          ...account,
-          'balances': aggregateTransactions(
-            (account['account_details'] as List?)
-                    ?.cast<Map<String, dynamic>>() ??
-                [],
-          ),
-        };
-      }).toList();
-    });
+    try {
+      final List<Map<String, dynamic>> activeRawAccounts =
+          await AccountDBHelper().getActiveAccounts();
+      final List<Map<String, dynamic>> deactivatedRawAccounts =
+          await AccountDBHelper().getDeactivatedAccounts();
+      if (mounted) {
+        setState(() {
+          _activeAccounts = activeRawAccounts.map((account) {
+            return {
+              ...account,
+              'balances': aggregateTransactions(
+                (account['account_details'] as List?)
+                        ?.cast<Map<String, dynamic>>() ??
+                    [],
+              ),
+            };
+          }).toList();
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _deactivatedAccounts = deactivatedRawAccounts.map((account) {
+            return {
+              ...account,
+              'balances': aggregateTransactions(
+                (account['account_details'] as List?)
+                        ?.cast<Map<String, dynamic>>() ??
+                    [],
+              ),
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      print("Error loading accounts: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _confirmDelete(
@@ -227,7 +255,9 @@ class _AccountScreenState extends State<AccountScreen>
           : ListView.builder(
               controller: _scrollController,
               itemCount: accounts.length,
-              padding: const EdgeInsets.symmetric(vertical: 5),
+
+              padding: const EdgeInsets.fromLTRB(
+                  0, 5, 0, 50), // Added bottom padding
               itemBuilder: (context, index) {
                 final account = accounts[index];
                 return AccountTile(
@@ -274,27 +304,30 @@ class _AccountScreenState extends State<AccountScreen>
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            labelStyle: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
-            tabs: [
-              Tab(text: localizations.activeAccounts),
-              Tab(text: localizations.deactivatedAccounts),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                _buildAccountList(_activeAccounts, true),
-                _buildAccountList(_deactivatedAccounts, false),
+                TabBar(
+                  controller: _tabController,
+                  labelStyle:
+                      const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
+                  tabs: [
+                    Tab(text: localizations.activeAccounts),
+                    Tab(text: localizations.deactivatedAccounts),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildAccountList(_activeAccounts, true),
+                      _buildAccountList(_deactivatedAccounts, false),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
         child: FaIcon(
@@ -378,57 +411,83 @@ class AccountTile extends StatelessWidget {
                 return [
                   if (isActive) ...[
                     PopupMenuItem(
-                        value: 'transactions',
-                        child: Row(children: [
+                      value: 'transactions',
+                      child: Row(
+                        children: [
                           FaIcon(FontAwesomeIcons.listUl, size: 16),
                           SizedBox(width: 8),
                           Text('معاملات حساب'),
-                        ])),
-                    PopupMenuItem(
+                        ],
+                      ),
+                    ),
+                    if (account['id'] > 10) ...[
+                      // Prevent edit, delete, deactivate for IDs <= 10
+                      PopupMenuItem(
                         value: 'edit',
-                        child: Row(children: [
-                          FaIcon(FontAwesomeIcons.userPen,
-                              size: 16, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('ویرایش حساب'),
-                        ])),
-                    PopupMenuItem(
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.userPen,
+                                size: 16, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Text('ویرایش حساب'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
                         value: 'deactivate',
-                        child: Row(children: [
-                          FaIcon(FontAwesomeIcons.userSlash, size: 16),
-                          SizedBox(width: 8),
-                          Text('غیرفعال کردن حساب'),
-                        ])),
-                  ] else
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.userSlash, size: 16),
+                            SizedBox(width: 8),
+                            Text('غیرفعال کردن حساب'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ] else if (account['id'] >
+                      10) // Prevent reactivation for IDs <= 10
                     PopupMenuItem(
-                        value: 'reactivate',
-                        child: Row(children: [
+                      value: 'reactivate',
+                      child: Row(
+                        children: [
                           FaIcon(FontAwesomeIcons.userCheck, size: 16),
                           SizedBox(width: 8),
                           Text('فعال‌سازی مجدد حساب'),
-                        ])),
-                  PopupMenuItem(
+                        ],
+                      ),
+                    ),
+                  if (account['id'] > 10) // Prevent delete for IDs <= 10
+                    PopupMenuItem(
                       value: 'delete',
-                      child: Row(children: [
-                        FaIcon(FontAwesomeIcons.trash,
-                            size: 16, color: Colors.redAccent),
-                        SizedBox(width: 8),
-                        Text('حذف حساب'),
-                      ])),
+                      child: Row(
+                        children: [
+                          FaIcon(FontAwesomeIcons.trash,
+                              size: 16, color: Colors.redAccent),
+                          SizedBox(width: 8),
+                          Text('حذف حساب'),
+                        ],
+                      ),
+                    ),
                   PopupMenuItem(
-                      value: 'share',
-                      child: Row(children: [
+                    value: 'share',
+                    child: Row(
+                      children: [
                         FaIcon(FontAwesomeIcons.shareNodes, size: 16),
                         SizedBox(width: 8),
                         Text('اشتراک گذاری بیلانس'),
-                      ])),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem(
-                      value: 'whatsapp',
-                      child: Row(children: [
+                    value: 'whatsapp',
+                    child: Row(
+                      children: [
                         FaIcon(FontAwesomeIcons.whatsapp, size: 16),
                         SizedBox(width: 8),
                         Text('ارسال بیلانس'),
-                      ])),
+                      ],
+                    ),
+                  ),
                 ];
               },
               icon: Icon(Icons.more_vert),
@@ -439,3 +498,5 @@ class AccountTile extends StatelessWidget {
     );
   }
 }
+
+

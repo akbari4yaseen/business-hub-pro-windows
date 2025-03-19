@@ -42,11 +42,11 @@ class _JournalScreenState extends State<JournalScreen> {
       if (mounted) {
         setState(() {
           _journals = journals;
-          _isLoading = false;
         });
       }
     } catch (e) {
       print("Error loading journals: $e");
+    } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -56,8 +56,12 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   Future<void> _deleteJournal(int id) async {
-    await JournalDBHelper().deleteJournal(id);
-    _loadJournals();
+    try {
+      await JournalDBHelper().deleteJournal(id);
+      _loadJournals();
+    } catch (e) {
+      print("Error deleting journal: $e");
+    }
   }
 
   void _showJournalDetails(Map<String, dynamic> journal) {

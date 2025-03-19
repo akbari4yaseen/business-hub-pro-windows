@@ -57,5 +57,8 @@
   "typeToSearchTrack": "برای جستجوی درک تایپ کنید",
   "pleaseSelectTrack": "لطفا یک درک را انتخاب کنید",
   "pleaseSelectAccount": "لطفا یک حساب را انتخاب کنید",
-  "amountRequired": "مبلغ لازم است"
+  "amountRequired": "مبلغ لازم است",
+  "search": "جستجو",
+  "all": "همه",
+  "noAccountsAvailable": "حسابی موجود نیست"
 }
