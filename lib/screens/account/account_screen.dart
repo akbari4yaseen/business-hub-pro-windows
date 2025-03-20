@@ -24,6 +24,10 @@ class _AccountScreenState extends State<AccountScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
   bool _isLoading = true;
+  bool _showFilterOptions = false;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedAccountType = 'all'; // Default filter option
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
@@ -59,6 +63,24 @@ class _AccountScreenState extends State<AccountScreen>
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _toggleFilterOptions() {
+    setState(() {
+      _showFilterOptions = !_showFilterOptions;
+    });
+  }
+
+  List<Map<String, dynamic>> _applyFilters(
+      List<Map<String, dynamic>> accounts) {
+    String query = _searchController.text.toLowerCase();
+    return accounts.where((account) {
+      bool matchesSearch = account['name'].toLowerCase().contains(query) ||
+          (account['address'] ?? '').toLowerCase().contains(query);
+      bool matchesFilter = _selectedAccountType == 'all' ||
+          account['account_type'] == _selectedAccountType;
+      return matchesSearch && matchesFilter;
+    }).toList();
   }
 
   Future<void> _loadAccounts() async {
@@ -301,6 +323,7 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
@@ -308,6 +331,63 @@ class _AccountScreenState extends State<AccountScreen>
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                // Search & Filter Bar
+                Visibility(
+                  visible: _isAtTop, // Hide when scrolled to down
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (value) => setState(() {}),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.search),
+                              hintText: 'Search by name or address',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.filter_list),
+                          onPressed: _toggleFilterOptions,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Filter Options (Dropdown)
+                if (_showFilterOptions)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedAccountType,
+                      items: const [
+                        DropdownMenuItem(value: 'all', child: Text('All')),
+                        DropdownMenuItem(
+                            value: 'system', child: Text('System')),
+                        DropdownMenuItem(
+                            value: 'customer', child: Text('Customer')),
+                        DropdownMenuItem(
+                            value: 'supplier', child: Text('Supplier')),
+                        DropdownMenuItem(
+                            value: 'exchanger', child: Text('Exchanger')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedAccountType = value!;
+                        });
+                      },
+                    ),
+                  ),
+
+                // Tabs for Active & Deactivated Accounts
                 TabBar(
                   controller: _tabController,
                   labelStyle:
@@ -317,12 +397,15 @@ class _AccountScreenState extends State<AccountScreen>
                     Tab(text: localizations.deactivatedAccounts),
                   ],
                 ),
+
+                // Account List with Search and Filter Applied
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildAccountList(_activeAccounts, true),
-                      _buildAccountList(_deactivatedAccounts, false),
+                      _buildAccountList(_applyFilters(_activeAccounts), true),
+                      _buildAccountList(
+                          _applyFilters(_deactivatedAccounts), false),
                     ],
                   ),
                 ),
@@ -331,8 +414,9 @@ class _AccountScreenState extends State<AccountScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
         child: FaIcon(
-            size: 18,
-            _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp),
+          size: 18,
+          _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp,
+        ),
         mini: !_isAtTop,
       ),
     );
@@ -498,5 +582,3 @@ class AccountTile extends StatelessWidget {
     );
   }
 }
-
-

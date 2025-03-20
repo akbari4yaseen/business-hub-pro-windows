@@ -258,12 +258,22 @@ class JournalDBHelper {
     );
   }
 
-  Future<int> deleteJournal(int id) async {
-    final db = await database;
-    return await db.delete(
+Future<int> deleteJournal(int id) async {
+  final db = await database;
+  return await db.transaction((txn) async {
+    // Delete from journal
+    await txn.delete(
       'journal',
       where: 'id = ?',
       whereArgs: [id],
     );
-  }
+
+    // Delete from account_details
+    return await txn.delete(
+      'account_details',
+      where: 'transaction_group = ? AND transaction_id = ?',
+      whereArgs: ['journal', id],
+    );
+  });
+}
 }

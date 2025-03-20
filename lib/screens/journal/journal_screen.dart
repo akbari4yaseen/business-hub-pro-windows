@@ -64,6 +64,32 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  Future<void> _confirmDeleteJournal(int id) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Confirm Delete"),
+          content: Text(
+              "Are you sure you want to delete this journal entry? This action cannot be undone."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Cancel
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                await _deleteJournal(id); // Proceed with deletion
+              },
+              child: Text("Delete", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showJournalDetails(Map<String, dynamic> journal) {
     showDialog(
       context: context,
@@ -194,8 +220,9 @@ class _JournalScreenState extends State<JournalScreen> {
                                   ).then((_) => _loadJournals());
                                   break;
                                 case 'delete':
-                                  await _deleteJournal(journal['id']);
+                                  await _confirmDeleteJournal(journal['id']);
                                   break;
+
                                 case 'print':
                                   // Print is disabled, do nothing
                                   break;
