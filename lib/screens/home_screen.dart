@@ -1,3 +1,4 @@
+import 'journal/add_journal_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -8,6 +9,17 @@ class HomeScreen extends StatelessWidget {
     int daysSinceLastBackup = 10; // Example: Change dynamically
     bool isBackupOverdue =
         daysSinceLastBackup > 7; // Warn if backup older than 7 days
+
+    void _newJournal() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddJournalScreen(),
+        ),
+      ).then((_) => {
+            //refresh
+          });
+    }
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -34,11 +46,11 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildActionButton('معامله جدید', Icons.add),
+                  _buildActionButton('معامله جدید', Icons.add, _newJournal),
                   _buildActionButton(
-                      'حساب‌ها', Icons.supervisor_account_outlined),
-                  _buildActionButton('گزارش‌ها', Icons.bar_chart),
-                  _buildActionButton('تنظیمات', Icons.settings),
+                      'حساب‌ها', Icons.supervisor_account_outlined, () => {}),
+                  _buildActionButton('گزارش‌ها', Icons.bar_chart, () => {}),
+                  _buildActionButton('تنظیمات', Icons.settings, () => {}),
                 ],
               ),
 
@@ -108,11 +120,11 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Quick Action Button Widget
-  Widget _buildActionButton(String label, IconData icon) {
+  Widget _buildActionButton(String label, IconData icon, action) {
     return Column(
       children: [
         FloatingActionButton(
-          onPressed: () {},
+          onPressed: action,
           backgroundColor: Colors.blueAccent,
           child: Icon(icon, color: Colors.white),
         ),
@@ -159,21 +171,12 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                // ElevatedButton.icon(
-                //   onPressed: () {
-                //     // TODO: Implement Google Drive backup functionality
-                //   },
-                //   icon: const Icon(Icons.cloud_upload),
-                //   label: const Text('پشتیبان‌گیری آنلاین'),
-                //   style: ElevatedButton.styleFrom(foregroundColor: Colors.blue),
-                // ),
                 ElevatedButton.icon(
                   onPressed: () {
                     // TODO: Implement backup functionality
                   },
                   icon: const Icon(Icons.backup_outlined),
                   label: const Text('پشتیبان‌گیری'),
-                  style: ElevatedButton.styleFrom(foregroundColor: Colors.blue),
                 ),
               ],
             )

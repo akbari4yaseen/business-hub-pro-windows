@@ -10,6 +10,7 @@ import '../../database/account_db.dart';
 import '../../utils/transaction_helper.dart';
 import '../../utils/utilities.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'search_filter_bar.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -24,13 +25,17 @@ class _AccountScreenState extends State<AccountScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isAtTop = true;
   bool _isLoading = true;
-  bool _showFilterOptions = false;
-
-  final TextEditingController _searchController = TextEditingController();
-  String _selectedAccountType = 'all'; // Default filter option
+  bool _showSearchBar = true; // To toggle search bar visibility
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
+  // Search and filter parameters
+  String _searchQuery = '';
+  String? _selectedAccountType;
+  String? _selectedCurrency;
+  double? _minBalance;
+  double? _maxBalance;
+  bool? _isPositiveBalance;
 
   @override
   void initState() {
@@ -46,6 +51,7 @@ class _AccountScreenState extends State<AccountScreen>
     if (atTop != _isAtTop) {
       setState(() {
         _isAtTop = atTop;
+        _showSearchBar = atTop; // Hide when at the top
       });
     }
   }
@@ -65,22 +71,201 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
-  void _toggleFilterOptions() {
-    setState(() {
-      _showFilterOptions = !_showFilterOptions;
-    });
-  }
-
+  // Apply search and filter
   List<Map<String, dynamic>> _applyFilters(
       List<Map<String, dynamic>> accounts) {
-    String query = _searchController.text.toLowerCase();
     return accounts.where((account) {
-      bool matchesSearch = account['name'].toLowerCase().contains(query) ||
-          (account['address'] ?? '').toLowerCase().contains(query);
-      bool matchesFilter = _selectedAccountType == 'all' ||
-          account['account_type'] == _selectedAccountType;
-      return matchesSearch && matchesFilter;
+      // Filter by name or address
+      if (_searchQuery.isNotEmpty &&
+          !(account['name']
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              (account['address']
+                      ?.toLowerCase()
+                      .contains(_searchQuery.toLowerCase()) ??
+                  false))) {
+        return false;
+      }
+
+      // Filter by account type
+      if (_selectedAccountType != null &&
+          _selectedAccountType != 'all' &&
+          account['account_type'] != _selectedAccountType) {
+        return false;
+      }
+
+      // Filter by currency
+      if (_selectedCurrency != null &&
+          !(account['balances'] as Map<String, dynamic>)
+              .keys
+              .contains(_selectedCurrency)) {
+        return false;
+      }
+
+      // Filter by balance amount
+      double balanceAmount = (account['balances'] as Map<String, dynamic>)
+          .values
+          .fold(0.0, (sum, e) => sum + (e['summary']['balance'] as double));
+      if (_minBalance != null && balanceAmount < _minBalance!) {
+        return false;
+      }
+      if (_maxBalance != null && balanceAmount > _maxBalance!) {
+        return false;
+      }
+
+      // Filter by positive or negative balances
+      if (_isPositiveBalance != null) {
+        bool isPositive = balanceAmount > 0;
+        if (_isPositiveBalance != isPositive) {
+          return false;
+        }
+      }
+
+      return true;
     }).toList();
+  }
+
+  // Show filter modal
+  void _showFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Account Type Filter
+                  ExpansionTile(
+                    title: Text("Account Type"),
+                    children: [
+                      Wrap(
+                        spacing: 10,
+                        children: [
+                          "all",
+                          "system",
+                          "customer",
+                          "supplier",
+                          "exchanger"
+                        ].map((type) {
+                          return ChoiceChip(
+                            label: Text(type),
+                            selected: _selectedAccountType == type,
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedAccountType = selected ? type : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+
+                  // Currency Filter
+                  ExpansionTile(
+                    title: Text("Currency"),
+                    children: [
+                      Wrap(
+                        spacing: 10,
+                        children:
+                            ["USD", "EUR", "PKR", "IRR", "AFN"].map((currency) {
+                          return ChoiceChip(
+                            label: Text(currency),
+                            selected: _selectedCurrency == currency,
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedCurrency = selected ? currency : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+
+                  // Balance Amount Filter
+                  ExpansionTile(
+                    title: Text("Balance Amount"),
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(labelText: "Min"),
+                              onChanged: (value) {
+                                setState(() {
+                                  _minBalance = double.tryParse(value);
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(labelText: "Max"),
+                              onChanged: (value) {
+                                setState(() {
+                                  _maxBalance = double.tryParse(value);
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // Positive/Negative Balance Filter
+                  ExpansionTile(
+                    title: Text("Balance Type"),
+                    children: [
+                      Wrap(
+                        spacing: 10,
+                        children: [
+                          ChoiceChip(
+                            label: Text("Positive"),
+                            selected: _isPositiveBalance == true,
+                            onSelected: (selected) {
+                              setState(() {
+                                _isPositiveBalance = selected ? true : null;
+                              });
+                            },
+                          ),
+                          ChoiceChip(
+                            label: Text("Negative"),
+                            selected: _isPositiveBalance == false,
+                            onSelected: (selected) {
+                              setState(() {
+                                _isPositiveBalance = selected ? false : null;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // Apply Filters Button
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      setState(() {});
+                    },
+                    child: Text("Apply Filters"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _loadAccounts() async {
@@ -326,65 +511,21 @@ class _AccountScreenState extends State<AccountScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    List<Map<String, dynamic>> filteredActiveAccounts =
+        _applyFilters(_activeAccounts);
+    List<Map<String, dynamic>> filteredDeactivatedAccounts =
+        _applyFilters(_deactivatedAccounts);
+
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Search & Filter Bar
-                Visibility(
-                  visible: _isAtTop, // Hide when scrolled to down
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) => setState(() {}),
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.search),
-                              hintText: 'Search by name or address',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.filter_list),
-                          onPressed: _toggleFilterOptions,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Filter Options (Dropdown)
-                if (_showFilterOptions)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedAccountType,
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('All')),
-                        DropdownMenuItem(
-                            value: 'system', child: Text('System')),
-                        DropdownMenuItem(
-                            value: 'customer', child: Text('Customer')),
-                        DropdownMenuItem(
-                            value: 'supplier', child: Text('Supplier')),
-                        DropdownMenuItem(
-                            value: 'exchanger', child: Text('Exchanger')),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedAccountType = value!;
-                        });
-                      },
-                    ),
+                if (_showSearchBar)
+                  SearchFilterBar(
+                    onSearchChanged: (value) =>
+                        setState(() => _searchQuery = value),
+                    onFilterPressed: _showFilterModal,
                   ),
 
                 // Tabs for Active & Deactivated Accounts
@@ -403,9 +544,8 @@ class _AccountScreenState extends State<AccountScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildAccountList(_applyFilters(_activeAccounts), true),
-                      _buildAccountList(
-                          _applyFilters(_deactivatedAccounts), false),
+                      _buildAccountList(filteredActiveAccounts, true),
+                      _buildAccountList(filteredDeactivatedAccounts, false),
                     ],
                   ),
                 ),
