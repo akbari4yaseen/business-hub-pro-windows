@@ -211,11 +211,7 @@ class DatabaseHelper {
     return result.isNotEmpty;
   }
 
-  Future<List<Map<String, dynamic>>> getRecentTransactions(int limit) async {
-    Database db = await database;
-    return await db.query('account_details',
-        orderBy: 'date DESC', limit: limit);
-  }
+  
 }
 
 /// Insert Multiple Accounts Using Batch**

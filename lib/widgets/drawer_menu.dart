@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/screens/settings_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../database/database_helper.dart';

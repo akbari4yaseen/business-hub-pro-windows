@@ -210,4 +210,10 @@ class AccountDBHelper {
       whereArgs: [id],
     );
   }
+
+  Future<List<Map<String, dynamic>>> getRecentTransactions(int limit) async {
+    Database db = await database;
+    return await db.query('account_details',
+        orderBy: 'date DESC', limit: limit);
+  }
 }

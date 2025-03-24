@@ -3,11 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/reports_screen.dart';
+import 'providers/bottom_navigation_provider.dart';
+import 'screens/reports/reports_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
 import 'screens/journal/add_journal_screen.dart';
+import 'screens/settings/settings_screen.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
@@ -16,8 +18,12 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+            create: (_) => BottomNavigationProvider()), // Added
+      ],
       child: const MyApp(),
     ),
   );
@@ -45,6 +51,7 @@ class MyApp extends StatelessWidget {
         '/journal/add': (context) => const AddJournalScreen(),
         '/accounts': (context) => const AccountScreen(),
         '/reports': (context) => const ReportsScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [
@@ -72,9 +79,6 @@ class BottomNavigationApp extends StatefulWidget {
 }
 
 class _BottomNavigationAppState extends State<BottomNavigationApp> {
-  int _currentIndex = 0;
-
-  // List of screens corresponding to each navigation item
   final List<Widget> _screens = const [
     HomeScreen(),
     JournalScreen(),
@@ -85,27 +89,20 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-
+    final bottomNavProvider = Provider.of<BottomNavigationProvider>(context);
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          localizations.appTitle,
-          style: TextStyle(
-            fontSize: 24,
-          ),
-        ),
+        title: Text(localizations.appTitle, style: TextStyle(fontSize: 24)),
       ),
-      body: _screens[_currentIndex], // Display the selected screen
+      body: _screens[bottomNavProvider.currentIndex], // Controlled by provider
       drawer: const DrawerMenu(),
       drawerEnableOpenDragGesture: false,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: bottomNavProvider.currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index; // Update the selected index
-          });
+          bottomNavProvider.updateIndex(index); // Update provider state
         },
         backgroundColor: themeProvider.bottomNavBackgroundColor,
         selectedItemColor: themeProvider.bottomNavSelectedItemColor,
