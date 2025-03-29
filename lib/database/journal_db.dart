@@ -242,38 +242,197 @@ class JournalDBHelper {
     String? description,
   }) async {
     final db = await database;
-    return await db.update(
-      'journal',
-      {
-        'date': date.toIso8601String(),
-        'account_id': accountId,
-        'track_id': trackId,
-        'amount': amount,
-        'currency': currency,
-        'transaction_type': transactionType,
-        'description': description ?? '',
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      // Delete old account_details for this journal
+      await txn.delete(
+        'account_details',
+        where: 'transaction_group = ? AND transaction_id = ?',
+        whereArgs: ['journal', id],
+      );
+
+      // Update the journal entry
+      await txn.update(
+        'journal',
+        {
+          'date': date.toIso8601String(),
+          'account_id': accountId,
+          'track_id': trackId,
+          'amount': amount,
+          'currency': currency,
+          'transaction_type': transactionType,
+          'description': description ?? '',
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Re-insert updated account_details
+      if (transactionType.toLowerCase() == 'debit') {
+        if (trackId == 2 || accountId == 1) {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        } else if (trackId == 1) {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': trackId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        } else {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': trackId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': "credit",
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        }
+      } else {
+        if (trackId == 2 || accountId == 1) {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        } else if (trackId == 1) {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': trackId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': transactionType,
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        } else {
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': accountId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': 'credit',
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+
+          await txn.insert(
+            'account_details',
+            {
+              'account_id': trackId,
+              'date': date.toIso8601String(),
+              'amount': amount,
+              'currency': currency,
+              'transaction_type': "debit",
+              'description': description ?? '',
+              'transaction_group': 'journal',
+              'transaction_id': id,
+            },
+          );
+        }
+      }
+
+      return id;
+    });
   }
 
-Future<int> deleteJournal(int id) async {
-  final db = await database;
-  return await db.transaction((txn) async {
-    // Delete from journal
-    await txn.delete(
-      'journal',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  Future<int> deleteJournal(int id) async {
+    final db = await database;
+    return await db.transaction((txn) async {
+      // Delete from journal
+      await txn.delete(
+        'journal',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
 
-    // Delete from account_details
-    return await txn.delete(
-      'account_details',
-      where: 'transaction_group = ? AND transaction_id = ?',
-      whereArgs: ['journal', id],
-    );
-  });
-}
+      // Delete from account_details
+      return await txn.delete(
+        'account_details',
+        where: 'transaction_group = ? AND transaction_id = ?',
+        whereArgs: ['journal', id],
+      );
+    });
+  }
 }
