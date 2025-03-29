@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/bottom_navigation_provider.dart';
+import '../database/account_db.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../utils/utilities.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Map<String, dynamic>> recentTransactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchRecentTransactions();
+  }
+
+  Future<void> fetchRecentTransactions() async {
+    List<Map<String, dynamic>> transactions =
+        await AccountDBHelper().getRecentTransactions(5);
+    setState(() {
+      recentTransactions = transactions;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +41,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Account Summary Cards
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -26,10 +50,7 @@ class HomeScreen extends StatelessWidget {
                 _buildSummaryCard('هزینه‌ها', '\$3,200', Icons.money_off),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Quick Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -48,48 +69,97 @@ class HomeScreen extends StatelessWidget {
                     () => Navigator.pushNamed(context, '/settings')),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Backup Section
             _buildBackupCard(daysSinceLastBackup, isBackupOverdue),
-
-            const SizedBox(height: 16),
-
-            // Recent Transactions
+            const SizedBox(height: 20),
             const Text('تراکنش‌های اخیر',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: const [
-                ListTile(
-                  leading: Icon(Icons.shopping_cart, color: Colors.red),
-                  title: Text('خرید از فروشگاه'),
-                  subtitle: Text('۲۰۲۵/۰۳/۰۹'),
-                  trailing: Text('-\$120'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.payments, color: Colors.green),
-                  title: Text('دریافت پرداخت'),
-                  subtitle: Text('۲۰۲۵/۰۳/۰۸'),
-                  trailing: Text('+\$500'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.restaurant, color: Colors.orange),
-                  title: Text('رستوران'),
-                  subtitle: Text('۲۰۲۵/۰۳/۰۷'),
-                  trailing: Text('-\$45'),
-                ),
-              ],
-            ),
+            const SizedBox(height: 10),
+            Card(
+                child: Column(children: [
+              ListView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: recentTransactions.isNotEmpty
+                    ? recentTransactions
+                        .asMap()
+                        .entries
+                        .map((entry) => _buildTransactionTile(entry.value,
+                            entry.key == recentTransactions.length - 1))
+                        .toList()
+                    : [const Center(child: Text('No recent transactions'))],
+              ),
+            ]))
           ],
         ),
       ),
     );
   }
 
-  // Summary Card Widget
+  Widget _buildTransactionTile(Map<String, dynamic> transaction, bool isLast) {
+    IconData icon = transaction['transaction_type'] == 'credit'
+        ? FontAwesomeIcons.plus
+        : FontAwesomeIcons.minus;
+    Color color =
+        transaction['transaction_type'] == 'credit' ? Colors.green : Colors.red;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+          child: Row(
+            children: [
+              // Icon with background
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.1),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Transaction Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction['account_name'],
+                      style: const TextStyle(fontFamily: "IRANsans"),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      formatJalaliDate(transaction['date']),
+                    ),
+                    Text(
+                      transaction['description'],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Amount
+              Text(
+                '${NumberFormat('#,###').format(transaction['amount'])} ${transaction['currency']}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isLast)
+          const Divider(), // Add divider only if it's NOT the last transaction
+      ],
+    );
+  }
+
   Widget _buildSummaryCard(String title, String value, IconData icon) {
     return Expanded(
       child: Card(
@@ -112,7 +182,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Quick Action Button Widget
   Widget _buildActionButton(String label, IconData icon, VoidCallback action) {
     return Column(
       children: [
@@ -127,7 +196,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Backup Card Widget
   Widget _buildBackupCard(int daysSinceLastBackup, bool isBackupOverdue) {
     return Card(
       elevation: 4,

@@ -23,6 +23,9 @@ dependencies:
   share_plus: ^10.1.4
   font_awesome_flutter: ^10.8.0
   persian_datetime_picker: 3.0.2
+  path_provider: ^2.1.5
+  file_picker: ^9.2.3
+  permission_handler: ^10.4.0
 
 dev_dependencies:
   flutter_test:

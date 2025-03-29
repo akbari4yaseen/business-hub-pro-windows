@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
         '/journal/add': (context) => const AddJournalScreen(),
         '/accounts': (context) => const AccountScreen(),
         '/reports': (context) => const ReportsScreen(),
-        '/settings': (context) => const SettingsScreen(),
+        '/settings': (context) =>  SettingsScreen(),
       },
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [

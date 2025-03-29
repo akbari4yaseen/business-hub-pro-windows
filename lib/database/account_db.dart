@@ -213,7 +213,80 @@ class AccountDBHelper {
 
   Future<List<Map<String, dynamic>>> getRecentTransactions(int limit) async {
     Database db = await database;
-    return await db.query('account_details',
-        orderBy: 'date DESC', limit: limit);
+
+    String query = '''
+    SELECT 
+      account_details.id, 
+      account_details.date, 
+      account_details.description, 
+      account_details.amount, 
+      account_details.transaction_type, 
+      account_details.currency,
+      accounts.name AS account_name
+    FROM account_details
+    JOIN accounts ON account_details.account_id = accounts.id
+    WHERE accounts.id > 2
+    ORDER BY account_details.date DESC, account_details.id DESC
+    LIMIT ?;
+  ''';
+
+    List<Map<String, dynamic>> rows = await db.rawQuery(query, [limit]);
+
+    return rows;
+  }
+
+  Future<List<Map<String, dynamic>>> getTransactions(int accountId) async {
+    return await _fetchTransactions(accountId, null);
+  }
+
+// Private method to fetch transactions with balance calculations
+  Future<List<Map<String, dynamic>>> _fetchTransactions(
+      int? accountId, int? limit) async {
+    Database db = await database;
+
+    String query = '''
+    SELECT * FROM account_details
+    ${accountId != null ? "WHERE account_id = ?" : ""}
+    ORDER BY date ASC, id ASC
+    ${limit != null ? "LIMIT ?" : ""}
+  ''';
+
+    List<dynamic> args = [];
+    if (accountId != null) args.add(accountId);
+    if (limit != null) args.add(limit);
+
+    List<Map<String, dynamic>> rows = await db.rawQuery(query, args);
+
+    Map<String, double> balanceMap = {};
+    List<Map<String, dynamic>> transactionDetails = [];
+
+    for (var row in rows) {
+      double creditAmount = 0.0;
+      double debitAmount = 0.0;
+
+      if (row['transaction_type'] == 'credit') {
+        creditAmount = (row['amount'] as num).toDouble();
+      } else if (row['transaction_type'] == 'debit') {
+        debitAmount = (row['amount'] as num).toDouble();
+      }
+
+      double balance =
+          (balanceMap[row['currency']] ?? 0.0) + creditAmount - debitAmount;
+      balanceMap[row['currency']] = balance;
+
+      transactionDetails.add({
+        'id': row['id'],
+        'date': row['date'],
+        'description': row['description'],
+        'transaction_group': row['transaction_group'],
+        'amount': (row['amount'] as num).toDouble(),
+        'transaction_type': row['transaction_type'],
+        'balance': balance,
+        'currency': row['currency'],
+      });
+    }
+
+    return transactionDetails.reversed
+        .toList(); // Show latest transactions first
   }
 }
