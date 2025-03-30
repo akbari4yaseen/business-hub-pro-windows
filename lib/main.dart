@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/bottom_navigation_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/home_screen.dart';
@@ -21,8 +22,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(
-            create: (_) => BottomNavigationProvider()), // Added
+        ChangeNotifierProvider(create: (_) => BottomNavigationProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -51,7 +52,7 @@ class MyApp extends StatelessWidget {
         '/journal/add': (context) => const AddJournalScreen(),
         '/accounts': (context) => const AccountScreen(),
         '/reports': (context) => const ReportsScreen(),
-        '/settings': (context) =>  SettingsScreen(),
+        '/settings': (context) => SettingsScreen(),
       },
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [

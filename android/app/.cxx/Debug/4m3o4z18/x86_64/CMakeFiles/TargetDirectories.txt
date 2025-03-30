@@ -1,0 +1,2 @@
+D:/fullter/BusinessHub/android/app/.cxx/Debug/4m3o4z18/x86_64/CMakeFiles/edit_cache.dir
+D:/fullter/BusinessHub/android/app/.cxx/Debug/4m3o4z18/x86_64/CMakeFiles/rebuild_cache.dir
