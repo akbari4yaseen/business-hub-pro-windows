@@ -160,14 +160,17 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<int> updateUserPassword(String newPassword) async {
+  Future<bool> updateUserPassword(
+      String currentPassword, String newPassword) async {
     Database db = await database;
-    return await db.update(
-      'user',
-      {'password': newPassword},
-      where: 'id = ?',
-      whereArgs: [1],
+
+    // Update password only if the current password matches
+    int rowsAffected = await db.rawUpdate(
+      'UPDATE user SET password = ? WHERE id = ? AND password = ?',
+      [newPassword, 1, currentPassword],
     );
+
+    return rowsAffected > 0;
   }
 
   Future<bool> validateUser(String password) async {
@@ -210,8 +213,6 @@ class DatabaseHelper {
     );
     return result.isNotEmpty;
   }
-
-  
 }
 
 /// Insert Multiple Accounts Using Batch**

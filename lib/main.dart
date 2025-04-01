@@ -11,6 +11,7 @@ import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
 import 'screens/journal/add_journal_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/settings/user_settings.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
@@ -53,6 +54,7 @@ class MyApp extends StatelessWidget {
         '/accounts': (context) => const AccountScreen(),
         '/reports': (context) => const ReportsScreen(),
         '/settings': (context) => SettingsScreen(),
+        '/user_settings': (context) => UserSettingsScreen(),
       },
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [
