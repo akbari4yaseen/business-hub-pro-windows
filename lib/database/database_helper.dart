@@ -158,6 +158,14 @@ class DatabaseHelper {
         description VARCHAR(256)
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<bool> updateUserPassword(
