@@ -60,5 +60,14 @@
   "amountRequired": "مبلغ لازم است",
   "search": "جستجو",
   "all": "همه",
-  "noAccountsAvailable": "حسابی موجود نیست"
+  "noAccountsAvailable": "حسابی موجود نیست",
+  "changePassword": "تغییر گذرواژه",
+  "currentPassword": "گذرواژه فعلی",
+  "newPassword": "گذرواژه جدید",
+  "confirmPassword": "تأیید گذرواژه",
+  "passwordUpdated": "گذرواژه با موفقیت تغییر یافت",
+  "incorrectCurrentPassword": "گذرواژه فعلی اشتباه است",
+  "fieldRequired": "این فیلد الزامی است",
+  "passwordTooShort": "حداقل باید ۶ کاراکتر باشد",
+  "passwordsDoNotMatch": "گذرواژه‌ها مطابقت ندارند"
 }

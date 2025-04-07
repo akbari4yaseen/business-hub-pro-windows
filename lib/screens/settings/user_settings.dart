@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class UserSettingsScreen extends StatefulWidget {
   const UserSettingsScreen({super.key});
@@ -9,103 +10,163 @@ class UserSettingsScreen extends StatefulWidget {
 }
 
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _showCurrentPassword = false;
-  bool _showNewPassword = false;
-  bool _showConfirmPassword = false;
-  String? _errorMessage;
+
+  bool _showCurrent = false;
+  bool _showNew = false;
+  bool _showConfirm = false;
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _updatePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    bool success = await DatabaseHelper().updateUserPassword(
+    final success = await DatabaseHelper().updateUserPassword(
       _currentPasswordController.text,
       _newPasswordController.text,
     );
 
-    setState(() {
-      _errorMessage = success ? null : "Current password is incorrect";
-    });
+    final localizations = AppLocalizations.of(context)!;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? localizations.passwordUpdated
+            : localizations.incorrectCurrentPassword),
+        backgroundColor: success ? null : Colors.red,
+      ),
+    );
+
     if (success) Navigator.pop(context);
   }
 
-  Widget _buildPasswordField(
-    String label,
-    TextEditingController controller,
-    bool obscureText,
-    VoidCallback toggleVisibility,
-  ) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.lock),
-        suffixIcon: IconButton(
-          icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
-          onPressed: toggleVisibility,
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) return "This field is required";
-        if (label == "New Password" && value.length < 6)
-          return "Must be at least 6 characters";
-        if (label == "Confirm Password" && value != _newPasswordController.text)
-          return "Passwords do not match";
-        return null;
-      },
-    );
+  String? _validatePassword(String? value) {
+    final localizations = AppLocalizations.of(context)!;
+    if (value == null || value.isEmpty) return localizations.fieldRequired;
+    if (value.length < 6) return localizations.passwordTooShort;
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    final localizations = AppLocalizations.of(context)!;
+    if (value != _newPasswordController.text)
+      return localizations.passwordsDoNotMatch;
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Change Password")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              _buildPasswordField(
-                  "Current Password",
-                  _currentPasswordController,
-                  _showCurrentPassword,
-                  () => setState(
-                      () => _showCurrentPassword = !_showCurrentPassword)),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                  "New Password",
-                  _newPasswordController,
-                  _showNewPassword,
-                  () => setState(() => _showNewPassword = !_showNewPassword)),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                  "Confirm Password",
-                  _confirmPasswordController,
-                  _showConfirmPassword,
-                  () => setState(
-                      () => _showConfirmPassword = !_showConfirmPassword)),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _updatePassword,
-                child: const Text("Change Password"),
+      appBar: AppBar(title: Text(localizations.changePassword)),
+      resizeToAvoidBottomInset: true,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(0),
               ),
-            ],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    PasswordField(
+                      label: localizations.currentPassword,
+                      controller: _currentPasswordController,
+                      obscure: !_showCurrent,
+                      onToggle: () =>
+                          setState(() => _showCurrent = !_showCurrent),
+                    ),
+                    const SizedBox(height: 20),
+                    PasswordField(
+                      label: localizations.newPassword,
+                      controller: _newPasswordController,
+                      obscure: !_showNew,
+                      onToggle: () => setState(() => _showNew = !_showNew),
+                      validator: _validatePassword,
+                    ),
+                    const SizedBox(height: 20),
+                    PasswordField(
+                      label: localizations.confirmPassword,
+                      controller: _confirmPasswordController,
+                      obscure: !_showConfirm,
+                      onToggle: () =>
+                          setState(() => _showConfirm = !_showConfirm),
+                      validator: _validateConfirmPassword,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _updatePassword,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(localizations.changePassword),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PasswordField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final bool obscure;
+  final VoidCallback onToggle;
+  final String? Function(String?)? validator;
+
+  const PasswordField({
+    super.key,
+    required this.label,
+    required this.controller,
+    required this.obscure,
+    required this.onToggle,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: IconButton(
+          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+          onPressed: onToggle,
+        ),
+        border: const OutlineInputBorder(),
+      ),
+      validator: validator ??
+          (value) => value == null || value.isEmpty
+              ? localizations.fieldRequired
+              : null,
     );
   }
 }

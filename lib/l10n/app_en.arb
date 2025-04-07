@@ -60,5 +60,14 @@
   "amountRequired": "Amount is required",
   "search": "Search",
   "all": "All",
-  "noAccountsAvailable": "No accounts available"
+  "noAccountsAvailable": "No accounts available",
+  "changePassword": "Change Password",
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmPassword": "Confirm Password",
+  "passwordUpdated": "Password updated successfully",
+  "incorrectCurrentPassword": "Current password is incorrect",
+  "fieldRequired": "This field is required",
+  "passwordTooShort": "Must be at least 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match"
 }
