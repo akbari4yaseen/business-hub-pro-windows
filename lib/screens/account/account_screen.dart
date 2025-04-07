@@ -125,6 +125,29 @@ class _AccountScreenState extends State<AccountScreen>
     }).toList();
   }
 
+  Widget _buildFilterOption<T>({
+    required String title,
+    required List<T> options,
+    required T? selected,
+    required void Function(T?) onSelected,
+  }) {
+    return ExpansionTile(
+      title: Text(title),
+      children: [
+        Wrap(
+          spacing: 10,
+          children: options.map((option) {
+            return ChoiceChip(
+              label: Text(option.toString()),
+              selected: selected == option,
+              onSelected: (selected) => onSelected(selected ? option : null),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   // Show filter modal
   void _showFilterModal() {
     showModalBottomSheet(
@@ -132,132 +155,73 @@ class _AccountScreenState extends State<AccountScreen>
       isScrollControlled: true,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, modalSetState) {
             return Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Account Type Filter
-                  ExpansionTile(
-                    title: Text("Account Type"),
-                    children: [
-                      Wrap(
-                        spacing: 10,
-                        children: [
-                          "all",
-                          "system",
-                          "customer",
-                          "supplier",
-                          "exchanger"
-                        ].map((type) {
-                          return ChoiceChip(
-                            label: Text(type),
-                            selected: _selectedAccountType == type,
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedAccountType = selected ? type : null;
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
+                  _buildFilterOption<String>(
+                    title: "Account Type",
+                    options: [
+                      "all",
+                      "system",
+                      "customer",
+                      "supplier",
+                      "exchanger"
                     ],
+                    selected: _selectedAccountType,
+                    onSelected: (val) =>
+                        modalSetState(() => _selectedAccountType = val),
                   ),
-
-                  // Currency Filter
-                  ExpansionTile(
-                    title: Text("Currency"),
-                    children: [
-                      Wrap(
-                        spacing: 10,
-                        children:
-                            ["USD", "EUR", "PKR", "IRR", "AFN"].map((currency) {
-                          return ChoiceChip(
-                            label: Text(currency),
-                            selected: _selectedCurrency == currency,
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedCurrency = selected ? currency : null;
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                  _buildFilterOption<String>(
+                    title: "Currency",
+                    options: ["USD", "EUR", "PKR", "IRR", "AFN"],
+                    selected: _selectedCurrency,
+                    onSelected: (val) =>
+                        modalSetState(() => _selectedCurrency = val),
                   ),
-
-                  // Balance Amount Filter
                   ExpansionTile(
-                    title: Text("Balance Amount"),
+                    title: const Text("Balance Amount"),
                     children: [
                       Row(
                         children: [
                           Expanded(
                             child: TextField(
                               keyboardType: TextInputType.number,
-                              decoration: InputDecoration(labelText: "Min"),
-                              onChanged: (value) {
-                                setState(() {
-                                  _minBalance = double.tryParse(value);
-                                });
-                              },
+                              decoration:
+                                  const InputDecoration(labelText: "Min"),
+                              onChanged: (val) => modalSetState(
+                                  () => _minBalance = double.tryParse(val)),
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               keyboardType: TextInputType.number,
-                              decoration: InputDecoration(labelText: "Max"),
-                              onChanged: (value) {
-                                setState(() {
-                                  _maxBalance = double.tryParse(value);
-                                });
-                              },
+                              decoration:
+                                  const InputDecoration(labelText: "Max"),
+                              onChanged: (val) => modalSetState(
+                                  () => _maxBalance = double.tryParse(val)),
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-
-                  // Positive/Negative Balance Filter
-                  ExpansionTile(
-                    title: Text("Balance Type"),
-                    children: [
-                      Wrap(
-                        spacing: 10,
-                        children: [
-                          ChoiceChip(
-                            label: Text("Positive"),
-                            selected: _isPositiveBalance == true,
-                            onSelected: (selected) {
-                              setState(() {
-                                _isPositiveBalance = selected ? true : null;
-                              });
-                            },
-                          ),
-                          ChoiceChip(
-                            label: Text("Negative"),
-                            selected: _isPositiveBalance == false,
-                            onSelected: (selected) {
-                              setState(() {
-                                _isPositiveBalance = selected ? false : null;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+                  _buildFilterOption<bool>(
+                    title: "Balance Type",
+                    options: [true, false],
+                    selected: _isPositiveBalance,
+                    onSelected: (val) =>
+                        modalSetState(() => _isPositiveBalance = val),
                   ),
-
-                  // Apply Filters Button
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
                       setState(() {});
                     },
-                    child: Text("Apply Filters"),
+                    child: const Text("Apply Filters"),
                   ),
                 ],
               ),
@@ -405,27 +369,57 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _shareBalances(Map<String, dynamic> account,
       {bool viaWhatsApp = false}) {
-    final balances = account['balances'] ?? {'USD': 0.00};
-    final balanceText = balances.entries
-        .map((e) => "${e.key}: ${NumberFormat('#,###.##').format(e.value)}")
-        .join(", ");
+    final balances = account['balances'] ?? {};
+    if (balances.isEmpty) return;
 
-    final message = "${account['name']} - Balances: $balanceText";
+    final balanceText = balances.entries.map((entry) {
+      final currency = entry.value['currency'] ?? entry.key;
+      final balance = entry.value['summary']['balance'] ?? 0.0;
+      return "$currency: ${NumberFormat('#,###.##').format(balance)}";
+    }).join(", ");
+
+    final message = "${account['name']} - Balances:\n$balanceText";
 
     if (viaWhatsApp) {
-      sendWhatsAppMessage(account['phone'], message);
+      sendWhatsAppMessage(account['phone'] ?? '', message);
     } else {
-      Share.share(message);
+      _shareText(message);
     }
   }
 
   Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
-    final url =
-        'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    } else {
-      throw 'Could not launch $url';
+    final cleanedPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final fullPhone = cleanedPhone.startsWith('+')
+        ? cleanedPhone
+        : '+93$cleanedPhone'; // default country
+
+    final encodedMessage = Uri.encodeComponent(message);
+    final uri = Uri.parse("https://wa.me/$fullPhone?text=$encodedMessage");
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Cannot open WhatsApp. Please check installation.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to open WhatsApp.')),
+      );
+    }
+  }
+
+  Future<void> _shareText(String text) async {
+    try {
+      await Share.share(text);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to share the balance.')),
+      );
     }
   }
 
@@ -454,6 +448,36 @@ class _AccountScreenState extends State<AccountScreen>
     }
   }
 
+  void _handleAccountAction(
+      String action, Map<String, dynamic> account, bool isActive) {
+    switch (action) {
+      case 'transactions':
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => TransactionsScreen(account: account)));
+        break;
+      case 'edit':
+        _editAccount(context, account);
+        break;
+      case 'deactivate':
+        _confirmDeactivate(context, account);
+        break;
+      case 'reactivate':
+        _confirmReactivate(context, account);
+        break;
+      case 'delete':
+        _confirmDelete(context, account, isActive);
+        break;
+      case 'share':
+        _shareBalances(account);
+        break;
+      case 'whatsapp':
+        _shareBalances(account, viaWhatsApp: true);
+        break;
+    }
+  }
+
   Widget _buildAccountList(List<Map<String, dynamic>> accounts, bool isActive) {
     return RefreshIndicator(
       onRefresh: _loadAccounts,
@@ -470,37 +494,8 @@ class _AccountScreenState extends State<AccountScreen>
                 return AccountTile(
                   account: account,
                   isActive: isActive,
-                  onActionSelected: (action) {
-                    switch (action) {
-                      case 'transactions':
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                TransactionsScreen(account: account),
-                          ),
-                        );
-                        break;
-                      case 'edit':
-                        _editAccount(context, account);
-                        break;
-                      case 'deactivate':
-                        _confirmDeactivate(context, account);
-                        break;
-                      case 'reactivate':
-                        _confirmReactivate(context, account);
-                        break;
-                      case 'delete':
-                        _confirmDelete(context, account, isActive);
-                        break;
-                      case 'share':
-                        _shareBalances(account);
-                        break;
-                      case 'whatsapp':
-                        _shareBalances(account, viaWhatsApp: true);
-                        break;
-                    }
-                  },
+                  onActionSelected: (action) =>
+                      _handleAccountAction(action, account, isActive),
                 );
               },
             ),
@@ -553,9 +548,10 @@ class _AccountScreenState extends State<AccountScreen>
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
+        tooltip: _isAtTop ? 'Add Account' : 'Scroll to Top',
         child: FaIcon(
-          size: 18,
           _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp,
+          size: 18,
         ),
         mini: !_isAtTop,
       ),

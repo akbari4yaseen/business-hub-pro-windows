@@ -109,7 +109,6 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     required String label,
     String? Function(String?)? validator,
     TextInputType keyboardType = TextInputType.text,
-    TextDirection textDirection = TextDirection.rtl,
     List<String>? autofillHints,
   }) {
     return Padding(
@@ -122,7 +121,6 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           filled: true,
         ),
         validator: validator,
-        textDirection: textDirection,
         autofillHints: autofillHints,
       ),
     );
@@ -162,21 +160,18 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         label: "واتساپ",
                         validator: _validateRequired,
                         keyboardType: TextInputType.phone,
-                        textDirection: TextDirection.ltr,
                       ),
                       _buildTextField(
                         controller: _phoneController,
                         label: "شماره تماس",
                         validator: _validateRequired,
                         keyboardType: TextInputType.phone,
-                        textDirection: TextDirection.ltr,
                       ),
                       _buildTextField(
                         controller: _emailController,
                         label: "ایمیل",
                         validator: _validateEmail,
                         keyboardType: TextInputType.emailAddress,
-                        textDirection: TextDirection.ltr,
                         autofillHints: [AutofillHints.email],
                       ),
                       _buildTextField(
