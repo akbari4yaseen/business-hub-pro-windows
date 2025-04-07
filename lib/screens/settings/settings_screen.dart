@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -8,12 +9,11 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'تنظیمات',
-        ),
+        title: const Text('تنظیمات'),
         backgroundColor: themeProvider.appBarBackgroundColor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: themeProvider.appBarTextColor),
@@ -22,47 +22,75 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
+        child: ListView(
           children: [
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildSettingsOption(
-                    context,
-                    icon: Icons.lock,
-                    text: 'رمز عبور',
-                    onTap: () => Navigator.pushNamed(context, '/user_settings'),
-                  ),
-                  _buildSettingsOption(
-                    context,
-                    icon: Icons.currency_exchange,
-                    text: 'ارز و واحدات',
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/currency_settings'),
-                  ),
-                  _buildSettingsOption(
-                    context,
-                    icon: Icons.filter_alt,
-                    text: 'فیلترهای پیش فرض',
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/default_filters'),
-                  ),
-                  _buildSettingsOption(
-                    context,
-                    icon: Icons.business,
-                    text: 'معلومات شرکت',
-                    onTap: () => Navigator.pushNamed(context, '/company_info'),
-                  ),
-                  _buildThemeSwitch(context, themeProvider),
-                  _buildSettingsOption(
-                    context,
-                    icon: Icons.logout,
-                    text: 'خارج شدن',
-                    color: Colors.red,
-                    onTap: () => _handleLogout(context),
-                  ),
-                ],
-              ),
+            // Currency Settings
+            _buildDropdownSetting(
+              context: context,
+              icon: Icons.currency_exchange,
+              title: 'ارز پیش فرض',
+              value: settingsProvider.defaultCurrency,
+              items: settingsProvider.availableCurrencies,
+              onChanged: (value) =>
+                  settingsProvider.setSetting('default_currency', value!),
+            ),
+
+            // Transaction Type Settings
+            _buildDropdownSetting(
+              context: context,
+              icon: Icons.compare_arrows,
+              title: 'نوع معامله پیش فرض',
+              value: settingsProvider.defaultTransaction,
+              items: settingsProvider.availableTransactionTypes,
+              onChanged: (value) =>
+                  settingsProvider.setSetting('default_transaction', value!),
+            ),
+
+            // Track Settings
+            _buildDropdownSetting(
+              context: context,
+              icon: Icons.track_changes,
+              title: 'مسیر پیش فرض',
+              value: settingsProvider.defaultTrack,
+              items: settingsProvider.availableTracks,
+              onChanged: (value) =>
+                  settingsProvider.setSetting('default_track', value!),
+            ),
+
+            // Language Settings
+            _buildDropdownSetting(
+              context: context,
+              icon: Icons.language,
+              title: 'زبان برنامه',
+              value: settingsProvider.appLanguage,
+              items: settingsProvider.availableLanguages,
+              onChanged: (value) =>
+                  settingsProvider.setSetting('app_language', value!),
+            ),
+
+            // Theme Settings
+            _buildThemeSwitch(context, themeProvider),
+
+            // Other settings...
+            _buildSettingsOption(
+              context,
+              icon: Icons.lock,
+              text: 'رمز عبور',
+              onTap: () => Navigator.pushNamed(context, '/user_settings'),
+            ),
+
+            _buildSettingsOption(
+              context,
+              icon: Icons.business,
+              text: 'معلومات شرکت',
+              onTap: () => Navigator.pushNamed(context, '/company_info'),
+            ),
+
+            _buildSettingsOption(
+              context,
+              icon: Icons.logout,
+              text: 'خارج شدن',
+              onTap: () => _handleLogout(context),
             ),
           ],
         ),
@@ -70,20 +98,50 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsOption(BuildContext context,
-      {required IconData icon,
-      required String text,
-      required VoidCallback onTap,
-      Color color = Colors.black}) {
+  Widget _buildDropdownSetting({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
-        leading: Icon(icon, color: color, size: 28),
+        leading: Icon(icon, size: 28),
+        title: Text(title),
+        trailing: DropdownButton<String>(
+          value: value,
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          underline: Container(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsOption(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: Icon(icon, size: 28),
         title: Text(text,
             style: TextStyle(
-              color: color,
               fontSize: 16,
             )),
         trailing:
@@ -128,7 +186,6 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _handleLogout(BuildContext context) {
-    // Handle logout logic here
     Navigator.pushReplacementNamed(context, '/login');
   }
 }

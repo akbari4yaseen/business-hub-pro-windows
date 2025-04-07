@@ -1,3 +1,4 @@
+import 'screens/settings/company_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -15,6 +16,7 @@ import 'screens/settings/user_settings.dart';
 import 'screens/login_screen.dart';
 import 'widgets/drawer_menu.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'providers/info_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => BottomNavigationProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => InfoProvider()),
       ],
       child: const MyApp(),
     ),
@@ -55,6 +58,7 @@ class MyApp extends StatelessWidget {
         '/reports': (context) => const ReportsScreen(),
         '/settings': (context) => SettingsScreen(),
         '/user_settings': (context) => UserSettingsScreen(),
+        '/company_info': (context) => CompanyInfoScreen(),
       },
       debugShowCheckedModeBanner: false, // Disable debug banner in release mode
       localizationsDelegates: const [

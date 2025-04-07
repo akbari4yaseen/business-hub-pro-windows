@@ -46,7 +46,7 @@ class DatabaseHelper {
     );
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS info (
+      CREATE TABLE IF NOT EXISTS companyInfo (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name VARCHAR(128) NOT NULL,
         email VARCHAR(64),
@@ -58,7 +58,7 @@ class DatabaseHelper {
     ''');
 
     await db.insert(
-      'info',
+      'companyInfo',
       {
         'id': 1,
         'name': 'Default Business',
@@ -134,7 +134,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date DATETIME NOT NULL,
         account_id INTEGER NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         currency VARCHAR(3) NOT NULL,
         transaction_type VARCHAR(8) NOT NULL,
         description VARCHAR(256),
@@ -152,7 +152,7 @@ class DatabaseHelper {
         date DATETIME NOT NULL,
         account_id INTEGER NOT NULL,
         track_id INTEGER NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         currency VARCHAR(3) NOT NULL,
         transaction_type VARCHAR(8) NOT NULL,
         description VARCHAR(256)
@@ -220,6 +220,50 @@ class DatabaseHelper {
       whereArgs: [1, 1],
     );
     return result.isNotEmpty;
+  }
+
+  Future<bool> updateCompanyInfo({
+    required String name,
+    String? email,
+    String? whatsApp,
+    String? phone,
+    String? address,
+    String? logo,
+  }) async {
+    final db = await database;
+
+    int rowsAffected = await db.update(
+      'companyInfo',
+      {
+        'name': name,
+        'email': email,
+        'whats_app': whatsApp,
+        'phone': phone,
+        'address': address,
+        'logo': logo,
+      },
+      where: 'id = ?',
+      whereArgs: [1], // assuming single entry with id=1
+    );
+
+    return rowsAffected > 0;
+  }
+
+  Future<Map<String, dynamic>?> loadCompanyInfo() async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> result = await db.query(
+      'companyInfo',
+      where: 'id = ?',
+      whereArgs: [1],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      return null;
+    }
   }
 }
 
