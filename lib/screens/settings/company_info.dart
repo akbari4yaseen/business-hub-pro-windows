@@ -110,18 +110,39 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     String? Function(String?)? validator,
     TextInputType keyboardType = TextInputType.text,
     List<String>? autofillHints,
+    IconData? icon,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-        ),
         validator: validator,
         autofillHints: autofillHints,
+        decoration: InputDecoration(
+          labelText: label,
+          floatingLabelBehavior:
+              FloatingLabelBehavior.auto, // Let it float naturally
+          prefixIcon: icon != null ? Icon(icon) : null,
+          filled: true,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.blue, width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.red),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       ),
     );
   }
@@ -129,58 +150,76 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("اطلاعات شرکت")),
+      appBar: AppBar(
+        title: const Text("اطلاعات شرکت"),
+        elevation: 2,
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : GestureDetector(
               onTap: () => FocusScope.of(context).unfocus(),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Align(
-                        alignment: Alignment.topRight,
-                        child: CircleAvatar(
-                          radius: 48,
-                          child: Icon(Icons.apartment, size: 40),
-                        ),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: CircleAvatar(
+                              radius: 44,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              child: const Icon(Icons.apartment,
+                                  size: 40, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildTextField(
+                            controller: _nameController,
+                            label: "نام کسب‌وکار",
+                            validator: _validateRequired,
+                            autofillHints: [AutofillHints.organizationName],
+                            icon: Icons.business,
+                          ),
+                          _buildTextField(
+                            controller: _whatsAppController,
+                            label: "واتساپ",
+                            validator: _validateRequired,
+                            keyboardType: TextInputType.phone,
+                            icon: Icons.chat,
+                          ),
+                          _buildTextField(
+                            controller: _phoneController,
+                            label: "شماره تماس",
+                            validator: _validateRequired,
+                            keyboardType: TextInputType.phone,
+                            icon: Icons.phone,
+                          ),
+                          _buildTextField(
+                            controller: _emailController,
+                            label: "ایمیل",
+                            validator: _validateEmail,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: [AutofillHints.email],
+                            icon: Icons.email,
+                          ),
+                          _buildTextField(
+                            controller: _addressController,
+                            label: "آدرس",
+                            validator: _validateRequired,
+                            autofillHints: [AutofillHints.fullStreetAddress],
+                            icon: Icons.location_on,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-                      _buildTextField(
-                        controller: _nameController,
-                        label: "نام کسب‌وکار",
-                        validator: _validateRequired,
-                        autofillHints: [AutofillHints.organizationName],
-                      ),
-                      _buildTextField(
-                        controller: _whatsAppController,
-                        label: "واتساپ",
-                        validator: _validateRequired,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      _buildTextField(
-                        controller: _phoneController,
-                        label: "شماره تماس",
-                        validator: _validateRequired,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      _buildTextField(
-                        controller: _emailController,
-                        label: "ایمیل",
-                        validator: _validateEmail,
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: [AutofillHints.email],
-                      ),
-                      _buildTextField(
-                        controller: _addressController,
-                        label: "آدرس",
-                        validator: _validateRequired,
-                        autofillHints: [AutofillHints.fullStreetAddress],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -188,11 +227,21 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       bottomNavigationBar: _isLoading
           ? null
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: ElevatedButton.icon(
-                onPressed: _handleSubmit,
-                icon: const Icon(Icons.save),
-                label: const Text("ثبت تغییرات"),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _handleSubmit,
+                  icon: const Icon(Icons.save),
+                  label: const Text(
+                    "ثبت تغییرات",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
             ),
     );

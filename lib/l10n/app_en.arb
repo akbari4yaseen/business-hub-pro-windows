@@ -1,5 +1,5 @@
 {
-  "appTitle": "#BusinessHub",
+  "appTitle": "BusinessHub",
   "home": "Home",
   "journal": "Journal",
   "accounts": "Accounts",
@@ -74,5 +74,11 @@
   "loginButton": "Login",
   "forgotPassword": "Forgot your password?",
   "enterPassword": "Please enter your password.",
-  "wrongPassword": "Incorrect password."
+  "wrongPassword": "Incorrect password.",
+  "appName": "BusinessHub",
+  "settings": "Settings",
+  "help": "Help",
+  "about": "About",
+  "logout": "Logout",
+  "darkMode": "Dark Mode"
 }

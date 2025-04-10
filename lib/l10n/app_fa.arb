@@ -1,5 +1,5 @@
 {
-  "appTitle": "#بیزنیزهاب",
+  "appTitle": "بیزنیزهاب",
   "home": "صفحه اصلی",
   "journal": "روزنامچه",
   "accounts": "حساب‌ها",
@@ -74,5 +74,11 @@
   "loginButton": "وارد شدن",
   "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
   "enterPassword": "لطفا رمز عبور خود را وارد کنید.",
-  "wrongPassword": "رمز عبور اشتباه است."
+  "wrongPassword": "رمز عبور اشتباه است.",
+  "appName": "بیزنیزهاب",
+  "settings": "تنظیمات",
+  "help": "کمک",
+  "about": "درباره",
+  "logout": "خروج",
+  "darkMode": "حالت تاریک"
 }

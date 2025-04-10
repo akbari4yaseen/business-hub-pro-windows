@@ -132,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen>
               Text(
                 loc.loginHeader,
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontFamily: "IRANSans",
                   color: theme.colorScheme.primary,
                 ),
               ),

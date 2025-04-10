@@ -68,20 +68,23 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.changePassword)),
+      appBar: AppBar(
+        title: Text(localizations.changePassword),
+      ),
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(14),
           child: Form(
             key: _formKey,
             child: Card(
-              elevation: 1,
+              elevation: 3,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     PasswordField(
@@ -118,13 +121,21 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
         child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
+          height: 56,
+          child: ElevatedButton.icon(
             onPressed: _updatePassword,
+            icon: const Icon(Icons.save),
+            label: Text(localizations.changePassword),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+              ),
             ),
-            child: Text(localizations.changePassword),
           ),
         ),
       ),
@@ -151,22 +162,48 @@ class PasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
     return TextFormField(
       controller: controller,
       obscureText: obscure,
+      validator: validator ??
+          (value) => value == null || value.isEmpty
+              ? localizations.fieldRequired
+              : null,
       decoration: InputDecoration(
         labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surface,
         prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
           onPressed: onToggle,
         ),
-        border: const OutlineInputBorder(),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
       ),
-      validator: validator ??
-          (value) => value == null || value.isEmpty
-              ? localizations.fieldRequired
-              : null,
     );
   }
 }
