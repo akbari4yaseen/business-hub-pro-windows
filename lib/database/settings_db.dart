@@ -32,4 +32,12 @@ class SettingsDBHelper {
     );
     return result.isNotEmpty ? result.first['value'] as String : null;
   }
+
+  Future<Map<String, String>> getAllSettings() async {
+    final db = await database;
+    final result = await db.query('settings');
+    return {
+      for (var row in result) row['key'] as String: row['value'] as String
+    };
+  }
 }

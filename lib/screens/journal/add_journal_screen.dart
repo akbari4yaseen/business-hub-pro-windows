@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import '../../constants/currencies.dart';
 import '../../database/account_db.dart';
 import '../../database/journal_db.dart';
+import '../../providers/settings_provider.dart';
 
 /// A custom [TextInputFormatter] that formats numeric input with thousand separators.
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
@@ -44,13 +46,13 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   List<Map<String, dynamic>> _accounts = [];
   int? _selectedAccount;
   int? _selectedTrack;
-  String _transactionType = 'credit';
-  String _currency = 'AFN';
+  late String _transactionType;
+  late String _currency;
+  late String _selectedTrackOption;
 
-  // Track option state: 'treasure', 'noTreasure', or 'track'
-  String _selectedTrackOption = 'noTreasure';
   final int _treasureTrackId = 1;
   final int _noTreasureTrackId = 2;
+
   String _customTrackName = "Track";
 
   DateTime _selectedDate = DateTime.now();
@@ -60,8 +62,17 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     super.initState();
     _loadAccounts();
 
-    // Set default track to treasure.
-    _selectedTrack = _noTreasureTrackId;
+    // Initialize with default values from settings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
+      setState(() {
+        _transactionType = settingsProvider.defaultTransaction;
+        _currency = settingsProvider.defaultCurrency;
+        _selectedTrackOption = settingsProvider.defaultTrackOption;
+        _selectedTrack = settingsProvider.defaultTrack;
+      });
+    });
   }
 
   @override

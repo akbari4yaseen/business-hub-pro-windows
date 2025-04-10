@@ -30,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.currency_exchange,
               title: 'ارز پیش فرض',
               value: settingsProvider.defaultCurrency,
-              items: settingsProvider.availableCurrencies,
+              items: SettingsProvider.availableCurrencies,
               onChanged: (value) =>
                   settingsProvider.setSetting('default_currency', value!),
             ),
@@ -41,7 +41,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.compare_arrows,
               title: 'نوع معامله پیش فرض',
               value: settingsProvider.defaultTransaction,
-              items: settingsProvider.availableTransactionTypes,
+              items: SettingsProvider.availableTransactionTypes,
               onChanged: (value) =>
                   settingsProvider.setSetting('default_transaction', value!),
             ),
@@ -50,11 +50,11 @@ class SettingsScreen extends StatelessWidget {
             _buildDropdownSetting(
               context: context,
               icon: Icons.track_changes,
-              title: 'مسیر پیش فرض',
-              value: settingsProvider.defaultTrack,
-              items: settingsProvider.availableTracks,
+              title: 'درک پیش فرض',
+              value: settingsProvider.defaultTrackOption,
+              items: SettingsProvider.availableTrackOptions,
               onChanged: (value) =>
-                  settingsProvider.setSetting('default_track', value!),
+                  settingsProvider.setSetting('default_track_option', value!),
             ),
 
             // Language Settings
@@ -63,7 +63,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.language,
               title: 'زبان برنامه',
               value: settingsProvider.appLanguage,
-              items: settingsProvider.availableLanguages,
+              items: SettingsProvider.availableLanguages,
               onChanged: (value) =>
                   settingsProvider.setSetting('app_language', value!),
             ),
