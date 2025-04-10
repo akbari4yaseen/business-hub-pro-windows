@@ -6,7 +6,6 @@
   "reports": "گزارشات",
   "password": "رمزعبور",
   "login": "ورود",
-  "enterPassword": "لطفا رمزعبور را درج کنید",
   "invalidPassword": "رمزعبور اشتباه است",
   "addAccount": "حساب جدید",
   "addJournal": "روزنامچه جدید",
@@ -69,5 +68,11 @@
   "incorrectCurrentPassword": "گذرواژه فعلی اشتباه است",
   "fieldRequired": "این فیلد الزامی است",
   "passwordTooShort": "حداقل باید ۶ کاراکتر باشد",
-  "passwordsDoNotMatch": "گذرواژه‌ها مطابقت ندارند"
+  "passwordsDoNotMatch": "گذرواژه‌ها مطابقت ندارند",
+  "loginHeader": "ورود به سیستم",
+  "passwordLabel": "رمز عبور",
+  "loginButton": "وارد شدن",
+  "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
+  "enterPassword": "لطفا رمز عبور خود را وارد کنید.",
+  "wrongPassword": "رمز عبور اشتباه است."
 }

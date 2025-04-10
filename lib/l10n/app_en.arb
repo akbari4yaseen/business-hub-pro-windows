@@ -6,7 +6,6 @@
   "reports": "Reports",
   "password": "Password",
   "login": "Login",
-  "enterPassword": "Please enter your password",
   "invalidPassword": "Invalid password",
   "addAccount": "New Account",
   "addJournal": "New Journal",
@@ -69,5 +68,11 @@
   "incorrectCurrentPassword": "Current password is incorrect",
   "fieldRequired": "This field is required",
   "passwordTooShort": "Must be at least 6 characters",
-  "passwordsDoNotMatch": "Passwords do not match"
+  "passwordsDoNotMatch": "Passwords do not match",
+  "loginHeader": "Login to the system",
+  "passwordLabel": "Password",
+  "loginButton": "Login",
+  "forgotPassword": "Forgot your password?",
+  "enterPassword": "Please enter your password.",
+  "wrongPassword": "Incorrect password."
 }
