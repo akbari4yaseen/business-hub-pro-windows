@@ -9,16 +9,66 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _errorMessage;
   bool _isLoading = false;
 
+  late AnimationController _logoController;
+  late AnimationController _cardSlideController;
+  late AnimationController _shakeController;
+
+  late Animation<double> _logoFade;
+  late Animation<Offset> _cardSlide;
+  late Animation<Offset> _shakeAnimation;
+
   @override
-  void dispose() {
-    _passwordController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _cardSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _logoFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
+    );
+
+    _cardSlide =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+      CurvedAnimation(parent: _cardSlideController, curve: Curves.easeOut),
+    );
+
+    _shakeAnimation = TweenSequence<Offset>([
+      TweenSequenceItem(
+          tween: Tween(begin: Offset.zero, end: const Offset(-0.02, 0)),
+          weight: 1),
+      TweenSequenceItem(
+          tween:
+              Tween(begin: const Offset(-0.02, 0), end: const Offset(0.02, 0)),
+          weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: const Offset(0.02, 0), end: Offset.zero),
+          weight: 1),
+    ]).animate(
+        CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
+
+    _logoController.forward();
+    Future.delayed(const Duration(milliseconds: 400),
+        () => _cardSlideController.forward());
   }
 
   Future<void> _login() async {
@@ -39,32 +89,45 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-      _errorMessage = isValidUser ? null : loc.wrongPassword;
-    });
+    setState(() => _isLoading = false);
 
-    if (isValidUser) {
-      Navigator.pushReplacementNamed(context, '/home');
+    if (!isValidUser) {
+      setState(() => _errorMessage = loc.wrongPassword);
+      _shakeController.forward(from: 0);
+      return;
     }
+
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+
+  @override
+  void dispose() {
+    _logoController.dispose();
+    _cardSlideController.dispose();
+    _shakeController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isLightMode = theme.brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor:
-          isLightMode ? Colors.white : theme.scaffoldBackgroundColor,
+      backgroundColor: theme.brightness == Brightness.light
+          ? Colors.white
+          : theme.scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset("assets/images/app_logo.png", height: 100),
+              FadeTransition(
+                opacity: _logoFade,
+                child: Image.asset("assets/images/app_logo.png", height: 100),
+              ),
               const SizedBox(height: 24),
               Text(
                 loc.loginHeader,
@@ -74,7 +137,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildLoginCard(loc, theme),
+              SlideTransition(
+                position: _cardSlide,
+                child: SlideTransition(
+                  position: _shakeAnimation,
+                  child: _buildLoginCard(loc, theme),
+                ),
+              ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {},
@@ -105,14 +174,19 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: InputDecoration(
                 labelText: loc.passwordLabel,
                 prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
+                suffixIcon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: IconButton(
+                    key: ValueKey(_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 errorText: _errorMessage,
@@ -146,10 +220,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       )
                     : Text(
                         loc.loginButton,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.white),
                       ),
               ),
             ),
