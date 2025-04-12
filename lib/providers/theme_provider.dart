@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../themes/app_theme.dart';
+import 'settings_provider.dart';
 
 class ThemeProvider with ChangeNotifier {
+  final SettingsProvider _settingsProvider;
+  ThemeProvider(this._settingsProvider) {
+    _isDarkMode = _settingsProvider.themeMode != 'light';
+  }
   bool _isDarkMode = false; // Stores the current theme mode
 
   // Getter to check if dark mode is enabled
@@ -30,6 +35,7 @@ class ThemeProvider with ChangeNotifier {
 
   // Toggles between dark and light mode
   void toggleTheme() {
+    _settingsProvider.setSetting('theme_mode', _isDarkMode ? 'dark' : 'light');
     _isDarkMode = !_isDarkMode;
     updateSystemNavigationBarColor(); // Update system UI colors accordingly
     notifyListeners(); // Notify all listeners about the theme change

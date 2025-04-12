@@ -69,7 +69,7 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // Theme Settings
-            _buildThemeSwitch(context, themeProvider),
+            _buildThemeSwitch(context, themeProvider, settingsProvider),
 
             // Other settings...
             _buildSettingsOption(
@@ -152,7 +152,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeSwitch(BuildContext context, ThemeProvider themeProvider) {
+  Widget _buildThemeSwitch(
+    BuildContext context,
+    ThemeProvider themeProvider,
+    SettingsProvider settingsProvider,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0,
@@ -164,9 +168,9 @@ class SettingsScreen extends StatelessWidget {
               ScaleTransition(scale: animation, child: child),
           child: themeProvider.isDarkMode
               ? const Icon(Icons.dark_mode,
-                  key: ValueKey('dark_mode'), size: 28, color: Colors.amber)
+                  key: ValueKey('theme_mode'), size: 28, color: Colors.amber)
               : const Icon(Icons.light_mode,
-                  key: ValueKey('light_mode'), size: 28, color: Colors.blue),
+                  key: ValueKey('theme_mode'), size: 28, color: Colors.blue),
         ),
         title: Text(
           'حالت ${themeProvider.isDarkMode ? "تاریک" : "روشن"}',
@@ -178,7 +182,10 @@ class SettingsScreen extends StatelessWidget {
           value: themeProvider.isDarkMode,
           activeColor: Colors.amber,
           inactiveThumbColor: Colors.blue,
-          onChanged: (value) => themeProvider.toggleTheme(),
+          onChanged: (value) {
+            themeProvider.toggleTheme();
+            settingsProvider.setSetting('theme_mode', value ? 'dark' : 'light');
+          },
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),

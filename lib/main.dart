@@ -18,15 +18,18 @@ import 'widgets/drawer_menu.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'providers/info_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.initializeSettings();
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(settingsProvider)),
         ChangeNotifierProvider(create: (_) => BottomNavigationProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => InfoProvider()),
       ],
       child: const MyApp(),
@@ -40,12 +43,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
 
     // Initialize system navigation bar color
     themeProvider.updateSystemNavigationBarColor();
 
     return MaterialApp(
       theme: themeProvider.currentTheme, // Use the current theme
+      themeMode: settingsProvider.themeMode == 'light'
+          ? ThemeMode.light
+          : ThemeMode.dark,
       home: const BottomNavigationApp(),
 
       // initialRoute: '/login',
@@ -73,7 +80,8 @@ class MyApp extends StatelessWidget {
         Locale("fa", "AF"),
         Locale("en", "US"),
       ],
-      locale: const Locale("fa", "AF"),
+      locale: Locale(settingsProvider.appLanguage,
+          settingsProvider.appLanguage == 'fa' ? 'AF' : 'US'),
     );
   }
 }
