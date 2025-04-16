@@ -5,6 +5,7 @@ import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../utils/utilities.dart';
+import '../widgets/backup_restore_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -70,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildBackupCard(daysSinceLastBackup, isBackupOverdue),
+            const BackupRestoreCard(),
             const SizedBox(height: 20),
             const Text('تراکنش‌های اخیر',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -196,46 +197,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBackupCard(int daysSinceLastBackup, bool isBackupOverdue) {
-    return Card(
-      elevation: 4,
-      color: isBackupOverdue ? Colors.red[100] : Colors.green[100],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.backup,
-                    size: 30,
-                    color: isBackupOverdue ? Colors.red : Colors.green),
-                const SizedBox(width: 10),
-                const Text('پشتیبان‌گیری پایگاه داده',
-                    style: TextStyle(fontSize: 18, fontFamily: "IRANSans")),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('آخرین پشتیبان‌گیری: $daysSinceLastBackup روز قبل',
-                style: TextStyle(
-                    fontSize: 16,
-                    color: isBackupOverdue ? Colors.red : Colors.black)),
-            if (isBackupOverdue)
-              const Text('⚠ لطفاً پشتیبان‌گیری جدید بگیرید!',
-                  style: TextStyle(
-                      fontSize: 16, color: Colors.red, fontFamily: "IRANSans")),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implement backup functionality
-              },
-              icon: const Icon(Icons.backup_outlined),
-              label: const Text('پشتیبان‌گیری'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

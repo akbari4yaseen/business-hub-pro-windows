@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
+  static const _databaseName = 'BusinessHub.db';
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -15,6 +17,61 @@ class DatabaseHelper {
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
+  }
+
+  /// Helper to get the database file path
+  Future<String> getDatabasePath() async {
+    return join(await getDatabasesPath(), _databaseName);
+  }
+
+  /// Export (backup) the database to a destination path
+  Future<bool> exportDatabase(String destinationPath) async {
+    try {
+      String dbPath = await getDatabasePath();
+      print('Exporting DB from: ' + dbPath + ' to: ' + destinationPath);
+      // Close the DB before copying to ensure all data is flushed
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      File dbFile = File(dbPath);
+      if (await dbFile.exists()) {
+        await dbFile.copy(destinationPath);
+        return true;
+      } else {
+        print('Database file not found at: $dbPath');
+      }
+      return false;
+    } catch (e) {
+      print("Export error: $e");
+      return false;
+    }
+  }
+
+  /// Import (restore) the database from a source path
+  Future<bool> importDatabase(String sourcePath) async {
+    try {
+      String dbPath = await getDatabasePath();
+      File dbFile = File(dbPath);
+      // Close the DB if open
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      // Delete existing DB
+      if (await dbFile.exists()) {
+        await dbFile.delete();
+      }
+      // Copy new DB
+      File sourceFile = File(sourcePath);
+      await sourceFile.copy(dbPath);
+      // Reopen DB
+      _database = await _initDatabase();
+      return true;
+    } catch (e) {
+      print("Import error: $e");
+      return false;
+    }
   }
 
   Future<Database> _initDatabase() async {
