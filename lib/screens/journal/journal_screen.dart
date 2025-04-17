@@ -148,16 +148,24 @@ class _JournalScreenState extends State<JournalScreen> {
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _journals.isEmpty
-              ? const Center(
-                  child: Text("No journal entries found."),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadJournals,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _journals.length,
-                    itemBuilder: (context, index) {
+          : RefreshIndicator(
+              onRefresh: _loadJournals,
+              child: _journals.isEmpty
+                  ? ListView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 70),
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(child: Text("No journal entries found.")),
+                      ],
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 70),
+                      itemCount: _journals.length,
+                      itemBuilder: (context, index) {
                       final journal = _journals[index];
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 5),

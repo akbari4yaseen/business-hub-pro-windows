@@ -126,29 +126,6 @@ class _AccountScreenState extends State<AccountScreen>
     }).toList();
   }
 
-  Widget _buildFilterOption<T>({
-    required String title,
-    required List<T> options,
-    required T? selected,
-    required void Function(T?) onSelected,
-  }) {
-    return ExpansionTile(
-      title: Text(title),
-      children: [
-        Wrap(
-          spacing: 10,
-          children: options.map((option) {
-            return ChoiceChip(
-              label: Text(option.toString()),
-              selected: selected == option,
-              onSelected: (selected) => onSelected(selected ? option : null),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
   // Show filter modal
   void _showFilterModal(searchText) {
     String? tempAccountType = _selectedAccountType;
