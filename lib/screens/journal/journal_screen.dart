@@ -5,6 +5,7 @@ import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -69,20 +70,20 @@ class _JournalScreenState extends State<JournalScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Confirm Delete"),
-          content: Text(
-              "Are you sure you want to delete this journal entry? This action cannot be undone."),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
+          content: Text(AppLocalizations.of(context)!.confirmDeleteJournal),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Cancel
-              child: Text("Cancel"),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () async {
                 Navigator.pop(context); // Close dialog
                 await _deleteJournal(id); // Proceed with deletion
               },
-              child: Text("Delete", style: TextStyle(color: Colors.red)),
+              child: Text(AppLocalizations.of(context)!.delete,
+                  style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -95,31 +96,31 @@ class _JournalScreenState extends State<JournalScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Journal Details"),
+          title: Text(AppLocalizations.of(context)!.journalDetails),
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                    "Description: ${journal['description'] ?? 'No Description'}"),
-                Text("Date: ${journal['date']}"),
+                    "${AppLocalizations.of(context)!.description}: ${journal['description'] ?? AppLocalizations.of(context)!.noDescription}"),
                 Text(
-                    "Amount: ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']}"),
-                Text("Transaction Type: ${journal['transaction_type']}"),
+                    "${AppLocalizations.of(context)!.date}: ${journal['date']}"),
                 Text(
-                  "Account: ${journal['account_name']}",
-                ),
+                    "${AppLocalizations.of(context)!.amount}: ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']}"),
                 Text(
-                  "Track: ${journal['track_name']}",
-                ),
+                    "${AppLocalizations.of(context)!.transactionType}: ${journal['transaction_type']}"),
+                Text(
+                    "${AppLocalizations.of(context)!.account}: ${journal['account_name']}"),
+                Text(
+                    "${AppLocalizations.of(context)!.track}: ${journal['track_name']}"),
               ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Close"),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         );
@@ -229,42 +230,47 @@ class _JournalScreenState extends State<JournalScreen> {
                               }
                             },
                             itemBuilder: (context) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'details',
                                 child: ListTile(
                                   leading: Icon(Icons.info),
-                                  title: Text('Details'),
+                                  title: Text(
+                                      AppLocalizations.of(context)!.details),
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'share',
                                 child: ListTile(
                                   leading: Icon(Icons.share),
-                                  title: Text('Share'),
+                                  title:
+                                      Text(AppLocalizations.of(context)!.share),
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'edit',
                                 child: ListTile(
                                   leading: Icon(Icons.edit, color: Colors.blue),
-                                  title: Text('Edit'),
+                                  title:
+                                      Text(AppLocalizations.of(context)!.edit),
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: ListTile(
                                   leading: Icon(Icons.delete,
                                       color: Colors.redAccent),
-                                  title: Text('Delete'),
+                                  title: Text(
+                                      AppLocalizations.of(context)!.delete),
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'print',
                                 enabled: false,
                                 child: ListTile(
                                   leading:
                                       Icon(Icons.print, color: Colors.grey),
-                                  title: Text('Print (Disabled)'),
+                                  title: Text(AppLocalizations.of(context)!
+                                      .printDisabled),
                                 ),
                               ),
                             ],

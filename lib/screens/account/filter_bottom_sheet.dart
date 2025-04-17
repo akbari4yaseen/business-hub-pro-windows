@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class FilterBottomSheet extends StatefulWidget {
   final Function(String?) onAccountTypeChanged;
@@ -58,7 +59,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Center(
-                child: Text("Filters",
+                child: Text(AppLocalizations.of(context)!.filters,
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
@@ -147,7 +148,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                         child: TextFormField(
                           controller: _maxBalanceController,
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(labelText: "Max Balance"),
+                          decoration: InputDecoration(
+                              labelText:
+                                  AppLocalizations.of(context)!.maxBalance),
                           onChanged: (value) {
                             widget.onBalanceAmountChanged(
                               double.tryParse(_minBalanceController.text) ?? 0,
@@ -164,13 +167,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
               // Positive / Negative Balance Switch
               ExpansionTile(
-                title: Text("Positive / Negative Balances"),
+                title: Text(
+                    AppLocalizations.of(context)!.positiveNegativeBalances),
                 leading: Icon(Icons.compare_arrows),
                 children: [
                   SwitchListTile(
                     title: Text(_showPositiveBalances
-                        ? "Show Positive Balances"
-                        : "Show Negative Balances"),
+                        ? AppLocalizations.of(context)!.showPositiveBalances
+                        : AppLocalizations.of(context)!.showNegativeBalances),
                     value: _showPositiveBalances,
                     onChanged: (value) {
                       setState(() {

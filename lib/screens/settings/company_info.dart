@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/info_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CompanyInfoScreen extends StatefulWidget {
   const CompanyInfoScreen({super.key});
@@ -52,15 +53,18 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
 
   String? _validateRequired(String? value) {
     return (value == null || value.trim().isEmpty)
-        ? "این فیلد ضروری است"
+        ? AppLocalizations.of(context)!.fieldRequired
         : null;
   }
 
   String? _validateEmail(String? value) {
     final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) return "این فیلد ضروری است";
+    if (trimmed == null || trimmed.isEmpty)
+      return AppLocalizations.of(context)!.fieldRequired;
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    return emailRegex.hasMatch(trimmed) ? null : "ایمیل معتبر نیست";
+    return emailRegex.hasMatch(trimmed)
+        ? null
+        : AppLocalizations.of(context)!.invalidEmail;
   }
 
   void _handleSubmit() async {
@@ -85,8 +89,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         SnackBar(
           content: Text(
             success
-                ? "معلومات شرکت بروز رسانی شد"
-                : "خطا در بروزرسانی اطلاعات شرکت",
+                ? AppLocalizations.of(context)!.companyInfoUpdated
+                : AppLocalizations.of(context)!.companyInfoUpdateError,
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -96,8 +100,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("خطا در بروزرسانی اطلاعات شرکت"),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.companyInfoUpdateError),
           duration: Duration(seconds: 2),
         ),
       );
@@ -151,7 +155,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("اطلاعات شرکت"),
+        title: Text(AppLocalizations.of(context)!.companyInfo),
         elevation: 2,
       ),
       body: _isLoading
@@ -183,28 +187,28 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           const SizedBox(height: 24),
                           _buildTextField(
                             controller: _nameController,
-                            label: "نام کسب‌وکار",
+                            label: AppLocalizations.of(context)!.businessName,
                             validator: _validateRequired,
                             autofillHints: [AutofillHints.organizationName],
                             icon: Icons.business,
                           ),
                           _buildTextField(
                             controller: _whatsAppController,
-                            label: "واتساپ",
+                            label: AppLocalizations.of(context)!.whatsApp,
                             validator: _validateRequired,
                             keyboardType: TextInputType.phone,
                             icon: Icons.chat,
                           ),
                           _buildTextField(
                             controller: _phoneController,
-                            label: "شماره تماس",
+                            label: AppLocalizations.of(context)!.phone,
                             validator: _validateRequired,
                             keyboardType: TextInputType.phone,
                             icon: Icons.phone,
                           ),
                           _buildTextField(
                             controller: _emailController,
-                            label: "ایمیل",
+                            label: AppLocalizations.of(context)!.email,
                             validator: _validateEmail,
                             keyboardType: TextInputType.emailAddress,
                             autofillHints: [AutofillHints.email],
@@ -212,7 +216,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           ),
                           _buildTextField(
                             controller: _addressController,
-                            label: "آدرس",
+                            label: AppLocalizations.of(context)!.address,
                             validator: _validateRequired,
                             autofillHints: [AutofillHints.fullStreetAddress],
                             icon: Icons.location_on,
@@ -233,8 +237,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _handleSubmit,
                   icon: const Icon(Icons.save),
-                  label: const Text(
-                    "ثبت تغییرات",
+                  label: Text(
+                    AppLocalizations.of(context)!.saveChanges,
                     style: TextStyle(fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(

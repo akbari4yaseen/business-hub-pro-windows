@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -13,7 +14,7 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تنظیمات'),
+        title: Text(AppLocalizations.of(context)!.settingsTitle),
         backgroundColor: themeProvider.appBarBackgroundColor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: themeProvider.appBarTextColor),
@@ -28,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
             _buildDropdownSetting(
               context: context,
               icon: Icons.currency_exchange,
-              title: 'ارز پیش فرض',
+              title: AppLocalizations.of(context)!.defaultCurrency,
               value: settingsProvider.defaultCurrency,
               items: SettingsProvider.availableCurrencies,
               onChanged: (value) =>
@@ -39,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
             _buildDropdownSetting(
               context: context,
               icon: Icons.compare_arrows,
-              title: 'نوع معامله پیش فرض',
+              title: AppLocalizations.of(context)!.defaultTransactionType,
               value: settingsProvider.defaultTransaction,
               items: SettingsProvider.availableTransactionTypes,
               onChanged: (value) =>
@@ -50,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
             _buildDropdownSetting(
               context: context,
               icon: Icons.track_changes,
-              title: 'درک پیش فرض',
+              title: AppLocalizations.of(context)!.defaultTrack,
               value: settingsProvider.defaultTrackOption,
               items: SettingsProvider.availableTrackOptions,
               onChanged: (value) =>
@@ -61,7 +62,7 @@ class SettingsScreen extends StatelessWidget {
             _buildDropdownSetting(
               context: context,
               icon: Icons.language,
-              title: 'زبان برنامه',
+              title: AppLocalizations.of(context)!.appLanguage,
               value: settingsProvider.appLanguage,
               items: SettingsProvider.availableLanguages,
               onChanged: (value) =>
@@ -75,21 +76,21 @@ class SettingsScreen extends StatelessWidget {
             _buildSettingsOption(
               context,
               icon: Icons.lock,
-              text: 'رمز عبور',
+              text: AppLocalizations.of(context)!.password,
               onTap: () => Navigator.pushNamed(context, '/user_settings'),
             ),
 
             _buildSettingsOption(
               context,
               icon: Icons.business,
-              text: 'معلومات شرکت',
+              text: AppLocalizations.of(context)!.companyInfo,
               onTap: () => Navigator.pushNamed(context, '/company_info'),
             ),
 
             _buildSettingsOption(
               context,
               icon: Icons.logout,
-              text: 'خارج شدن',
+              text: AppLocalizations.of(context)!.logout,
               onTap: () => _handleLogout(context),
             ),
           ],
@@ -173,7 +174,9 @@ class SettingsScreen extends StatelessWidget {
                   key: ValueKey('theme_mode'), size: 28, color: Colors.blue),
         ),
         title: Text(
-          'حالت ${themeProvider.isDarkMode ? "تاریک" : "روشن"}',
+          AppLocalizations.of(context)!.themeMode(themeProvider.isDarkMode
+              ? AppLocalizations.of(context)!.dark
+              : AppLocalizations.of(context)!.light),
           style: TextStyle(
               fontSize: 16,
               color: themeProvider.isDarkMode ? Colors.white : Colors.black),

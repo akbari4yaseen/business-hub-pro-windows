@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:intl/intl.dart';
 import '../database/database_helper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class BackupRestoreCard extends StatelessWidget {
   const BackupRestoreCard({Key? key}) : super(key: key);
@@ -13,24 +13,36 @@ class BackupRestoreCard extends StatelessWidget {
       String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
       if (selectedDirectory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Export canceled. No directory selected.')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.exportCanceledNoDirectory)),
         );
         return;
       }
-      String backupPath = join(selectedDirectory, 'BusinessHub_backup.db');
+      final now = DateTime.now();
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
+      final fileName = 'BusinessHub__backup_${timestamp}.db';
+
+      String backupPath = join(selectedDirectory, fileName);
       bool result = await DatabaseHelper().exportDatabase(backupPath);
       if (result) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Database exported successfully to:\n$backupPath')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .databaseExportedSuccessfully(backupPath))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Database file not found or export failed!')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .databaseFileNotFoundOrExportFailed)),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error exporting database: $e')),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .errorExportingDatabase(e.toString()))),
       );
     }
   }
@@ -40,7 +52,9 @@ class BackupRestoreCard extends StatelessWidget {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result == null || result.files.single.path == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Restore canceled. No file selected.')),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.restoreCanceledNoFile)),
         );
         return;
       }
@@ -48,16 +62,22 @@ class BackupRestoreCard extends StatelessWidget {
       bool resultRestore = await DatabaseHelper().importDatabase(backupPath);
       if (resultRestore) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Database restored successfully! Please restart the app.')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.databaseRestoredSuccessfully)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Restore failed! File not found or error occurred.')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.restoreFailedFileNotFound)),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error restoring database: $e')),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .errorRestoringDatabase(e.toString()))),
       );
     }
   }
@@ -74,10 +94,12 @@ class BackupRestoreCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
-                Icon(Icons.backup, size: 30, color: Colors.blueAccent),
-                SizedBox(width: 10),
-                Text('Backup & Restore Database', style: TextStyle(fontSize: 18, fontFamily: "IRANSans")),
+              children: [
+                const Icon(Icons.backup, size: 30, color: Colors.blueAccent),
+                const SizedBox(width: 10),
+                Text(AppLocalizations.of(context)!.backupRestoreTitle,
+                    style:
+                        const TextStyle(fontSize: 18, fontFamily: "IRANSans")),
               ],
             ),
             const SizedBox(height: 10),
@@ -87,7 +109,7 @@ class BackupRestoreCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _backupDatabase(context),
                     icon: const Icon(Icons.backup_outlined),
-                    label: const Text('Backup'),
+                    label: Text(AppLocalizations.of(context)!.backup),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -95,7 +117,7 @@ class BackupRestoreCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _restoreDatabase(context),
                     icon: const Icon(Icons.restore_outlined),
-                    label: const Text('Restore'),
+                    label: Text(AppLocalizations.of(context)!.restore),
                   ),
                 ),
               ],
