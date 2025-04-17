@@ -11,6 +11,7 @@ import '../../utils/transaction_helper.dart';
 import '../../utils/utilities.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'search_filter_bar.dart';
+import 'filter_bottom_sheet.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -149,81 +150,86 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   // Show filter modal
-  void _showFilterModal() {
+  void _showFilterModal(searchText) {
+    String? tempAccountType = _selectedAccountType;
+    String? tempCurrency = _selectedCurrency;
+    double? tempMinBalance = _minBalance;
+    double? tempMaxBalance = _maxBalance;
+    bool? tempIsPositiveBalance = _isPositiveBalance;
+    String tempSearch = _searchQuery;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, modalSetState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildFilterOption<String>(
-                    title: "Account Type",
-                    options: [
-                      "all",
-                      "system",
-                      "customer",
-                      "supplier",
-                      "exchanger"
-                    ],
-                    selected: _selectedAccountType,
-                    onSelected: (val) =>
-                        modalSetState(() => _selectedAccountType = val),
-                  ),
-                  _buildFilterOption<String>(
-                    title: "Currency",
-                    options: ["USD", "EUR", "PKR", "IRR", "AFN"],
-                    selected: _selectedCurrency,
-                    onSelected: (val) =>
-                        modalSetState(() => _selectedCurrency = val),
-                  ),
-                  ExpansionTile(
-                    title: const Text("Balance Amount"),
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration:
-                                  const InputDecoration(labelText: "Min"),
-                              onChanged: (val) => modalSetState(
-                                  () => _minBalance = double.tryParse(val)),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration:
-                                  const InputDecoration(labelText: "Max"),
-                              onChanged: (val) => modalSetState(
-                                  () => _maxBalance = double.tryParse(val)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  _buildFilterOption<bool>(
-                    title: "Balance Type",
-                    options: [true, false],
-                    selected: _isPositiveBalance,
-                    onSelected: (val) =>
-                        modalSetState(() => _isPositiveBalance = val),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {});
-                    },
-                    child: const Text("Apply Filters"),
-                  ),
-                ],
+            return Material(
+              color: Theme.of(context).canvasColor,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              child: FilterBottomSheet(
+                selectedAccountType: tempAccountType,
+                selectedCurrency: tempCurrency,
+                minBalance: tempMinBalance,
+                maxBalance: tempMaxBalance,
+                isPositiveBalance: tempIsPositiveBalance,
+                onChanged: (
+                    {String? accountType,
+                    String? currency,
+                    double? min,
+                    double? max,
+                    bool? isPositive}) {
+                  modalSetState(() {
+                    if (accountType != null) tempAccountType = accountType;
+                    if (currency != null) tempCurrency = currency;
+                    if (min != null || min == null) tempMinBalance = min;
+                    if (max != null || max == null) tempMaxBalance = max;
+                    if (isPositive != null) tempIsPositiveBalance = isPositive;
+                  });
+                  // Instant search/filter update
+                  setState(() {
+                    _searchQuery = tempSearch;
+                    _selectedAccountType = tempAccountType;
+                    _selectedCurrency = tempCurrency;
+                    _minBalance = tempMinBalance;
+                    _maxBalance = tempMaxBalance;
+                    _isPositiveBalance = tempIsPositiveBalance;
+                  });
+                },
+                onReset: () {
+                  modalSetState(() {
+                    tempAccountType = null;
+                    tempCurrency = null;
+                    tempMinBalance = null;
+                    tempMaxBalance = null;
+                    tempIsPositiveBalance = null;
+                  });
+                  setState(() {
+                    _selectedAccountType = null;
+                    _selectedCurrency = null;
+                    _minBalance = null;
+                    _maxBalance = null;
+                    _isPositiveBalance = null;
+                  });
+                },
+                onApply: (
+                    {String? accountType,
+                    String? currency,
+                    double? min,
+                    double? max,
+                    bool? isPositive}) {
+                  setState(() {
+                    _searchQuery = tempSearch;
+                    _selectedAccountType = tempAccountType;
+                    _selectedCurrency = tempCurrency;
+                    _minBalance = tempMinBalance;
+                    _maxBalance = tempMaxBalance;
+                    _isPositiveBalance = tempIsPositiveBalance;
+                  });
+                  Navigator.pop(context);
+                },
               ),
             );
           },
@@ -518,9 +524,17 @@ class _AccountScreenState extends State<AccountScreen>
               children: [
                 if (_showSearchBar)
                   SearchFilterBar(
-                    onSearchChanged: (value) =>
-                        setState(() => _searchQuery = value),
-                    onFilterPressed: _showFilterModal,
+                    onSearchChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                        filteredActiveAccounts = _applyFilters(_activeAccounts);
+                        filteredDeactivatedAccounts =
+                            _applyFilters(_deactivatedAccounts);
+                      });
+                    },
+                    onFilterPressed: () {
+                      _showFilterModal(_searchQuery);
+                    },
                   ),
 
                 // Tabs for Active & Deactivated Accounts

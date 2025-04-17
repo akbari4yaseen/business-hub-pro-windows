@@ -1,209 +1,169 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class FilterBottomSheet extends StatefulWidget {
-  final Function(String?) onAccountTypeChanged;
-  final Function(String?) onCurrencyChanged;
-  final Function(double, double) onBalanceAmountChanged;
-  final Function(bool) onPositiveNegativeChanged;
-  final VoidCallback onApplyFilters;
-  final VoidCallback onClearFilters;
+class FilterBottomSheet extends StatelessWidget {
+  final String? selectedAccountType;
+  final String? selectedCurrency;
+  final double? minBalance;
+  final double? maxBalance;
+  final bool? isPositiveBalance;
+  final void Function(
+      {String? accountType,
+      String? currency,
+      double? min,
+      double? max,
+      bool? isPositive}) onApply;
+  final VoidCallback onReset;
+  final void Function(
+      {String? accountType,
+      String? currency,
+      double? min,
+      double? max,
+      bool? isPositive}) onChanged;
 
   const FilterBottomSheet({
     Key? key,
-    required this.onAccountTypeChanged,
-    required this.onCurrencyChanged,
-    required this.onBalanceAmountChanged,
-    required this.onPositiveNegativeChanged,
-    required this.onApplyFilters,
-    required this.onClearFilters,
+    required this.selectedAccountType,
+    required this.selectedCurrency,
+    required this.minBalance,
+    required this.maxBalance,
+    required this.isPositiveBalance,
+    required this.onApply,
+    required this.onReset,
+    required this.onChanged,
   }) : super(key: key);
 
   @override
-  _FilterBottomSheetState createState() => _FilterBottomSheetState();
-}
-
-class _FilterBottomSheetState extends State<FilterBottomSheet> {
-  String? _selectedAccountType;
-  String? _selectedCurrency;
-  TextEditingController _minBalanceController =
-      TextEditingController(text: "0");
-  TextEditingController _maxBalanceController =
-      TextEditingController(text: "10000");
-  bool _showPositiveBalances = true;
-  final _focusNode = FocusNode();
-
-  @override
-  void dispose() {
-    _minBalanceController.dispose();
-    _maxBalanceController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context)
-            .viewInsets
-            .bottom, // Push up when keyboard opens
-      ),
-      child: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Text(AppLocalizations.of(context)!.filters,
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    final accountTypes = ["all", "system", "customer", "supplier", "exchanger"];
+    final currencies = ["USD", "EUR", "PKR", "IRR", "AFN"];
+    return SafeArea(
+      child: Padding(
+        padding:
+            MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(16)),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight * 0.95,
               ),
-              SizedBox(height: 10),
-
-              // Account Type Filter
-              ExpansionTile(
-                title: Text("Account Type"),
-                leading: Icon(Icons.account_balance_wallet),
-                children: [
-                  Wrap(
-                    spacing: 8.0,
-                    children: [
-                      "All",
-                      "System",
-                      "Customer",
-                      "Supplier",
-                      "Exchanger"
-                    ]
-                        .map((type) => ChoiceChip(
-                              label: Text(type),
-                              selected: _selectedAccountType == type,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedAccountType = selected ? type : null;
-                                });
-                                widget
-                                    .onAccountTypeChanged(_selectedAccountType);
-                              },
-                            ))
-                        .toList(),
-                  ),
-                  SizedBox(height: 10),
-                ],
-              ),
-
-              // Currency Filter
-              ExpansionTile(
-                title: Text("Currency"),
-                leading: Icon(Icons.monetization_on),
-                children: [
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedCurrency,
-                    hint: Text("Select Currency"),
-                    items: ["USD", "EUR", "PKR", "IRR", "EUD", "AFN"]
-                        .map((currency) => DropdownMenuItem(
-                              value: currency,
-                              child: Text(currency),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCurrency = value;
-                      });
-                      widget.onCurrencyChanged(value);
-                    },
-                  ),
-                  SizedBox(height: 10),
-                ],
-              ),
-
-              // Balance Amount Filter (Text Input)
-              ExpansionTile(
-                title: Text("Balance Amount"),
-                leading: Icon(Icons.attach_money),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _minBalanceController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(labelText: "Min Balance"),
-                          onChanged: (value) {
-                            widget.onBalanceAmountChanged(
-                              double.tryParse(value) ?? 0,
-                              double.tryParse(_maxBalanceController.text) ??
-                                  10000,
-                            );
-                          },
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _maxBalanceController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                              labelText:
-                                  AppLocalizations.of(context)!.maxBalance),
-                          onChanged: (value) {
-                            widget.onBalanceAmountChanged(
-                              double.tryParse(_minBalanceController.text) ?? 0,
-                              double.tryParse(value) ?? 10000,
-                            );
-                          },
+                    ),
+                    Text("Account Filters",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    Text("Account Type",
+                        style: Theme.of(context).textTheme.labelMedium),
+                    Wrap(
+                      spacing: 10,
+                      children: accountTypes
+                          .map((type) => FilterChip(
+                                label: Text(type),
+                                selected: selectedAccountType == type,
+                                onSelected: (_) => onChanged(accountType: type),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text("Currency",
+                        style: Theme.of(context).textTheme.labelMedium),
+                    Wrap(
+                      spacing: 10,
+                      children: currencies
+                          .map((cur) => FilterChip(
+                                label: Text(cur),
+                                selected: selectedCurrency == cur,
+                                onSelected: (_) => onChanged(currency: cur),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text("Balance Range",
+                        style: Theme.of(context).textTheme.labelMedium),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: "Min"),
+                            initialValue: minBalance?.toString() ?? '',
+                            onChanged: (val) =>
+                                onChanged(min: double.tryParse(val)),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: "Max"),
+                            initialValue: maxBalance?.toString() ?? '',
+                            onChanged: (val) =>
+                                onChanged(max: double.tryParse(val)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text("Balance Type",
+                        style: Theme.of(context).textTheme.labelMedium),
+                    Wrap(
+                      spacing: 10,
+                      children: [
+                        FilterChip(
+                          label: const Text("Positive"),
+                          selected: isPositiveBalance == true,
+                          onSelected: (_) => onChanged(isPositive: true),
+                        ),
+                        FilterChip(
+                          label: const Text("Negative"),
+                          selected: isPositiveBalance == false,
+                          onSelected: (_) => onChanged(isPositive: false),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: onReset,
+                            child: const Text("Reset"),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => onApply(
+                              accountType: selectedAccountType,
+                              currency: selectedCurrency,
+                              min: minBalance,
+                              max: maxBalance,
+                              isPositive: isPositiveBalance,
+                            ),
+                            child: const Text("Apply Filters"),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
-
-              // Positive / Negative Balance Switch
-              ExpansionTile(
-                title: Text(
-                    AppLocalizations.of(context)!.positiveNegativeBalances),
-                leading: Icon(Icons.compare_arrows),
-                children: [
-                  SwitchListTile(
-                    title: Text(_showPositiveBalances
-                        ? AppLocalizations.of(context)!.showPositiveBalances
-                        : AppLocalizations.of(context)!.showNegativeBalances),
-                    value: _showPositiveBalances,
-                    onChanged: (value) {
-                      setState(() {
-                        _showPositiveBalances = value;
-                      });
-                      widget.onPositiveNegativeChanged(value);
-                    },
-                  ),
-                  SizedBox(height: 10),
-                ],
-              ),
-
-              // Apply & Clear Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: widget.onClearFilters,
-                    child: Text("Clear Filters",
-                        style: TextStyle(color: Colors.red)),
-                  ),
-                  ElevatedButton(
-                    onPressed: widget.onApplyFilters,
-                    child: Text("Apply Filters"),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
