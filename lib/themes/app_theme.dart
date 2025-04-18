@@ -33,12 +33,13 @@ class AppTheme {
       indicatorColor: Colors.blue,
     ),
     appBarTheme: AppBarTheme(
-      color: Colors.white,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
       iconTheme: IconThemeData(color: Colors.grey[900]),
       titleTextStyle: TextStyle(
         color: Colors.grey[900],
         fontFamily: "IRANSans",
-        fontSize: 14,
+        fontSize: 20,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -84,12 +85,13 @@ class AppTheme {
       indicatorColor: Colors.blue,
     ),
     appBarTheme: AppBarTheme(
-      color: Colors.grey.shade900,
+      backgroundColor: Colors.grey.shade900,
+      surfaceTintColor: Colors.transparent,
       iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
         color: Colors.white,
         fontFamily: "IRANSans",
-        fontSize: 14,
+        fontSize: 20,
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(

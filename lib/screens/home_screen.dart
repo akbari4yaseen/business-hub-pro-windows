@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
@@ -37,10 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
     // Example backup logic
     int daysSinceLastBackup = 10;
     bool isBackupOverdue = daysSinceLastBackup > 7;
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('خانه'),
+        title: Text(loc.appName),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: widget.openDrawer,

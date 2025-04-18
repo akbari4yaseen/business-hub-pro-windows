@@ -251,6 +251,7 @@ class _JournalScreenState extends State<JournalScreen> {
           onPressed: widget.openDrawer,
         ),
         title: Text(loc.journal),
+        
       ),
       body: RefreshIndicator(
         onRefresh: _loadJournals,

@@ -1,5 +1,3 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -115,14 +113,6 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
 
     return Scaffold(
       key: _scaffoldKey,
-      // appBar: AppBar(
-      //   title:
-      //       Text(localizations.appTitle, style: const TextStyle(fontSize: 24)),
-      //   leading: IconButton(
-      //     icon: const Icon(Icons.menu),
-      //     onPressed: _openDrawer,
-      //   ),
-      // ),
       drawer: const DrawerMenu(),
       drawerEnableOpenDragGesture: false,
       body: screens[bottomNavProvider.currentIndex],
