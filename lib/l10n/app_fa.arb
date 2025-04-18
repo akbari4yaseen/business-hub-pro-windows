@@ -97,6 +97,7 @@
   "dark": "تاریک",
   "light": "روشن",
   "filters": "فیلترها",
+  "filter": "فیلتر",
   "maxBalance": "حداکثر بیلانس",
   "positiveNegativeBalances": "بیلانس مثبت / منفی",
   "showPositiveBalances": "نمایش بیلانس مثبت",
@@ -125,5 +126,11 @@
   "edit": "ویرایش",
   "printDisabled": "چاپ (غیرفعال)",
   "noJournalEntries": "روزنامچه خالی است.",
-  "clear": "پاک کردن"
+  "clear": "پاک کردن",
+  "reset": "باز نشاندن",
+  "maxAmount": "مبلغ پایین",
+  "minAmount": "مبلغ بالا",
+  "apply": "تطبیق",
+  "selectDate": "انتخاب تاریخ",
+  "currency": "ارز"
 }

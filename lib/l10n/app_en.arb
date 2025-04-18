@@ -98,6 +98,7 @@
   "dark": "Dark",
   "light": "Light",
   "filters": "Filters",
+  "filter": "Filter",
   "maxBalance": "Max Balance",
   "positiveNegativeBalances": "Positive / Negative Balances",
   "showPositiveBalances": "Show Positive Balances",
@@ -125,5 +126,11 @@
   "edit": "Edit",
   "printDisabled": "Print (Disabled)",
   "noJournalEntries": "No journal entries found.",
-  "clear": "Clear"
+  "clear": "Clear",
+  "reset": "Reset",
+  "maxAmount": "Max Amount",
+  "minAmount": "Min Amount",
+  "apply": "Apply",
+  "selectDate": "Select Date",
+  "currency": "Currency"
 }

@@ -512,7 +512,7 @@ class _AccountScreenState extends State<AccountScreen>
             ),
             onPressed: _showFilterModal,
             splashRadius: 24,
-            tooltip: loc.filters,
+            tooltip: loc.filter,
           ),
         ],
       ),

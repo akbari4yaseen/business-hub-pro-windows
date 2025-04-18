@@ -7,6 +7,8 @@ import '../../database/journal_db.dart';
 import '../../utils/utilities.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
+import 'journal_search_filter_bar.dart';
+import 'journal_filter_bottom_sheet.dart';
 
 class JournalScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -19,8 +21,14 @@ class JournalScreen extends StatefulWidget {
 class _JournalScreenState extends State<JournalScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _journals = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String? _selectedType;
+  String? _selectedCurrency;
+  DateTime? _selectedDate;
   bool _isAtTop = true;
   bool _isLoading = true;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -30,7 +38,9 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   @override
+  @override
   void dispose() {
+    _searchController.dispose();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -134,14 +144,148 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
+  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> list) {
+    return list.where((journal) {
+      // Search: only account_name, track_name, description
+      if (_searchQuery.isNotEmpty) {
+        final desc = (journal['description'] ?? '').toString().toLowerCase();
+        final acc = (journal['account_name'] ?? '').toString().toLowerCase();
+        final track = (journal['track_name'] ?? '').toString().toLowerCase();
+        final q = _searchQuery.toLowerCase();
+        if (!desc.contains(q) && !acc.contains(q) && !track.contains(q)) {
+          return false;
+        }
+      }
+      // Transaction type filter
+      if (_selectedType != null && _selectedType != 'all' &&
+          journal['transaction_type'] != _selectedType) {
+        return false;
+      }
+      // Currency filter
+      if (_selectedCurrency != null && _selectedCurrency != 'all' &&
+          journal['currency'] != _selectedCurrency) {
+        return false;
+      }
+      // Date filter
+      if (_selectedDate != null) {
+        final jDate = DateTime.tryParse(journal['date'].toString());
+        if (jDate == null ||
+            jDate.year != _selectedDate!.year ||
+            jDate.month != _selectedDate!.month ||
+            jDate.day != _selectedDate!.day) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  void _showFilterModal() {
+    String? tmpType = _selectedType;
+    String? tmpCurrency = _selectedCurrency;
+    DateTime? tmpDate = _selectedDate;
+
+    // Transaction types: credit, debit
+    final typeList = ['all', 'credit', 'debit'];
+    // Extract unique currencies from _journals
+    final currencies = <String>{};
+    for (final j in _journals) {
+      if (j['currency'] != null) currencies.add(j['currency'].toString());
+    }
+    final currencyList = ['all', ...currencies.toList()..sort()];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (c) => StatefulBuilder(
+        builder: (c2, setModal) => Material(
+          color: Theme.of(context).canvasColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: JournalFilterBottomSheet(
+            selectedType: tmpType,
+            selectedCurrency: tmpCurrency,
+            selectedDate: tmpDate,
+            typeOptions: typeList,
+            currencyOptions: currencyList,
+            onChanged: ({type, currency, date}) {
+              setModal(() {
+                if (type != null) tmpType = type;
+                if (currency != null) tmpCurrency = currency;
+                if (date != null) tmpDate = date;
+              });
+            },
+            onReset: () {
+              setModal(() {
+                tmpType = null;
+                tmpCurrency = null;
+                tmpDate = null;
+              });
+            },
+            onApply: ({type, currency, date}) {
+              setState(() {
+                _selectedType = tmpType;
+                _selectedCurrency = tmpCurrency;
+                _selectedDate = tmpDate;
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(AppLocalizations loc) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: loc.search,
+          border: InputBorder.none,
+          prefixIcon: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              setState(() {
+                _isSearching = false;
+              });
+            },
+            splashRadius: 20,
+            tooltip: loc.cancel,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  splashRadius: 20,
+                  tooltip: loc.clear,
+                )
+              : null,
+        ),
+        onChanged: (v) => setState(() => _searchQuery = v),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
+    final filteredJournals = _applyFilters(_journals);
+
     Widget bodyContent;
     if (_isLoading) {
       bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (_journals.isEmpty) {
+    } else if (filteredJournals.isEmpty) {
       bodyContent = ListView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -153,9 +297,9 @@ class _JournalScreenState extends State<JournalScreen> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 60),
-        itemCount: _journals.length,
+        itemCount: filteredJournals.length,
         itemBuilder: (ctx, i) {
-          final j = _journals[i];
+          final j = filteredJournals[i];
           final icon = j['transaction_type'] == 'credit'
               ? FontAwesomeIcons.plus
               : FontAwesomeIcons.minus;
@@ -251,11 +395,31 @@ class _JournalScreenState extends State<JournalScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: widget.openDrawer,
         ),
-        title: Text(loc.journal),
+        title: _isSearching
+            ? _buildSearchField(loc)
+            : Text(loc.journal, style: const TextStyle(fontSize: 18)),
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+              tooltip: loc.search,
+            ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterModal,
+            tooltip: loc.filter,
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadJournals,
@@ -278,3 +442,4 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 }
+
