@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../utils/utilities.dart';
 import '../widgets/backup_restore_card.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback openDrawer;
+  const HomeScreen({Key? key, required this.openDrawer}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -24,8 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchRecentTransactions() async {
-    List<Map<String, dynamic>> transactions =
-        await AccountDBHelper().getRecentTransactions(5);
+    final transactions = await AccountDBHelper().getRecentTransactions(5);
     setState(() {
       recentTransactions = transactions;
     });
@@ -33,15 +34,65 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Example backup logic
     int daysSinceLastBackup = 10;
     bool isBackupOverdue = daysSinceLastBackup > 7;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('خانه'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: widget.openDrawer,
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'profile':
+                  Navigator.pushNamed(context, '/profile');
+                  break;
+                case 'notifications':
+                  Navigator.pushNamed(context, '/notifications');
+                  break;
+                case 'help':
+                  Navigator.pushNamed(context, '/help');
+                  break;
+                case 'logout':
+                  // Add your logout logic here
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Text('پروفایل'),
+              ),
+              const PopupMenuItem(
+                value: 'notifications',
+                child: Text('اطلاعیه‌ها'),
+              ),
+              const PopupMenuItem(
+                value: 'help',
+                child: Text('راهنما'),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Text('خروج'),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 8),
+
+            // 2) Summary cards
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -51,46 +102,75 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildSummaryCard('هزینه‌ها', '\$3,200', Icons.money_off),
               ],
             ),
+
             const SizedBox(height: 16),
+
+            // 3) Action buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildActionButton('معامله جدید', Icons.add,
-                    () => Navigator.pushNamed(context, '/journal/add')),
-                _buildActionButton('حساب‌ها', Icons.supervisor_account_outlined,
-                    () {
-                  Provider.of<BottomNavigationProvider>(context, listen: false)
-                      .updateIndex(2);
-                }),
-                _buildActionButton('گزارش‌ها', Icons.bar_chart, () {
-                  Provider.of<BottomNavigationProvider>(context, listen: false)
-                      .updateIndex(3);
-                }),
-                _buildActionButton('تنظیمات', Icons.settings,
-                    () => Navigator.pushNamed(context, '/settings')),
+                _buildActionButton(
+                  'معامله جدید',
+                  Icons.add,
+                  () => Navigator.pushNamed(context, '/journal/add'),
+                ),
+                _buildActionButton(
+                  'حساب‌ها',
+                  Icons.supervisor_account_outlined,
+                  () {
+                    Provider.of<BottomNavigationProvider>(context,
+                            listen: false)
+                        .updateIndex(2);
+                  },
+                ),
+                _buildActionButton(
+                  'گزارش‌ها',
+                  Icons.bar_chart,
+                  () {
+                    Provider.of<BottomNavigationProvider>(context,
+                            listen: false)
+                        .updateIndex(3);
+                  },
+                ),
+                _buildActionButton(
+                  'تنظیمات',
+                  Icons.settings,
+                  () => Navigator.pushNamed(context, '/settings'),
+                ),
               ],
             ),
+
             const SizedBox(height: 16),
+
+            // 4) Backup/restore card
             const BackupRestoreCard(),
+
             const SizedBox(height: 20),
-            const Text('تراکنش‌های اخیر',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'تراکنش‌های اخیر',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
+
+            // 5) Recent transactions list
             Card(
-                child: Column(children: [
-              ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: recentTransactions.isNotEmpty
-                    ? recentTransactions
-                        .asMap()
-                        .entries
-                        .map((entry) => _buildTransactionTile(entry.value,
-                            entry.key == recentTransactions.length - 1))
-                        .toList()
-                    : [const Center(child: Text('No recent transactions'))],
+              child: Column(
+                children: [
+                  ListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: recentTransactions.isNotEmpty
+                        ? recentTransactions
+                            .asMap()
+                            .entries
+                            .map((entry) => _buildTransactionTile(entry.value,
+                                entry.key == recentTransactions.length - 1))
+                            .toList()
+                        : [const Center(child: Text('No recent transactions'))],
+                  ),
+                ],
               ),
-            ]))
+            ),
           ],
         ),
       ),
@@ -98,10 +178,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTransactionTile(Map<String, dynamic> transaction, bool isLast) {
-    IconData icon = transaction['transaction_type'] == 'credit'
+    final icon = transaction['transaction_type'] == 'credit'
         ? FontAwesomeIcons.plus
         : FontAwesomeIcons.minus;
-    Color color =
+    final color =
         transaction['transaction_type'] == 'credit' ? Colors.green : Colors.red;
 
     return Column(
@@ -110,18 +190,11 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
           child: Row(
             children: [
-              // Icon with background
               CircleAvatar(
-                backgroundColor: color.withOpacity(0.1),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 18,
-                ),
+                backgroundColor: color.withValues(alpha: 0.1),
+                child: Icon(icon, color: color, size: 18),
               ),
               const SizedBox(width: 12),
-
-              // Transaction Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,9 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: const TextStyle(fontFamily: "IRANsans"),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      formatJalaliDate(transaction['date']),
-                    ),
+                    Text(formatJalaliDate(transaction['date'])),
                     Text(
                       transaction['description'],
                       maxLines: 1,
@@ -143,20 +214,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // Amount
               Text(
                 '${NumberFormat('#,###').format(transaction['amount'])} ${transaction['currency']}',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: color, fontSize: 14),
               ),
             ],
           ),
         ),
-        if (!isLast)
-          const Divider(), // Add divider only if it's NOT the last transaction
+        if (!isLast) const Divider(),
       ],
     );
   }
@@ -172,9 +237,11 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(icon, size: 30, color: Colors.blueAccent),
               const SizedBox(height: 8),
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                value,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               Text(title, style: const TextStyle(color: Colors.grey)),
             ],
           ),
@@ -196,5 +263,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
 }

@@ -36,6 +36,8 @@ String getLocalizedAccountType(BuildContext context, String type) {
       return localizations.exchanger;
     case 'supplier':
       return localizations.supplier;
+    case 'all':
+      return localizations.all;
     default:
       return type; // Fallback in case of missing translation
   }

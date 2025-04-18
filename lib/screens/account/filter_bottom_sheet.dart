@@ -1,3 +1,6 @@
+import 'package:BusinessHub/utils/utilities.dart';
+
+import '../../constants/currencies.dart';
 import 'package:flutter/material.dart';
 
 class FilterBottomSheet extends StatelessWidget {
@@ -35,7 +38,7 @@ class FilterBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accountTypes = ["all", "system", "customer", "supplier", "exchanger"];
-    final currencies = ["USD", "EUR", "PKR", "IRR", "AFN"];
+
     return SafeArea(
       child: Padding(
         padding:
@@ -62,37 +65,69 @@ class FilterBottomSheet extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text("Account Filters",
-                        style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 16),
-                    Text("Account Type",
-                        style: Theme.of(context).textTheme.labelMedium),
-                    Wrap(
-                      spacing: 10,
-                      children: accountTypes
-                          .map((type) => FilterChip(
-                                label: Text(type),
-                                selected: selectedAccountType == type,
-                                onSelected: (_) => onChanged(accountType: type),
-                              ))
-                          .toList(),
+                    Text(
+                      "Account Filters",
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    Text("Currency",
-                        style: Theme.of(context).textTheme.labelMedium),
-                    Wrap(
-                      spacing: 10,
-                      children: currencies
-                          .map((cur) => FilterChip(
-                                label: Text(cur),
-                                selected: selectedCurrency == cur,
-                                onSelected: (_) => onChanged(currency: cur),
-                              ))
-                          .toList(),
+
+                    // Account Type with horizontal scrolling
+                    Text(
+                      "Account Type",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: accountTypes
+                            .map(
+                              (type) => Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: FilterChip(
+                                  label: Text(
+                                      getLocalizedAccountType(context, type)),
+                                  selected: selectedAccountType == type,
+                                  onSelected: (_) =>
+                                      onChanged(accountType: type),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text("Balance Range",
-                        style: Theme.of(context).textTheme.labelMedium),
+
+                    // Currency with horizontal scrolling
+                    Text(
+                      "Currency",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: currencies
+                            .map(
+                              (cur) => Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: FilterChip(
+                                  label: Text(cur),
+                                  selected: selectedCurrency == cur,
+                                  onSelected: (_) => onChanged(currency: cur),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Balance Range
+                    Text(
+                      "Balance Range",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
                     Row(
                       children: [
                         Expanded(
@@ -117,8 +152,12 @@ class FilterBottomSheet extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text("Balance Type",
-                        style: Theme.of(context).textTheme.labelMedium),
+
+                    // Balance Type
+                    Text(
+                      "Balance Type",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
                     Wrap(
                       spacing: 10,
                       children: [
@@ -135,10 +174,12 @@ class FilterBottomSheet extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
+
+                    // Buttons
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
+                          child: TextButton(
                             onPressed: onReset,
                             child: const Text("Reset"),
                           ),

@@ -123,5 +123,7 @@
   "details": "Details",
   "share": "Share",
   "edit": "Edit",
-  "printDisabled": "Print (Disabled)"
+  "printDisabled": "Print (Disabled)",
+  "noJournalEntries": "No journal entries found.",
+  "clear": "Clear"
 }

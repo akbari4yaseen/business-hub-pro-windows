@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ReportsScreen extends StatelessWidget {
-  const ReportsScreen({super.key});
+  final VoidCallback openDrawer;
+  const ReportsScreen({Key? key, required this.openDrawer}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     // Sample data for the chart
-    final List<FlSpot> spots = [
+    const spots = <FlSpot>[
       FlSpot(0, 100), // Day 1, Amount 100
       FlSpot(1, 200), // Day 2, Amount 200
       FlSpot(2, 150), // Day 3, Amount 150
@@ -18,15 +21,18 @@ class ReportsScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: openDrawer,
+        ),
+        title: Text(loc.reports),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Daily Sales Report',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
             Expanded(
               child: LineChart(
                 LineChartData(
@@ -38,15 +44,14 @@ class ReportsScreen extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 30,
                         getTitlesWidget: (value, meta) {
-                          // Map x-axis values to days
-                          final days = [
+                          const days = [
                             'Mon',
                             'Tue',
                             'Wed',
                             'Thu',
                             'Fri',
                             'Sat',
-                            'Sun'
+                            'Sun',
                           ];
                           return Text(days[value.toInt()]);
                         },
@@ -57,8 +62,7 @@ class ReportsScreen extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 40,
                         getTitlesWidget: (value, meta) {
-                          // Display amounts on the y-axis
-                          return Text('\$${value.toInt()}');
+                          return Text('\\${value.toInt()}');
                         },
                       ),
                     ),
@@ -72,10 +76,11 @@ class ReportsScreen extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: Colors.blue,
                       dotData: FlDotData(show: true),
                       belowBarData: BarAreaData(
-                          show: true, color: Colors.blue.withOpacity(0.3)),
+                        show: true,
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      ),
                     ),
                   ],
                 ),
