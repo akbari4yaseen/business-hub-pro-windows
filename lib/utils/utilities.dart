@@ -43,10 +43,10 @@ String getLocalizedAccountType(BuildContext context, String type) {
   }
 }
 
-String getLocalizedSystemAccountName(BuildContext context, String type) {
+String getLocalizedSystemAccountName(BuildContext context, String name) {
   final localizations = AppLocalizations.of(context)!;
 
-  switch (type) {
+  switch (name) {
     case 'treasure':
       return localizations.treasure;
     case 'noTreasure':
@@ -60,7 +60,29 @@ String getLocalizedSystemAccountName(BuildContext context, String type) {
     case 'expenses':
       return localizations.expenses;
     default:
-      return type; // Fallback in case of missing translation
+      return name; // Fallback in case of missing translation
+  }
+}
+
+String getLocalizedAccountName(
+    BuildContext context, int accountId, String? fallbackName) {
+  final localizations = AppLocalizations.of(context)!;
+  switch (accountId) {
+    case 1:
+      return localizations.treasure;
+    case 2:
+      return localizations.noTreasure;
+    case 3:
+      return localizations.asset;
+    case 4:
+      return localizations.profit;
+    case 5:
+      return localizations.loss;
+    case 10:
+      return localizations.expenses;
+
+    default:
+      return fallbackName ?? '';
   }
 }
 

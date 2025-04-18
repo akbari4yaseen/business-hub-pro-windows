@@ -49,6 +49,7 @@ class _JournalScreenState extends State<JournalScreen> {
     setState(() => _isLoading = true);
     try {
       final journals = await JournalDBHelper().getJournals();
+
       if (mounted) {
         setState(() {
           _journals
@@ -116,8 +117,10 @@ class _JournalScreenState extends State<JournalScreen> {
               Text(
                   '${loc.amount}: ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']}'),
               Text('${loc.transactionType}: ${journal['transaction_type']}'),
-              Text('${loc.account}: ${journal['account_name']}'),
-              Text('${loc.track}: ${journal['track_name']}'),
+              Text(
+                  '${loc.account}: ${getLocalizedSystemAccountName(context, journal['account_name'])}'),
+              Text(
+                  '${loc.track}: ${getLocalizedSystemAccountName(context, journal['track_name'])}'),
             ],
           ),
           actions: [
@@ -153,7 +156,12 @@ class _JournalScreenState extends State<JournalScreen> {
         itemCount: _journals.length,
         itemBuilder: (ctx, i) {
           final j = _journals[i];
-          final isCredit = j['transaction_type'] == 'credit';
+          final icon = j['transaction_type'] == 'credit'
+              ? FontAwesomeIcons.plus
+              : FontAwesomeIcons.minus;
+          final color =
+              j['transaction_type'] == 'credit' ? Colors.green : Colors.red;
+
           return Card(
             elevation: 0,
             shape:
@@ -163,14 +171,11 @@ class _JournalScreenState extends State<JournalScreen> {
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               leading: CircleAvatar(
-                backgroundColor: isCredit ? Colors.green[400] : Colors.red[400],
-                child: FaIcon(
-                  isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                backgroundColor: color.withValues(alpha: 0.1),
+                child: Icon(icon, color: color, size: 18),
               ),
-              title: Text('${j['account_name']} — ${j['track_name']}',
+              title: Text(
+                  '${getLocalizedSystemAccountName(context, j['account_name'])} — ${getLocalizedSystemAccountName(context, j['track_name'])}',
                   style: const TextStyle(fontSize: 14)),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +256,6 @@ class _JournalScreenState extends State<JournalScreen> {
           onPressed: widget.openDrawer,
         ),
         title: Text(loc.journal),
-        
       ),
       body: RefreshIndicator(
         onRefresh: _loadJournals,

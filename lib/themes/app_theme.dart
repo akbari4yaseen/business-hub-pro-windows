@@ -66,8 +66,7 @@ class AppTheme {
       brightness: Brightness.dark,
       primary: Colors.blue,
       onPrimary: Colors.white,
-      secondary: const Color.fromRGBO(
-          144, 202, 249, 1), // A lighter blue accent for dark mode
+      secondary: const Color.fromARGB(255, 40, 147, 235), // A lighter blue accent for dark mode
       onSecondary: Colors.white,
       error: const Color.fromRGBO(239, 83, 80, 1),
       onError: Colors.black,
@@ -83,6 +82,7 @@ class AppTheme {
     tabBarTheme: TabBarTheme(
       labelColor: Colors.blue,
       indicatorColor: Colors.blue,
+      
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.grey.shade900,
