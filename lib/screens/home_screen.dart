@@ -19,11 +19,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> recentTransactions = [];
+  late final Future<Map<String, int>> _statsFuture;
+
+  String _format(int number) => NumberFormat.compact().format(number);
 
   @override
   void initState() {
     super.initState();
     fetchRecentTransactions();
+    _statsFuture = AccountDBHelper().getAccountCounts();
   }
 
   Future<void> fetchRecentTransactions() async {
@@ -95,14 +99,34 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
 
             // 2) Summary cards
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSummaryCard(
-                    'موجودی', '\$12,500', Icons.account_balance_wallet),
-                _buildSummaryCard('فاکتورها', '25', Icons.receipt_long),
-                _buildSummaryCard('هزینه‌ها', '\$3,200', Icons.money_off),
-              ],
+            FutureBuilder<Map<String, int>>(
+              future: _statsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return const Center(child: Text('خطا در بارگذاری آمار'));
+                }
+
+                final data = snapshot.data!;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSummaryCard('همه', _format(data["total_accounts"]!),
+                        FontAwesomeIcons.users),
+                    _buildSummaryCard(
+                        'فعال',
+                        _format(data["activated_accounts"]!),
+                        FontAwesomeIcons.userCheck),
+                    _buildSummaryCard(
+                        'غیرفعال',
+                        _format(data["deactivated_accounts"]!),
+                        FontAwesomeIcons.userSlash),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 16),
@@ -238,12 +262,12 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Icon(icon, size: 30, color: Colors.blueAccent),
+              Icon(icon, size: 22, color: Colors.blueAccent),
               const SizedBox(height: 8),
               Text(
                 value,
                 style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Text(title, style: const TextStyle(color: Colors.grey)),
             ],

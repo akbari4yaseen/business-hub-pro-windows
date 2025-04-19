@@ -289,4 +289,32 @@ class AccountDBHelper {
     return transactionDetails.reversed
         .toList(); // Show latest transactions first
   }
+
+  Future<Map<String, int>> getAccountCounts() async {
+    final db = await database;
+
+    final result = await db.rawQuery('''
+    SELECT 
+      COUNT(*) AS total,
+      SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS activated,
+      SUM(CASE WHEN active = 0 THEN 1 ELSE 0 END) AS deactivated
+    FROM accounts
+    WHERE id > 2;
+  ''');
+
+    if (result.isNotEmpty) {
+      final row = result.first;
+      return {
+        'total_accounts': row['total'] as int,
+        'activated_accounts': row['activated'] as int,
+        'deactivated_accounts': row['deactivated'] as int,
+      };
+    } else {
+      return {
+        'total_accounts': 0,
+        'activated_accounts': 0,
+        'deactivated_accounts': 0,
+      };
+    }
+  }
 }

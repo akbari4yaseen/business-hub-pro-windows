@@ -27,23 +27,28 @@ class DatabaseHelper {
   /// Export (backup) the database to a destination path
   Future<bool> exportDatabase(String destinationPath) async {
     try {
-      String dbPath = await getDatabasePath();
-      print('Exporting DB from: ' + dbPath + ' to: ' + destinationPath);
-      // Close the DB before copying to ensure all data is flushed
+      // 1. Close & flush your DB
+      await database;
       if (_database != null) {
         await _database!.close();
         _database = null;
       }
-      File dbFile = File(dbPath);
-      if (await dbFile.exists()) {
-        await dbFile.copy(destinationPath);
-        return true;
-      } else {
-        print('Database file not found at: $dbPath');
+
+      // 2. Find your source DB file
+      final sourceFile = File(await getDatabasePath());
+      if (!await sourceFile.exists()) {
+        print('Database file not found at: ${sourceFile.path}');
+        return false;
       }
-      return false;
+
+      // 3. Copy to the destination (parent must already exist)
+      final destFile = File(destinationPath);
+      // ← removed: await destFile.parent.create(recursive: true);
+      await sourceFile.copy(destFile.path);
+
+      return true;
     } catch (e) {
-      print("Export error: $e");
+      print('Export error: $e');
       return false;
     }
   }

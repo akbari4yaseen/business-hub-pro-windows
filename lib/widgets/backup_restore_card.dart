@@ -1,55 +1,116 @@
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../database/database_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+/// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
+Future<bool> ensureStoragePermission() async {
+  if (Platform.isAndroid) {
+    // On Android 11+, this covers all file access.
+    if (await Permission.manageExternalStorage.isGranted) {
+      return true;
+    }
+    final status = await Permission.manageExternalStorage.request();
+    if (status.isGranted) {
+      return true;
+    }
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+    }
+    return false;
+  }
+  // iOS and other platforms don't need this.
+  return true;
+}
 
 class BackupRestoreCard extends StatelessWidget {
   const BackupRestoreCard({Key? key}) : super(key: key);
 
   Future<void> _backupDatabase(BuildContext context) async {
+    // 1️⃣ Ensure we have storage permission
+    final hasPermission = await ensureStoragePermission();
+    if (!hasPermission) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)?.storagePermissionRequired ??
+                'Storage permission is required to back up.',
+          ),
+        ),
+      );
+      return;
+    }
+
     try {
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      final selectedDirectory = await FilePicker.platform.getDirectoryPath();
       if (selectedDirectory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  AppLocalizations.of(context)!.exportCanceledNoDirectory)),
+            content: Text(
+              AppLocalizations.of(context)!.exportCanceledNoDirectory,
+            ),
+          ),
         );
         return;
       }
+
+      // Copy into parent directory (avoid duplicate folder)
+      final parentDirPath = dirname(selectedDirectory);
+
       final now = DateTime.now();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
       final fileName = 'BusinessHub__backup_${timestamp}.db';
+      final backupPath = join(parentDirPath, fileName);
 
-      String backupPath = join(selectedDirectory, fileName);
-      bool result = await DatabaseHelper().exportDatabase(backupPath);
-      if (result) {
+      final success = await DatabaseHelper().exportDatabase(backupPath);
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(AppLocalizations.of(context)!
-                  .databaseExportedSuccessfully(backupPath))),
+            content: Text(
+              AppLocalizations.of(context)!
+                  .databaseExportedSuccessfully(backupPath),
+            ),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(AppLocalizations.of(context)!
-                  .databaseFileNotFoundOrExportFailed)),
+            content: Text(
+              AppLocalizations.of(context)!.databaseFileNotFoundOrExportFailed,
+            ),
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(AppLocalizations.of(context)!
-                .errorExportingDatabase(e.toString()))),
+          content: Text(
+            AppLocalizations.of(context)!.errorExportingDatabase(e.toString()),
+          ),
+        ),
       );
     }
   }
 
   Future<void> _restoreDatabase(BuildContext context) async {
+    // 1️⃣ Ensure we have storage permission (to read the selected file)
+    final hasPermission = await ensureStoragePermission();
+    if (!hasPermission) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)?.storagePermissionRequired ??
+                    'Storage permission is required to restore.')),
+      );
+      return;
+    }
+
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      final result = await FilePicker.platform.pickFiles();
       if (result == null || result.files.single.path == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -58,19 +119,21 @@ class BackupRestoreCard extends StatelessWidget {
         );
         return;
       }
-      String backupPath = result.files.single.path!;
-      bool resultRestore = await DatabaseHelper().importDatabase(backupPath);
-      if (resultRestore) {
+      final backupPath = result.files.single.path!;
+      final success = await DatabaseHelper().importDatabase(backupPath);
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  AppLocalizations.of(context)!.databaseRestoredSuccessfully)),
+            content: Text(
+                AppLocalizations.of(context)!.databaseRestoredSuccessfully),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  AppLocalizations.of(context)!.restoreFailedFileNotFound)),
+            content:
+                Text(AppLocalizations.of(context)!.restoreFailedFileNotFound),
+          ),
         );
       }
     } catch (e) {
@@ -96,9 +159,10 @@ class BackupRestoreCard extends StatelessWidget {
               children: [
                 const Icon(Icons.backup, size: 30, color: Colors.blueAccent),
                 const SizedBox(width: 10),
-                Text(AppLocalizations.of(context)!.backupRestoreTitle,
-                    style:
-                        const TextStyle(fontSize: 18, fontFamily: "IRANSans")),
+                Text(
+                  AppLocalizations.of(context)!.backupRestoreTitle,
+                  style: const TextStyle(fontSize: 18, fontFamily: "IRANSans"),
+                ),
               ],
             ),
             const SizedBox(height: 10),
