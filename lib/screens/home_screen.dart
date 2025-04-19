@@ -202,7 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction['account_name'],
+                      getLocalizedSystemAccountName(
+                          context, transaction['account_name']),
                       style: const TextStyle(fontFamily: "IRANsans"),
                     ),
                     const SizedBox(height: 4),

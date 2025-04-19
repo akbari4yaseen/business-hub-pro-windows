@@ -1,4 +1,4 @@
-import 'package:BusinessHub/providers/theme_provider.dart';
+import '../../providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +10,7 @@ import '../../constants/currencies.dart';
 import '../../database/account_db.dart';
 import '../../database/journal_db.dart';
 import '../../providers/settings_provider.dart';
-import 'package:BusinessHub/utils/utilities.dart';
+import '../../utils/utilities.dart';
 
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat("#,###.##");
@@ -150,7 +150,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
         amount: amount,
         currency: _currency,
         transactionType: _transactionType.toLowerCase(),
-        description: _descCtrl.text.isNotEmpty ? _descCtrl.text : null,
+        description: _descCtrl.text,
       );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {

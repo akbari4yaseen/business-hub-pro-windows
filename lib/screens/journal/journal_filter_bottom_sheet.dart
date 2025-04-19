@@ -65,22 +65,30 @@ class JournalFilterBottomSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     // Currency FilterChips
+
                     Text(loc.currency,
                         style: Theme.of(context).textTheme.labelMedium),
                     const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      children: currencyOptions.map((currency) {
-                        final isSelected =
-                            (selectedCurrency ?? 'all') == currency;
-                        return FilterChip(
-                          label: Text(currency == 'all' ? loc.all : currency),
-                          selected: isSelected,
-                          onSelected: (_) => onChanged(currency: currency),
-                        );
-                      }).toList(),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: currencyOptions.map((currency) {
+                          final isSelected =
+                              (selectedCurrency ?? 'all') == currency;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label:
+                                  Text(currency == 'all' ? loc.all : currency),
+                              selected: isSelected,
+                              onSelected: (_) => onChanged(currency: currency),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
                     const SizedBox(height: 16),
+
                     // Date Picker
                     InkWell(
                       onTap: () async {

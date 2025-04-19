@@ -7,8 +7,8 @@ import '../../database/journal_db.dart';
 import '../../utils/utilities.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
-import 'journal_search_filter_bar.dart';
 import 'journal_filter_bottom_sheet.dart';
+import '../../widgets/journal_search_bar.dart';
 
 class JournalScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -19,180 +19,158 @@ class JournalScreen extends StatefulWidget {
 }
 
 class _JournalScreenState extends State<JournalScreen> {
+  static const _pageSize = 30;
+
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, dynamic>> _journals = [];
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+
+  List<Map<String, dynamic>> _journals = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  bool _isSearching = false;
+  int _currentPage = 0;
+  bool _isAtTop = true;
+
   String? _selectedType;
   String? _selectedCurrency;
   DateTime? _selectedDate;
-  bool _isAtTop = true;
-  bool _isLoading = true;
-  bool _isSearching = false;
+  List<String> currencyOptions = [];
 
   @override
   void initState() {
     super.initState();
-    _loadJournals();
     _scrollController.addListener(_onScroll);
+    _refreshJournals();
   }
 
   @override
-  @override
   void dispose() {
-    _searchController.dispose();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (!mounted) return;
-    final atTop = _scrollController.position.pixels <= 0;
-    if (atTop != _isAtTop) {
-      setState(() => _isAtTop = atTop);
+    // Infinite‐scroll trigger
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoading &&
+        _hasMore) {
+      _fetchNextPage();
     }
+
+    // FAB up/down
+    final atTop = _scrollController.position.pixels <= 0;
+    if (atTop != _isAtTop) setState(() => _isAtTop = atTop);
   }
 
-  Future<void> _loadJournals() async {
-    setState(() => _isLoading = true);
-    try {
-      final journals = await JournalDBHelper().getJournals();
+  Future<void> _refreshJournals() async {
+    setState(() {
+      _journals.clear();
+      _currentPage = 0;
+      _hasMore = true;
+    });
+    await _fetchNextPage();
+  }
 
-      if (mounted) {
-        setState(() {
-          _journals
-            ..clear()
-            ..addAll(journals);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading journals: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  Future<void> _fetchNextPage() async {
+    if (!_hasMore) return;
+
+    setState(() => _isLoading = true);
+
+    final newBatch = await JournalDBHelper().getJournalsPage(
+      offset: _currentPage * _pageSize,
+      limit: _pageSize,
+      searchQuery: _searchController.text,
+      transactionType: _selectedType,
+      currency: _selectedCurrency,
+      exactDate: _selectedDate,
+    );
+
+    setState(() {
+      _journals.addAll(newBatch);
+      _isLoading = false;
+      _currentPage++;
+      if (newBatch.length < _pageSize) _hasMore = false;
+    });
   }
 
   Future<void> _deleteJournal(int id) async {
     try {
       await JournalDBHelper().deleteJournal(id);
-      await _loadJournals();
+      await _refreshJournals();
     } catch (e) {
       debugPrint('Error deleting journal: $e');
     }
   }
 
+  Future<void> _loadCurrencies() async {
+    final list = await JournalDBHelper().getDistinctCurrencies();
+    list.sort();
+    currencyOptions = ['all', ...list];
+  }
+
   void _confirmDelete(int id) {
+    final loc = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (ctx) {
-        final loc = AppLocalizations.of(context)!;
-        return AlertDialog(
-          title: Text(loc.confirmDelete),
-          content: Text(loc.confirmDeleteJournal),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.cancel),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                await _deleteJournal(id);
-              },
-              child:
-                  Text(loc.delete, style: const TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showDetails(Map<String, dynamic> journal) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final loc = AppLocalizations.of(context)!;
-        return AlertDialog(
-          title: Text(loc.journalDetails),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  '${loc.description}: ${journal['description'] ?? loc.noDescription}'),
-              Text('${loc.date}: ${journal['date']}'),
-              Text(
-                  '${loc.amount}: ${NumberFormat('#,###').format(journal['amount'])} ${journal['currency']}'),
-              Text('${loc.transactionType}: ${journal['transaction_type']}'),
-              Text(
-                  '${loc.account}: ${getLocalizedSystemAccountName(context, journal['account_name'])}'),
-              Text(
-                  '${loc.track}: ${getLocalizedSystemAccountName(context, journal['track_name'])}'),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.confirmDelete),
+        content: Text(loc.confirmDeleteJournal),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteJournal(id);
+            },
+            child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.close),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> list) {
-    return list.where((journal) {
-      // Search: only account_name, track_name, description
-      if (_searchQuery.isNotEmpty) {
-        final desc = (journal['description'] ?? '').toString().toLowerCase();
-        final acc = (journal['account_name'] ?? '').toString().toLowerCase();
-        final track = (journal['track_name'] ?? '').toString().toLowerCase();
-        final q = _searchQuery.toLowerCase();
-        if (!desc.contains(q) && !acc.contains(q) && !track.contains(q)) {
-          return false;
-        }
-      }
-      // Transaction type filter
-      if (_selectedType != null && _selectedType != 'all' &&
-          journal['transaction_type'] != _selectedType) {
-        return false;
-      }
-      // Currency filter
-      if (_selectedCurrency != null && _selectedCurrency != 'all' &&
-          journal['currency'] != _selectedCurrency) {
-        return false;
-      }
-      // Date filter
-      if (_selectedDate != null) {
-        final jDate = DateTime.tryParse(journal['date'].toString());
-        if (jDate == null ||
-            jDate.year != _selectedDate!.year ||
-            jDate.month != _selectedDate!.month ||
-            jDate.day != _selectedDate!.day) {
-          return false;
-        }
-      }
-      return true;
-    }).toList();
+  void _showDetails(Map<String, dynamic> j) {
+    final loc = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.journalDetails),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                '${loc.description}: ${j['description'] ?? loc.noDescription}'),
+            Text('${loc.date}: ${j['date']}'),
+            Text(
+                '${loc.amount}: ${NumberFormat('#,###').format(j['amount'])} ${j['currency']}'),
+            Text('${loc.transactionType}: ${j['transaction_type']}'),
+            Text(
+                '${loc.account}: ${getLocalizedSystemAccountName(context, j['account_name'])}'),
+            Text(
+                '${loc.track}: ${getLocalizedSystemAccountName(context, j['track_name'])}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.close))
+        ],
+      ),
+    );
   }
 
   void _showFilterModal() {
     String? tmpType = _selectedType;
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
+    _loadCurrencies();
 
-    // Transaction types: credit, debit
     final typeList = ['all', 'credit', 'debit'];
-    // Extract unique currencies from _journals
-    final currencies = <String>{};
-    for (final j in _journals) {
-      if (j['currency'] != null) currencies.add(j['currency'].toString());
-    }
-    final currencyList = ['all', ...currencies.toList()..sort()];
 
     showModalBottomSheet(
       context: context,
@@ -207,12 +185,12 @@ class _JournalScreenState extends State<JournalScreen> {
             selectedCurrency: tmpCurrency,
             selectedDate: tmpDate,
             typeOptions: typeList,
-            currencyOptions: currencyList,
+            currencyOptions: currencyOptions,
             onChanged: ({type, currency, date}) {
               setModal(() {
-                if (type != null) tmpType = type;
-                if (currency != null) tmpCurrency = currency;
-                if (date != null) tmpDate = date;
+                tmpType = type;
+                tmpCurrency = currency;
+                tmpDate = date;
               });
             },
             onReset: () {
@@ -229,49 +207,10 @@ class _JournalScreenState extends State<JournalScreen> {
                 _selectedDate = tmpDate;
               });
               Navigator.pop(context);
+              _refreshJournals();
             },
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSearchField(AppLocalizations loc) {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.center,
-      child: TextField(
-        controller: _searchController,
-        autofocus: true,
-        decoration: InputDecoration(
-          hintText: loc.search,
-          border: InputBorder.none,
-          prefixIcon: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              setState(() {
-                _isSearching = false;
-              });
-            },
-            splashRadius: 20,
-            tooltip: loc.cancel,
-          ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                  splashRadius: 20,
-                  tooltip: loc.clear,
-                )
-              : null,
-        ),
-        onChanged: (v) => setState(() => _searchQuery = v),
       ),
     );
   }
@@ -280,12 +219,10 @@ class _JournalScreenState extends State<JournalScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    final filteredJournals = _applyFilters(_journals);
-
     Widget bodyContent;
-    if (_isLoading) {
+    if (_journals.isEmpty && _isLoading) {
       bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (filteredJournals.isEmpty) {
+    } else if (_journals.isEmpty) {
       bodyContent = ListView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -297,9 +234,16 @@ class _JournalScreenState extends State<JournalScreen> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 60),
-        itemCount: filteredJournals.length,
+        itemCount: _journals.length + (_hasMore ? 1 : 0),
         itemBuilder: (ctx, i) {
-          final j = filteredJournals[i];
+          if (i >= _journals.length) {
+            // bottom loader
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final j = _journals[i];
           final icon = j['transaction_type'] == 'credit'
               ? FontAwesomeIcons.plus
               : FontAwesomeIcons.minus;
@@ -319,24 +263,29 @@ class _JournalScreenState extends State<JournalScreen> {
                 child: Icon(icon, color: color, size: 18),
               ),
               title: Text(
-                  '${getLocalizedSystemAccountName(context, j['account_name'])} — ${getLocalizedSystemAccountName(context, j['track_name'])}',
-                  style: const TextStyle(fontSize: 14)),
+                '${getLocalizedSystemAccountName(context, j['account_name'])} — '
+                '${getLocalizedSystemAccountName(context, j['track_name'])}',
+                style: const TextStyle(fontSize: 14),
+              ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                      '${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
-                      style: const TextStyle(fontSize: 14)),
+                    '${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
                   Text(formatJalaliDate(j['date']),
                       style: const TextStyle(fontSize: 13)),
-                  Text(j['description'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    j['description'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
               ),
               trailing: PopupMenuButton<String>(
-                onSelected: (value) async {
+                onSelected: (value) {
                   switch (value) {
                     case 'details':
                       _showDetails(j);
@@ -345,14 +294,13 @@ class _JournalScreenState extends State<JournalScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => EditJournalScreen(journal: j)),
-                      ).then((_) => _loadJournals());
+                          builder: (_) => EditJournalScreen(journal: j),
+                        ),
+                      ).then((_) => _refreshJournals());
                       break;
                     case 'delete':
                       _confirmDelete(j['id']);
                       break;
-                    case 'share':
-                    case 'print':
                     default:
                       break;
                   }
@@ -401,17 +349,25 @@ class _JournalScreenState extends State<JournalScreen> {
           onPressed: widget.openDrawer,
         ),
         title: _isSearching
-            ? _buildSearchField(loc)
+            ? JournalSearchBar(
+                controller: _searchController,
+                debounceDuration: const Duration(milliseconds: 400),
+                isLoading: _isLoading,
+                onChanged: (_) => _refreshJournals(),
+                onSubmitted: (_) => _refreshJournals(),
+                onCancel: () => setState(() => _isSearching = false),
+                onClear: () {
+                  _searchController.clear();
+                  _refreshJournals();
+                },
+                hintText: loc.searchJournal,
+              )
             : Text(loc.journal, style: const TextStyle(fontSize: 18)),
         actions: [
           if (!_isSearching)
             IconButton(
               icon: const Icon(Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                });
-              },
+              onPressed: () => setState(() => _isSearching = true),
               tooltip: loc.search,
             ),
           IconButton(
@@ -422,24 +378,28 @@ class _JournalScreenState extends State<JournalScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadJournals,
+        onRefresh: _refreshJournals,
         child: bodyContent,
       ),
       floatingActionButton: FloatingActionButton(
         mini: !_isAtTop,
         child: FaIcon(
-            _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
-            size: 18),
-        onPressed: _isAtTop
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddJournalScreen()),
-                ).then((_) => _loadJournals())
-            : () => _scrollController.animateTo(0,
+          _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+          size: 18,
+        ),
+        onPressed: () {
+          if (_isAtTop) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddJournalScreen()),
+            ).then((_) => _refreshJournals());
+          } else {
+            _scrollController.animateTo(0,
                 duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut),
+                curve: Curves.easeInOut);
+          }
+        },
       ),
     );
   }
 }
-

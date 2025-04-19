@@ -112,7 +112,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               _buildTextField(
                 label: localizations.accountName,

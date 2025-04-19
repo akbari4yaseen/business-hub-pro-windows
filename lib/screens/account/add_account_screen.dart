@@ -116,7 +116,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               _buildTextField(
                 label: localizations.accountName,
