@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../database/account_db.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../providers/theme_provider.dart';
+import '../../database/account_db.dart';
 
 class AddAccountScreen extends StatefulWidget {
   final Map<String, dynamic>? accountData;
@@ -100,93 +102,78 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       'supplier': localizations.supplier,
       'exchanger': localizations.exchanger,
     };
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.addAccount),
         actions: [
-          ElevatedButton.icon(
-            onPressed: _saveAccount,
-            icon: const Icon(Icons.save),
-            label: Text(localizations.save),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-            ),
-          ),
-          const SizedBox(width: 10),
+          IconButton(onPressed: _saveAccount, icon: Icon(Icons.save)),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildTextField(
-                    label: localizations.accountName,
-                    controller: _nameController,
-                    icon: Icons.person,
-                    autoFocus: true,
-                    maxLength: 32,
-                    validator: (value) =>
-                        (value == null || value.trim().length < 2)
-                            ? localizations.nameRequired
-                            : null,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: _selectedAccountType,
-                    decoration: InputDecoration(
-                      labelText: localizations.accountType,
-                      prefixIcon: const Icon(Icons.supervisor_account_outlined),
-                    ),
-                    items: accountTypes.entries
-                        .map((entry) => DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedAccountType = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    label: localizations.phone,
-                    controller: _phoneController,
-                    icon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    isLTR: true,
-                    maxLength: 16,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final phoneRegExp = RegExp(r'^\+?\d{0,3}?\d{9,}$');
-                        if (!phoneRegExp.hasMatch(value)) {
-                          return localizations.invalidPhone;
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    label: localizations.address,
-                    controller: _addressController,
-                    icon: Icons.location_on,
-                    maxLength: 128,
-                  ),
-                  const SizedBox(height: 12),
-                ],
+      backgroundColor: themeProvider.appBackgroundColor,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildTextField(
+                label: localizations.accountName,
+                controller: _nameController,
+                icon: Icons.person,
+                autoFocus: true,
+                maxLength: 32,
+                validator: (value) => (value == null || value.trim().length < 2)
+                    ? localizations.nameRequired
+                    : null,
               ),
-            ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _selectedAccountType,
+                decoration: InputDecoration(
+                  labelText: localizations.accountType,
+                  prefixIcon: const Icon(Icons.supervisor_account_outlined),
+                ),
+                items: accountTypes.entries
+                    .map((entry) => DropdownMenuItem<String>(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedAccountType = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                label: localizations.phone,
+                controller: _phoneController,
+                icon: Icons.phone,
+                keyboardType: TextInputType.phone,
+                isLTR: true,
+                maxLength: 16,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final phoneRegExp = RegExp(r'^\+?\d{0,3}?\d{9,}$');
+                    if (!phoneRegExp.hasMatch(value)) {
+                      return localizations.invalidPhone;
+                    }
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                label: localizations.address,
+                controller: _addressController,
+                icon: Icons.location_on,
+                maxLength: 128,
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
       ),

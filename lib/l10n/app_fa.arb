@@ -57,6 +57,8 @@
   "pleaseSelectAccount": "لطفا یک حساب را انتخاب کنید",
   "amountRequired": "مبلغ لازم است",
   "search": "جستجو",
+  "searchJournal": "جستجوی روزنامچه...",
+  "searchAccount": "جستجوی حساب‌ها...",
   "all": "همه",
   "noAccountsAvailable": "حسابی موجود نیست",
   "changePassword": "تغییر گذرواژه",
@@ -132,5 +134,7 @@
   "minAmount": "مبلغ بالا",
   "apply": "تطبیق",
   "selectDate": "انتخاب تاریخ",
-  "currency": "ارز"
+  "currency": "ارز",
+  "errorDeletingJournal": "خطا در حذف روزنامچه. لطفاً دوباره تلاش کنید.",
+  "errorLoadingJournal": "خطا در بارگذاری روزنامچه. لطفاً دوباره تلاش کنید."
 }

@@ -58,6 +58,8 @@
   "pleaseSelectAccount": "Please select an account",
   "amountRequired": "Amount is required",
   "search": "Search",
+  "searchJournal": "Search journals...",
+  "searchAccount": "Search accounts...",
   "all": "All",
   "noAccountsAvailable": "No accounts available",
   "changePassword": "Change Password",
@@ -132,5 +134,7 @@
   "minAmount": "Min Amount",
   "apply": "Apply",
   "selectDate": "Select Date",
-  "currency": "Currency"
+  "currency": "Currency",
+  "errorDeletingJournal": "Error deleting journal. Please try again.",
+  "errorLoadingJournal": "Error loading journal entries. Please try again."
 }
