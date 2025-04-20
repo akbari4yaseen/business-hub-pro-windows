@@ -570,7 +570,7 @@ class AccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -614,7 +614,7 @@ class AccountTile extends StatelessWidget {
                   return Text(
                     '${entry.value['currency']}: ${NumberFormat('#,###.##').format(balance)}',
                     style: TextStyle(
-                      color: isActive ? Colors.green[700] : Colors.red[700],
+                      color: balance >= 0 ? Colors.green[700] : Colors.red[700],
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),

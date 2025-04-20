@@ -254,7 +254,7 @@ class _JournalScreenState extends State<JournalScreen> {
             elevation: 0,
             shape:
                 const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
-            margin: const EdgeInsets.symmetric(vertical: 4),
+            margin: const EdgeInsets.symmetric(vertical: 2),
             child: ListTile(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
