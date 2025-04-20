@@ -101,6 +101,9 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       'customer': localizations.customer,
       'supplier': localizations.supplier,
       'exchanger': localizations.exchanger,
+      'bank': localizations.bank,
+      'income': localizations.income,
+      'expense': localizations.expense,
     };
     final themeProvider = Provider.of<ThemeProvider>(context);
 

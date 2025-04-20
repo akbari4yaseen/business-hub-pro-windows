@@ -10,6 +10,7 @@ import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import 'journal_filter_bottom_sheet.dart';
 import '../../widgets/journal_search_bar.dart';
+import '../../widgets/journal_details_widget.dart';
 
 class JournalScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -136,97 +137,11 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   void _showDetails(Map<String, dynamic> j) {
-    final loc = AppLocalizations.of(context)!;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.2,
-        maxChildSize: 0.8,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-          ),
-          child: Stack(
-            children: [
-              // Header with title and close button
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 12, right: 12, top: 12, bottom: 18),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.journalDetails,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _detailItem(loc.description,
-                          j['description'] ?? loc.noDescription),
-                      _detailItem(
-                          loc.date, formatLocalizedDate(context, j['date'])),
-                      _detailItem(loc.amount,
-                          '\u200E${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}'),
-                      _detailItem(
-                          loc.transactionType,
-                          j['transaction_type'] == "credit"
-                              ? loc.credit
-                              : loc.debit),
-                      _detailItem(
-                          loc.account,
-                          getLocalizedSystemAccountName(
-                              context, j['account_name'])),
-                      _detailItem(
-                          loc.track,
-                          getLocalizedSystemAccountName(
-                              context, j['track_name'])),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _detailItem(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(fontFamily: "IRANSans", color: Colors.grey)),
-          const SizedBox(height: 2),
-          Text(content,
-              style: const TextStyle(
-                fontSize: 15,
-              )),
-        ],
-      ),
+      builder: (ctx) => JournalDetailsWidget(journal: j),
     );
   }
 

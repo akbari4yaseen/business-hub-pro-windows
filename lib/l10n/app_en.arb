@@ -87,6 +87,8 @@
   "backup": "Backup",
   "restore": "Restore",
   "aboutDescription": "BusinessHub is a modern business management app designed to help you track, analyze, and grow your business efficiently. Enjoy a seamless experience and powerful features!",
+  "helpTitle": "Help & Support",
+  "helpDescription": "Need assistance? Explore FAQs or contact our support team for help with BusinessHub.",
   "exportCanceledNoDirectory": "Export canceled. No directory selected.",
   "databaseExportedSuccessfully": "Database exported successfully to:\n{path}",
   "databaseFileNotFoundOrExportFailed": "Database file not found or export failed!",
@@ -137,6 +139,9 @@
   "balance": "Balance",
   "selectDate": "Select Date",
   "currency": "Currency",
+  "income": "Income",
+  "expense": "Expense",
+  "bank": "Bank",
   "errorDeletingJournal": "Error deleting journal. Please try again.",
   "errorLoadingJournal": "Error loading journal entries. Please try again.",
   "storagePermissionRequired": "Storage permission is required to back up."

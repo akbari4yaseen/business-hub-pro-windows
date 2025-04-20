@@ -32,8 +32,14 @@ String getLocalizedAccountType(BuildContext context, String type) {
       return localizations.customer;
     case 'exchanger':
       return localizations.exchanger;
+    case 'bank':
+      return localizations.bank;
     case 'supplier':
       return localizations.supplier;
+    case 'income':
+      return localizations.income;
+    case 'expense':
+      return localizations.expense;
     case 'all':
       return localizations.all;
     default:
@@ -55,8 +61,6 @@ String getLocalizedSystemAccountName(BuildContext context, String name) {
       return localizations.profit;
     case 'loss':
       return localizations.loss;
-    case 'expenses':
-      return localizations.expenses;
     default:
       return name; // Fallback in case of missing translation
   }
@@ -72,12 +76,10 @@ String getLocalizedAccountName(
       return localizations.noTreasure;
     case 3:
       return localizations.asset;
-    case 4:
+    case 9:
       return localizations.profit;
-    case 5:
-      return localizations.loss;
     case 10:
-      return localizations.expenses;
+      return localizations.loss;
 
     default:
       return fallbackName ?? '';

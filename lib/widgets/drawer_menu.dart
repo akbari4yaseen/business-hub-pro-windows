@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/help_screen.dart';
 import '../database/database_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -57,7 +58,10 @@ class DrawerMenu extends StatelessWidget {
                   icon: Icons.help_outline,
                   title: localizations.help,
                   onTap: () {
-                    // TODO: Navigate to Help screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HelpScreen()),
+                    );
                   },
                 ),
                 _buildListTile(

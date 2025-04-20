@@ -7,6 +7,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../providers/theme_provider.dart';
 import '../../database/account_db.dart';
+import '../../widgets/transaction_details_widget.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -110,7 +111,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -165,7 +166,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Divider(color: Colors.white.withOpacity(0.5)),
+              Divider(color: Colors.white.withValues(alpha: 0.5)),
               const SizedBox(height: 8),
               const Text('Balance',
                   style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -185,93 +186,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showDetails(Map<String, dynamic> tx) {
-    final loc = AppLocalizations.of(context)!;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.2,
-        maxChildSize: 0.8,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-          ),
-          child: Stack(
-            children: [
-              // Header with title and close button
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 12, right: 12, top: 12, bottom: 18),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.journalDetails,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _detailItem(loc.description,
-                          tx['description'] ?? loc.noDescription),
-                      _detailItem(
-                          loc.date, formatLocalizedDate(context, tx['date'])),
-                      _detailItem(loc.amount,
-                          '\u200E${NumberFormat('#,###.##').format(tx['amount'])} ${tx['currency']}'),
-                      _detailItem(
-                          loc.transactionType,
-                          tx['transaction_type'] == "credit"
-                              ? loc.credit
-                              : loc.debit),
-                      _detailItem(
-                        loc.balance,
-                        '\u200E${NumberFormat('#,###.##').format(tx['balance'])} ${tx['currency']}',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _detailItem(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(fontFamily: "IRANSans", color: Colors.grey)),
-          const SizedBox(height: 2),
-          Text(content,
-              style: const TextStyle(
-                fontSize: 15,
-              )),
-        ],
-      ),
+      builder: (_) => TransactionDetailsSheet(transaction: tx),
     );
   }
 
@@ -288,7 +207,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(

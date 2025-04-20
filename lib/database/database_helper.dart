@@ -169,26 +169,19 @@ class DatabaseHelper {
         'address': ''
       },
       {
-        'id': 4,
+        'id': 9,
         'name': 'profit',
         'account_type': 'system',
         'phone': '',
         'address': ''
       },
       {
-        'id': 5,
+        'id': 10,
         'name': 'loss',
         'account_type': 'system',
         'phone': '',
         'address': ''
       },
-      {
-        'id': 10,
-        'name': 'expenses',
-        'account_type': 'system',
-        'phone': '',
-        'address': ''
-      }
     ]);
 
     await db.execute('''
