@@ -313,13 +313,10 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
-    final cleanedPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    final fullPhone = cleanedPhone.startsWith('+')
-        ? cleanedPhone
-        : '+93$cleanedPhone'; // default country
+    if (phoneNumber == '') return;
 
     final encodedMessage = Uri.encodeComponent(message);
-    final uri = Uri.parse("https://wa.me/$fullPhone?text=$encodedMessage");
+    final uri = Uri.parse("https://wa.me/$phoneNumber?text=$encodedMessage");
 
     try {
       if (await canLaunchUrl(uri)) {

@@ -32,6 +32,8 @@ class ThemeProvider with ChangeNotifier {
 
   Color get appBackgroundColor =>
       _isDarkMode ? Colors.grey[900]! : Colors.white;
+  Color get cardBackgroundColor =>
+      _isDarkMode ? Colors.grey[800]! : Colors.white;
 
   // System navigation bar color (used for Android system UI customization)
   Color get systemNavBarColor => _isDarkMode ? Colors.grey[900]! : Colors.white;

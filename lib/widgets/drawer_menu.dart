@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/about_screen.dart';
 import '../database/database_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -64,7 +65,10 @@ class DrawerMenu extends StatelessWidget {
                   icon: Icons.info_outline,
                   title: localizations.about,
                   onTap: () {
-                    // TODO: Navigate to About screen
+                    Navigator.push(
+  context,
+  MaterialPageRoute(builder: (_) => const AboutScreen()),
+);
                   },
                 ),
                 const Divider(),

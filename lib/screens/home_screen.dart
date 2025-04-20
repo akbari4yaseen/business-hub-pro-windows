@@ -7,6 +7,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import '../utils/utilities.dart';
+import '../utils/date_formatters.dart';
 import '../widgets/backup_restore_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -98,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const SizedBox(height: 8),
 
-            // 2) Summary cards
+            // 2) account state cards
             FutureBuilder<Map<String, int>>(
               future: _statsFuture,
               builder: (context, snapshot) {
@@ -114,13 +115,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildSummaryCard('همه', _format(data["total_accounts"]!),
+                    _buildAccountStateCard(
+                        'همه',
+                        _format(data["total_accounts"]!),
                         FontAwesomeIcons.users),
-                    _buildSummaryCard(
+                    _buildAccountStateCard(
                         'فعال',
                         _format(data["activated_accounts"]!),
                         FontAwesomeIcons.userCheck),
-                    _buildSummaryCard(
+                    _buildAccountStateCard(
                         'غیرفعال',
                         _format(data["deactivated_accounts"]!),
                         FontAwesomeIcons.userSlash),
@@ -231,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: const TextStyle(fontFamily: "IRANsans"),
                     ),
                     const SizedBox(height: 4),
-                    Text(formatJalaliDate(transaction['date'])),
+                    Text(formatLocalizedDate(context, transaction['date'])),
                     Text(
                       transaction['description'],
                       maxLines: 1,
@@ -253,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon) {
+  Widget _buildAccountStateCard(String title, String value, IconData icon) {
     return Expanded(
       child: Card(
         elevation: 4,

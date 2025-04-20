@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../utils/date_formatters.dart';
 
 import '../../database/journal_db.dart';
 import '../../utils/utilities.dart';
@@ -136,29 +137,94 @@ class _JournalScreenState extends State<JournalScreen> {
 
   void _showDetails(Map<String, dynamic> j) {
     final loc = AppLocalizations.of(context)!;
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.journalDetails),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-                '${loc.description}: ${j['description'] ?? loc.noDescription}'),
-            Text('${loc.date}: ${j['date']}'),
-            Text(
-                '${loc.amount}: ${NumberFormat('#,###').format(j['amount'])} ${j['currency']}'),
-            Text('${loc.transactionType}: ${j['transaction_type']}'),
-            Text(
-                '${loc.account}: ${getLocalizedSystemAccountName(context, j['account_name'])}'),
-            Text(
-                '${loc.track}: ${getLocalizedSystemAccountName(context, j['track_name'])}'),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.2,
+        maxChildSize: 0.8,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).canvasColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+          ),
+          child: Stack(
+            children: [
+              // Header with title and close button
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: 12, right: 12, top: 12, bottom: 18),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      loc.journalDetails,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _detailItem(loc.description,
+                          j['description'] ?? loc.noDescription),
+                      _detailItem(
+                          loc.date, formatLocalizedDate(context, j['date'])),
+                      _detailItem(loc.amount,
+                          '\u200E${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}'),
+                      _detailItem(
+                          loc.transactionType,
+                          j['transaction_type'] == "credit"
+                              ? loc.credit
+                              : loc.debit),
+                      _detailItem(
+                          loc.account,
+                          getLocalizedSystemAccountName(
+                              context, j['account_name'])),
+                      _detailItem(
+                          loc.track,
+                          getLocalizedSystemAccountName(
+                              context, j['track_name'])),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(loc.close))
+      ),
+    );
+  }
+
+  Widget _detailItem(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style:
+                  const TextStyle(fontFamily: "IRANSans", color: Colors.grey)),
+          const SizedBox(height: 2),
+          Text(content,
+              style: const TextStyle(
+                fontSize: 15,
+              )),
         ],
       ),
     );
@@ -274,10 +340,11 @@ class _JournalScreenState extends State<JournalScreen> {
                     '${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
                     style: const TextStyle(fontSize: 14),
                   ),
-                  Text(formatJalaliDate(j['date']),
+                  Text(
+                      '${loc.date}: ${formatLocalizedDate(context, j['date'])}',
                       style: const TextStyle(fontSize: 13)),
                   Text(
-                    j['description'] ?? '',
+                    j['description'],
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, color: Colors.grey),

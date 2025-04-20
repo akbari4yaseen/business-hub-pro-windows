@@ -236,24 +236,22 @@ class AccountDBHelper {
   }
 
   Future<List<Map<String, dynamic>>> getTransactions(int accountId) async {
-    return await _fetchTransactions(accountId, null);
+    return await _fetchTransactions(accountId);
   }
 
 // Private method to fetch transactions with balance calculations
-  Future<List<Map<String, dynamic>>> _fetchTransactions(
-      int? accountId, int? limit) async {
+  Future<List<Map<String, dynamic>>> _fetchTransactions(int? accountId) async {
     Database db = await database;
 
     String query = '''
     SELECT * FROM account_details
     ${accountId != null ? "WHERE account_id = ?" : ""}
     ORDER BY date ASC, id ASC
-    ${limit != null ? "LIMIT ?" : ""}
+  
   ''';
 
     List<dynamic> args = [];
     if (accountId != null) args.add(accountId);
-    if (limit != null) args.add(limit);
 
     List<Map<String, dynamic>> rows = await db.rawQuery(query, args);
 
@@ -279,6 +277,7 @@ class AccountDBHelper {
         'date': row['date'],
         'description': row['description'],
         'transaction_group': row['transaction_group'],
+        'transaction_id': row['transaction_id'],
         'amount': (row['amount'] as num).toDouble(),
         'transaction_type': row['transaction_type'],
         'balance': balance,
