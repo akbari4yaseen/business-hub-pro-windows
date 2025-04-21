@@ -38,7 +38,17 @@ class FilterBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accountTypes = ["all", "system", "customer", "supplier", "exchanger"];
+    final accountTypes = [
+      "all",
+      "system",
+      "customer",
+      "supplier",
+      "exchanger",
+      "income",
+      "expense",
+      "owner",
+      "company"
+    ];
     final loc = AppLocalizations.of(context)!;
 
     return SafeArea(

@@ -50,6 +50,8 @@ String getLocalizedAccountType(BuildContext context, String type) {
       return localizations.expense;
     case 'owner':
       return localizations.owner;
+    case 'company':
+      return localizations.company;
     case 'all':
       return localizations.all;
     default:

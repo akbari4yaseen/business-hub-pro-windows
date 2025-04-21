@@ -253,8 +253,10 @@ class _JournalScreenState extends State<JournalScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
-                    style: const TextStyle(fontSize: 14),
+                    '\u200E${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                    ),
                   ),
                   Text(
                       '${loc.date}: ${formatLocalizedDate(context, j['date'])}',
