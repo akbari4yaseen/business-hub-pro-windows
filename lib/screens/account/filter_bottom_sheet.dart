@@ -1,11 +1,11 @@
 import 'package:BusinessHub/utils/utilities.dart';
-
-import '../../constants/currencies.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class FilterBottomSheet extends StatelessWidget {
   final String? selectedAccountType;
   final String? selectedCurrency;
+  final List<String> currencyOptions;
   final double? minBalance;
   final double? maxBalance;
   final bool? isPositiveBalance;
@@ -27,6 +27,7 @@ class FilterBottomSheet extends StatelessWidget {
     Key? key,
     required this.selectedAccountType,
     required this.selectedCurrency,
+    required this.currencyOptions,
     required this.minBalance,
     required this.maxBalance,
     required this.isPositiveBalance,
@@ -38,6 +39,7 @@ class FilterBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accountTypes = ["all", "system", "customer", "supplier", "exchanger"];
+    final loc = AppLocalizations.of(context)!;
 
     return SafeArea(
       child: Padding(
@@ -55,66 +57,66 @@ class FilterBottomSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Account Filters",
+                      loc.accountFilters,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
 
                     // Account Type with horizontal scrolling
                     Text(
-                      "Account Type",
+                      loc.accountType,
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: accountTypes
-                            .map(
-                              (type) => Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: FilterChip(
-                                  label: Text(
-                                      getLocalizedAccountType(context, type)),
-                                  selected: selectedAccountType == type,
-                                  onSelected: (_) =>
-                                      onChanged(accountType: type),
-                                ),
-                              ),
-                            )
-                            .toList(),
+                        children: accountTypes.map((type) {
+                          final isSelected =
+                              (selectedAccountType ?? 'all') == type;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: FilterChip(
+                              label:
+                                  Text(getLocalizedAccountType(context, type)),
+                              selected: isSelected,
+                              onSelected: (_) => onChanged(accountType: type),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     // Currency with horizontal scrolling
                     Text(
-                      "Currency",
+                      loc.currency,
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: currencies
-                            .map(
-                              (cur) => Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: FilterChip(
-                                  label: Text(cur),
-                                  selected: selectedCurrency == cur,
-                                  onSelected: (_) => onChanged(currency: cur),
-                                ),
-                              ),
-                            )
-                            .toList(),
+                        children: currencyOptions.map((currency) {
+                          final isSelected =
+                              (selectedCurrency ?? 'all') == currency;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label:
+                                  Text(currency == 'all' ? loc.all : currency),
+                              selected: isSelected,
+                              onSelected: (_) => onChanged(currency: currency),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     // Balance Range
                     Text(
-                      "Balance Range",
+                      loc.balanceRange,
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     Row(
@@ -122,7 +124,7 @@ class FilterBottomSheet extends StatelessWidget {
                         Expanded(
                           child: TextFormField(
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: "Min"),
+                            decoration: InputDecoration(labelText: loc.min),
                             initialValue: minBalance?.toString() ?? '',
                             onChanged: (val) =>
                                 onChanged(min: double.tryParse(val)),
@@ -132,7 +134,7 @@ class FilterBottomSheet extends StatelessWidget {
                         Expanded(
                           child: TextFormField(
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: "Max"),
+                            decoration: InputDecoration(labelText: loc.max),
                             initialValue: maxBalance?.toString() ?? '',
                             onChanged: (val) =>
                                 onChanged(max: double.tryParse(val)),
@@ -144,19 +146,19 @@ class FilterBottomSheet extends StatelessWidget {
 
                     // Balance Type
                     Text(
-                      "Balance Type",
+                      loc.balanceType,
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     Wrap(
                       spacing: 10,
                       children: [
                         FilterChip(
-                          label: const Text("Positive"),
+                          label: Text(loc.positive),
                           selected: isPositiveBalance == true,
                           onSelected: (_) => onChanged(isPositive: true),
                         ),
                         FilterChip(
-                          label: const Text("Negative"),
+                          label: Text(loc.negative),
                           selected: isPositiveBalance == false,
                           onSelected: (_) => onChanged(isPositive: false),
                         ),
@@ -170,7 +172,7 @@ class FilterBottomSheet extends StatelessWidget {
                         Expanded(
                           child: TextButton(
                             onPressed: onReset,
-                            child: const Text("Reset"),
+                            child: Text(loc.reset),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -183,7 +185,7 @@ class FilterBottomSheet extends StatelessWidget {
                               max: maxBalance,
                               isPositive: isPositiveBalance,
                             ),
-                            child: const Text("Apply Filters"),
+                            child: Text(loc.applyFilters),
                           ),
                         ),
                       ],

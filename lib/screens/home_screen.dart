@@ -108,7 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 if (snapshot.hasError || !snapshot.hasData) {
-                  return const Center(child: Text('خطا در بارگذاری آمار'));
+                  return const Center(
+                      child: Text('خطا در بارگذاری  آمار حساب‌ها'));
                 }
 
                 final data = snapshot.data!;

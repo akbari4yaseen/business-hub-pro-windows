@@ -485,13 +485,4 @@ extension JournalPaging on JournalDBHelper {
     args.addAll([limit, offset]);
     return await db.rawQuery(sql, args);
   }
-
-  /// Returns a list of distinct currencies used in journal entries.
-  Future<List<String>> getDistinctCurrencies() async {
-    final db = await _db;
-    final result = await db.rawQuery(
-      'SELECT DISTINCT currency FROM journal ORDER BY currency',
-    );
-    return result.map((row) => row['currency'] as String).toList();
-  }
 }

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../database/account_db.dart';
+import '../../database/database_helper.dart';
 import '../../utils/transaction_helper.dart';
 import '../../utils/utilities.dart';
 
@@ -39,6 +40,7 @@ class _AccountScreenState extends State<AccountScreen>
   double? _minBalance;
   double? _maxBalance;
   bool? _isPositiveBalance;
+  List<String> currencyOptions = [];
 
   List<Map<String, dynamic>> _activeAccounts = [];
   List<Map<String, dynamic>> _deactivatedAccounts = [];
@@ -110,6 +112,12 @@ class _AccountScreenState extends State<AccountScreen>
     }
   }
 
+  Future<void> _loadCurrencies() async {
+    final list = await DatabaseHelper().getDistinctCurrencies();
+    list.sort();
+    currencyOptions = ['all', ...list];
+  }
+
   List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> list) {
     return list.where((account) {
       // Search text
@@ -153,6 +161,7 @@ class _AccountScreenState extends State<AccountScreen>
     double? tmpMin = _minBalance;
     double? tmpMax = _maxBalance;
     bool? tmpPos = _isPositiveBalance;
+    _loadCurrencies();
 
     showModalBottomSheet(
       context: context,
@@ -165,6 +174,7 @@ class _AccountScreenState extends State<AccountScreen>
           child: FilterBottomSheet(
             selectedAccountType: tmpType,
             selectedCurrency: tmpCurr,
+            currencyOptions: currencyOptions,
             minBalance: tmpMin,
             maxBalance: tmpMax,
             isPositiveBalance: tmpPos,

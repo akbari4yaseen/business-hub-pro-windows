@@ -68,12 +68,15 @@ class MyApp extends StatelessWidget {
         AppLocalizations.delegate,
         DariMaterialLocalizations.delegate,
         DariCupertinoLocalizations.delegate,
+        PashtoMaterialLocalizations.delegate,
+        PashtoCupertinoLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
         Locale('fa', 'AF'),
+        Locale('ps', 'AF'),
         Locale('en', 'US'),
       ],
       locale: Locale(

@@ -48,4 +48,13 @@ class DatabaseHelper {
   Future<String> getDatabasePath() async {
     return join(await getDatabasesPath(), _databaseName);
   }
+
+  /// Returns a list of distinct currencies used in journal entries.
+  Future<List<String>> getDistinctCurrencies() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT DISTINCT currency FROM account_details ORDER BY currency',
+    );
+    return result.map((row) => row['currency'] as String).toList();
+  }
 }

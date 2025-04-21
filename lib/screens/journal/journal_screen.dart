@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../utils/date_formatters.dart';
 
 import '../../database/journal_db.dart';
+import '../../database/database_helper.dart';
 import '../../utils/utilities.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
@@ -109,7 +110,7 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   Future<void> _loadCurrencies() async {
-    final list = await JournalDBHelper().getDistinctCurrencies();
+    final list = await DatabaseHelper().getDistinctCurrencies();
     list.sort();
     currencyOptions = ['all', ...list];
   }
