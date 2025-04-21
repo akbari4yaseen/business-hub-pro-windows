@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/theme_provider.dart';
 import '../../database/account_db.dart';
+import '../../utils/account_types.dart';
 
 class AddAccountScreen extends StatefulWidget {
   final Map<String, dynamic>? accountData;
@@ -97,15 +98,8 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final accountTypes = {
-      'customer': localizations.customer,
-      'supplier': localizations.supplier,
-      'exchanger': localizations.exchanger,
-      'bank': localizations.bank,
-      'income': localizations.income,
-      'expense': localizations.expense,
-      'owner': localizations.owner,
-    };
+    final accountTypes = getAccountTypes(localizations);
+
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(

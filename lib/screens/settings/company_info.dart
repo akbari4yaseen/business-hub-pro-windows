@@ -115,6 +115,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     TextInputType keyboardType = TextInputType.text,
     List<String>? autofillHints,
     IconData? icon,
+    bool isLTR = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -122,6 +123,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         controller: controller,
         keyboardType: keyboardType,
         validator: validator,
+        textDirection: isLTR ? TextDirection.ltr : null,
         autofillHints: autofillHints,
         decoration: InputDecoration(
           labelText: label,
@@ -198,6 +200,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                             validator: _validateRequired,
                             keyboardType: TextInputType.phone,
                             icon: Icons.chat,
+                            isLTR: true,
                           ),
                           _buildTextField(
                             controller: _phoneController,
@@ -205,11 +208,13 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                             validator: _validateRequired,
                             keyboardType: TextInputType.phone,
                             icon: Icons.phone,
+                            isLTR: true,
                           ),
                           _buildTextField(
                             controller: _emailController,
                             label: AppLocalizations.of(context)!.email,
                             validator: _validateEmail,
+                            isLTR: true,
                             keyboardType: TextInputType.emailAddress,
                             autofillHints: [AutofillHints.email],
                             icon: Icons.email,

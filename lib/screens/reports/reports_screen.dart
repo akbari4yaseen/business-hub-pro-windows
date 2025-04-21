@@ -62,7 +62,7 @@ class ReportsScreen extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 40,
                         getTitlesWidget: (value, meta) {
-                          return Text('\\${value.toInt()}');
+                          return Text('${value.toInt()}');
                         },
                       ),
                     ),
