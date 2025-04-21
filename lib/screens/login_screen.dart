@@ -1,6 +1,8 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../database/database_helper.dart';
+import '../database/user_dao.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,13 +18,13 @@ class _LoginScreenState extends State<LoginScreen>
   String? _errorMessage;
   bool _isLoading = false;
 
-  late AnimationController _logoController;
-  late AnimationController _cardSlideController;
-  late AnimationController _shakeController;
+  late final AnimationController _logoController;
+  late final AnimationController _cardSlideController;
+  late final AnimationController _shakeController;
 
-  late Animation<double> _logoFade;
-  late Animation<Offset> _cardSlide;
-  late Animation<Offset> _shakeAnimation;
+  late final Animation<double> _logoFade;
+  late final Animation<Offset> _cardSlide;
+  late final Animation<Offset> _shakeAnimation;
 
   @override
   void initState() {
@@ -31,44 +33,50 @@ class _LoginScreenState extends State<LoginScreen>
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
-    );
+    )..forward();
 
     _cardSlideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    Future.delayed(const Duration(milliseconds: 400),
+        () => _cardSlideController.forward());
 
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
 
-    _logoFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
+    _logoFade = CurvedAnimation(
+      parent: _logoController,
+      curve: Curves.easeIn,
     );
 
-    _cardSlide =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-      CurvedAnimation(parent: _cardSlideController, curve: Curves.easeOut),
-    );
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _cardSlideController,
+      curve: Curves.easeOut,
+    ));
 
     _shakeAnimation = TweenSequence<Offset>([
       TweenSequenceItem(
-          tween: Tween(begin: Offset.zero, end: const Offset(-0.02, 0)),
-          weight: 1),
+        tween: Tween(begin: Offset.zero, end: const Offset(-0.02, 0)),
+        weight: 1,
+      ),
       TweenSequenceItem(
-          tween:
-              Tween(begin: const Offset(-0.02, 0), end: const Offset(0.02, 0)),
-          weight: 2),
+        tween: Tween(begin: const Offset(-0.02, 0), end: const Offset(0.02, 0)),
+        weight: 2,
+      ),
       TweenSequenceItem(
-          tween: Tween(begin: const Offset(0.02, 0), end: Offset.zero),
-          weight: 1),
-    ]).animate(
-        CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
-
-    _logoController.forward();
-    Future.delayed(const Duration(milliseconds: 400),
-        () => _cardSlideController.forward());
+        tween: Tween(begin: const Offset(0.02, 0), end: Offset.zero),
+        weight: 1,
+      ),
+    ]).animate(CurvedAnimation(
+      parent: _shakeController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   Future<void> _login() async {
@@ -77,6 +85,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (password.isEmpty) {
       setState(() => _errorMessage = loc.enterPassword);
+      _shakeController.forward(from: 0);
       return;
     }
 
@@ -85,13 +94,15 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = null;
     });
 
-    final isValidUser = await DatabaseHelper().validateUser(password);
+    // get DAO
+    final db = await DatabaseHelper().database;
+    final dao = UserDao(db);
+    final isValid = await dao.validate(password);
 
     if (!mounted) return;
-
     setState(() => _isLoading = false);
 
-    if (!isValidUser) {
+    if (!isValid) {
       setState(() => _errorMessage = loc.wrongPassword);
       _shakeController.forward(from: 0);
       return;
@@ -146,11 +157,10 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {},
-                child: Text(
-                  loc.forgotPassword,
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
+                onPressed: () {
+                  // TODO: Navigate to forgot-password flow
+                },
+                child: Text(loc.forgotPassword),
               ),
             ],
           ),
@@ -176,15 +186,11 @@ class _LoginScreenState extends State<LoginScreen>
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
                   child: IconButton(
                     key: ValueKey(_obscurePassword),
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
                     onPressed: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
@@ -203,7 +209,6 @@ class _LoginScreenState extends State<LoginScreen>
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -213,16 +218,10 @@ class _LoginScreenState extends State<LoginScreen>
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(
-                        loc.loginButton,
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                    : Text(loc.loginButton,
+                        style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],

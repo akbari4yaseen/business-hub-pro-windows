@@ -10,143 +10,99 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 /// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
 Future<bool> ensureStoragePermission() async {
   if (Platform.isAndroid) {
-    // On Android 11+, this covers all file access.
-    if (await Permission.manageExternalStorage.isGranted) {
-      return true;
-    }
-    final status = await Permission.manageExternalStorage.request();
-    if (status.isGranted) {
-      return true;
-    }
-    if (status.isPermanentlyDenied) {
-      openAppSettings();
-    }
+    final perm = Permission.manageExternalStorage;
+    if (await perm.isGranted) return true;
+    final status = await perm.request();
+    if (status.isGranted) return true;
+    if (status.isPermanentlyDenied) openAppSettings();
     return false;
   }
-  // iOS and other platforms don't need this.
-  return true;
+  return true; // iOS and others don't need explicit storage perms
 }
 
 class BackupRestoreCard extends StatelessWidget {
   const BackupRestoreCard({Key? key}) : super(key: key);
 
   Future<void> _backupDatabase(BuildContext context) async {
-    // 1️⃣ Ensure we have storage permission
-    final hasPermission = await ensureStoragePermission();
-    if (!hasPermission) {
+    final loc = AppLocalizations.of(context)!;
+    if (!await ensureStoragePermission()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)?.storagePermissionRequired ??
-                'Storage permission is required to back up.',
-          ),
-        ),
+        SnackBar(content: Text(loc.storagePermissionRequired)),
       );
       return;
     }
 
+    final selectedDir = await FilePicker.platform.getDirectoryPath();
+    if (selectedDir == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.exportCanceledNoDirectory)),
+      );
+      return;
+    }
+
+    final parentDir = dirname(selectedDir);
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final backupName = 'BusinessHub__backup_${timestamp}.db';
+    final backupPath = join(parentDir, backupName);
+
     try {
-      final selectedDirectory = await FilePicker.platform.getDirectoryPath();
-      if (selectedDirectory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.exportCanceledNoDirectory,
-            ),
-          ),
-        );
-        return;
-      }
-
-      // Copy into parent directory (avoid duplicate folder)
-      final parentDirPath = dirname(selectedDirectory);
-
-      final now = DateTime.now();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
-      final fileName = 'BusinessHub__backup_${timestamp}.db';
-      final backupPath = join(parentDirPath, fileName);
-
-      final success = await DatabaseHelper().exportDatabase(backupPath);
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!
-                  .databaseExportedSuccessfully(backupPath),
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.databaseFileNotFoundOrExportFailed,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
+      final success = await DatabaseHelper().exportTo(backupPath);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.errorExportingDatabase(e.toString()),
+            success
+                ? loc.databaseExportedSuccessfully(backupPath)
+                : loc.databaseFileNotFoundOrExportFailed,
           ),
         ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.errorExportingDatabase(e.toString()))),
       );
     }
   }
 
   Future<void> _restoreDatabase(BuildContext context) async {
-    // 1️⃣ Ensure we have storage permission (to read the selected file)
-    final hasPermission = await ensureStoragePermission();
-    if (!hasPermission) {
+    final loc = AppLocalizations.of(context)!;
+    if (!await ensureStoragePermission()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                AppLocalizations.of(context)?.storagePermissionRequired ??
-                    'Storage permission is required to restore.')),
+        SnackBar(content: Text(loc.storagePermissionRequired)),
+      );
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles();
+    final path = result?.files.single.path;
+    if (path == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.restoreCanceledNoFile)),
       );
       return;
     }
 
     try {
-      final result = await FilePicker.platform.pickFiles();
-      if (result == null || result.files.single.path == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(AppLocalizations.of(context)!.restoreCanceledNoFile)),
-        );
-        return;
-      }
-      final backupPath = result.files.single.path!;
-      final success = await DatabaseHelper().importDatabase(backupPath);
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.databaseRestoredSuccessfully),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.restoreFailedFileNotFound),
-          ),
-        );
-      }
-    } catch (e) {
+      final success = await DatabaseHelper().importFrom(path);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(AppLocalizations.of(context)!
-                .errorRestoringDatabase(e.toString()))),
+          content: Text(
+            success
+                ? loc.databaseRestoredSuccessfully
+                : loc.restoreFailedFileNotFound,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.errorRestoringDatabase(e.toString()))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -160,8 +116,8 @@ class BackupRestoreCard extends StatelessWidget {
                 const Icon(Icons.backup, size: 30, color: Colors.blueAccent),
                 const SizedBox(width: 10),
                 Text(
-                  AppLocalizations.of(context)!.backupRestoreTitle,
-                  style: const TextStyle(fontSize: 18, fontFamily: "IRANSans"),
+                  loc.backupRestoreTitle,
+                  style: const TextStyle(fontSize: 18, fontFamily: 'IRANSans'),
                 ),
               ],
             ),
@@ -172,7 +128,7 @@ class BackupRestoreCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _backupDatabase(context),
                     icon: const Icon(Icons.backup_outlined),
-                    label: Text(AppLocalizations.of(context)!.backup),
+                    label: Text(loc.backup),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -180,7 +136,7 @@ class BackupRestoreCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _restoreDatabase(context),
                     icon: const Icon(Icons.restore_outlined),
-                    label: Text(AppLocalizations.of(context)!.restore),
+                    label: Text(loc.restore),
                   ),
                 ),
               ],

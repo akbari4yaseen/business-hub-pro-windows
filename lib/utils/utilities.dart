@@ -1,26 +1,34 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-String getCurrencyName(String currency) {
-  const Map<String, String> currencyNames = {
-    'USD': 'دالر',
-    'TRY': 'لیره ترکیه',
-    'SAR': 'ریال سعودی',
-    'PKR': 'کلدار',
-    'IRR': 'تومان',
-    'INR': 'کلدار هندی',
-    'GBP': 'پوند',
-    'EUR': 'یورو',
-    'CNY': 'ین چین',
-    'CAD': 'دالر کانادایی',
-    'AUD': 'دالر استرالیایی',
-    'AFN': 'افغانی',
-    'AED': 'درهم امارات',
-    'MYR': 'رینگیت مالزی',
-  };
-
-  return currencyNames[currency] ?? currency;
-}
+const Map<String, Map<String, String>> localizedCurrencyNames = {
+  "AFN": {"en": "Afghani", "fa": "افغانی", "ps": "افغانۍ"},
+  "USD": {"en": "US Dollar", "fa": "دالر آمریکا", "ps": "د امریکې ډالر"},
+  "EUR": {"en": "Euro", "fa": "یورو", "ps": "یورو"},
+  "PKR": {
+    "en": "Pakistani Rupee",
+    "fa": "روپیه پاکستان",
+    "ps": "پاکستانۍ روپۍ"
+  },
+  "IRR": {"en": "Iranian Rial", "fa": "تومان", "ps": "تومان"},
+  "TRY": {"en": "Turkish Lira", "fa": "لیر ترکیه", "ps": "ترک لیره"},
+  "SAR": {"en": "Saudi Riyal", "fa": "ریال سعودی", "ps": "سعودي ریال"},
+  "INR": {"en": "Indian Rupee", "fa": "روپیه هند", "ps": "هندي روپۍ"},
+  "GBP": {"en": "British Pound", "fa": "پوند انگلیس", "ps": "برتانوي پونډ"},
+  "CNY": {"en": "Chinese Yuan", "fa": "یوان چین", "ps": "چینایي یوان"},
+  "CAD": {"en": "Canadian Dollar", "fa": "دالر کانادا", "ps": "د کاناډا ډالر"},
+  "AUD": {
+    "en": "Australian Dollar",
+    "fa": "دالر استرالیا",
+    "ps": "استرالیایي ډالر"
+  },
+  "AED": {"en": "Emirati Dirham", "fa": "درهم امارات", "ps": "د اماراتو درهم"},
+  "MYR": {
+    "en": "Malaysian Ringgit",
+    "fa": "رینگیت مالزی",
+    "ps": "مالیزیایي رینګت"
+  }
+};
 
 String getLocalizedAccountType(BuildContext context, String type) {
   final localizations = AppLocalizations.of(context)!;
@@ -40,6 +48,8 @@ String getLocalizedAccountType(BuildContext context, String type) {
       return localizations.income;
     case 'expense':
       return localizations.expense;
+    case 'owner':
+      return localizations.owner;
     case 'all':
       return localizations.all;
     default:

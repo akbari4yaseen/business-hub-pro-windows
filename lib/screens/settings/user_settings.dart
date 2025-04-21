@@ -1,6 +1,8 @@
+// lib/screens/user_settings_screen.dart
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../database/database_helper.dart';
+import '../../database/user_dao.dart';
 
 class UserSettingsScreen extends StatefulWidget {
   const UserSettingsScreen({super.key});
@@ -30,46 +32,58 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
   Future<void> _updatePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await DatabaseHelper().updateUserPassword(
-      _currentPasswordController.text,
-      _newPasswordController.text,
+    // Use UserDao instead of direct DatabaseHelper call
+    final db = await DatabaseHelper().database;
+    final dao = UserDao(db);
+    final success = await dao.updatePassword(
+      _currentPasswordController.text.trim(),
+      _newPasswordController.text.trim(),
     );
 
-    final localizations = AppLocalizations.of(context)!;
-
+    final loc = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success
-            ? localizations.passwordUpdated
-            : localizations.incorrectCurrentPassword),
+        content: Text(
+          success
+              ? loc.passwordUpdated
+              : loc.incorrectCurrentPassword,
+        ),
         backgroundColor: success ? null : Colors.red,
       ),
     );
 
-    if (success) Navigator.pop(context);
+    if (success) {
+      Navigator.pop(context);
+    }
   }
 
   String? _validatePassword(String? value) {
-    final localizations = AppLocalizations.of(context)!;
-    if (value == null || value.isEmpty) return localizations.fieldRequired;
-    if (value.length < 6) return localizations.passwordTooShort;
+    final loc = AppLocalizations.of(context)!;
+    if (value == null || value.isEmpty) {
+      return loc.fieldRequired;
+    }
+    if (value.length < 6) {
+      return loc.passwordTooShort;
+    }
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
-    final localizations = AppLocalizations.of(context)!;
-    if (value != _newPasswordController.text)
-      return localizations.passwordsDoNotMatch;
+    final loc = AppLocalizations.of(context)!;
+    if (value != _newPasswordController.text) {
+      return loc.passwordsDoNotMatch;
+    }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.changePassword),
+        title: Text(loc.changePassword),
       ),
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
@@ -88,7 +102,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                 child: Column(
                   children: [
                     PasswordField(
-                      label: localizations.currentPassword,
+                      label: loc.currentPassword,
                       controller: _currentPasswordController,
                       obscure: !_showCurrent,
                       onToggle: () =>
@@ -96,7 +110,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                     ),
                     const SizedBox(height: 20),
                     PasswordField(
-                      label: localizations.newPassword,
+                      label: loc.newPassword,
                       controller: _newPasswordController,
                       obscure: !_showNew,
                       onToggle: () => setState(() => _showNew = !_showNew),
@@ -104,7 +118,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                     ),
                     const SizedBox(height: 20),
                     PasswordField(
-                      label: localizations.confirmPassword,
+                      label: loc.confirmPassword,
                       controller: _confirmPasswordController,
                       obscure: !_showConfirm,
                       onToggle: () =>
@@ -125,16 +139,14 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
           child: ElevatedButton.icon(
             onPressed: _updatePassword,
             icon: const Icon(Icons.save),
-            label: Text(localizations.changePassword),
+            label: Text(loc.changePassword),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              textStyle: const TextStyle(
-                fontSize: 16,
-              ),
+              textStyle: const TextStyle(fontSize: 16),
             ),
           ),
         ),
@@ -161,20 +173,20 @@ class PasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       validator: validator ??
-          (value) => value == null || value.isEmpty
-              ? localizations.fieldRequired
-              : null,
+          (value) =>
+              value == null || value.isEmpty ? loc.fieldRequired : null,
       decoration: InputDecoration(
         labelText: label,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
+        fillColor: theme.colorScheme.surface,
         prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
@@ -185,13 +197,10 @@ class PasswordField extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
+            color: theme.colorScheme.primary,
             width: 2,
           ),
         ),

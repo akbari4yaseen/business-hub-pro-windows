@@ -100,6 +100,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
       'bank': localizations.bank,
       'income': localizations.income,
       'expense': localizations.expense,
+      'owner': localizations.owner,
     };
     final themeProvider = Provider.of<ThemeProvider>(context);
 

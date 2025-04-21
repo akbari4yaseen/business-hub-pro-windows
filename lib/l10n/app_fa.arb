@@ -142,6 +142,7 @@
   "income": "عاید",
   "expense": "مصرف",
   "bank": "بانک",
+  "owner": "مالک",
   "errorDeletingJournal": "خطا در حذف روزنامچه. لطفاً دوباره تلاش کنید.",
   "errorLoadingJournal": "خطا در بارگذاری روزنامچه. لطفاً دوباره تلاش کنید.",
   "storagePermissionRequired": "اجازه دسترسی به حافظه لازم است"

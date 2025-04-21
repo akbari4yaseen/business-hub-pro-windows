@@ -142,6 +142,7 @@
   "income": "Income",
   "expense": "Expense",
   "bank": "Bank",
+  "owner": "Owner",
   "errorDeletingJournal": "Error deleting journal. Please try again.",
   "errorLoadingJournal": "Error loading journal entries. Please try again.",
   "storagePermissionRequired": "Storage permission is required to back up."
