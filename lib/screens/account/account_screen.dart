@@ -13,7 +13,7 @@ import 'add_account_screen.dart';
 import '../../widgets/account_filter_bottom_sheet.dart';
 import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
-import '../../widgets/account_search_bar.dart';
+import '../../widgets/search_bar.dart';
 
 class AccountScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -381,7 +381,7 @@ class _AccountScreenState extends State<AccountScreen>
           onPressed: widget.openDrawer,
         ),
         title: _isSearching
-            ? AccountSearchBar(
+            ? CommonSearchBar(
                 controller: _searchController,
                 debounceDuration: const Duration(milliseconds: 500),
                 isLoading: _isLoading,

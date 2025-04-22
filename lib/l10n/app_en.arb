@@ -172,5 +172,6 @@
   "deactivatedAccountsShort": "Inactive",
   "newTransaction": "New Transaction",
   "recentTransactions": "Recent Transactions",
-  "noRecentTransactions": "No recent transactions"
+  "noRecentTransactions": "No recent transactions",
+  "noTransactionsFound": "No transactions"
 }

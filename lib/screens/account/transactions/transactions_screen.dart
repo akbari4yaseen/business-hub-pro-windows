@@ -7,6 +7,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../database/account_db.dart';
 import '../../../widgets/transaction_details_widget.dart';
+import '../../../widgets/search_bar.dart';
+import '../../../widgets/transaction_filter_bottom_sheet.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
 
@@ -24,6 +26,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   bool isLoading = true;
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
+  // Search and filter state
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String? _selectedType;
+  String? _selectedCurrency;
+  DateTime? _selectedDate;
+
   @override
   void initState() {
     super.initState();
@@ -31,12 +40,82 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> fetchTransactions() async {
-    final txs = await AccountDBHelper().getTransactions(widget.account['id']);
+    setState(() {
+      isLoading = true;
+    });
+    final txs = await AccountDBHelper().getTransactions(
+      widget.account['id'],
+      // searchQuery: _searchController.text,
+      // transactionType: _selectedType,
+      // currency: _selectedCurrency,
+      // exactDate: _selectedDate,
+    );
     if (!mounted) return;
     setState(() {
       transactions = txs;
       isLoading = false;
     });
+  }
+
+  void _showFilterModal() async {
+    // Define available filter options
+    final typeOptions = ['all', 'credit', 'debit'];
+    final balancesMap =
+        widget.account['balances'] as Map<String, dynamic>? ?? {};
+    final currencyOptions = ['all', ...balancesMap.keys.toList()];
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => TransactionFilterBottomSheet(
+        selectedType: _selectedType ?? 'all',
+        selectedCurrency: _selectedCurrency ?? 'all',
+        selectedDate: _selectedDate,
+        typeOptions: typeOptions,
+        currencyOptions: currencyOptions,
+        onChanged: ({String? type, String? currency, DateTime? date}) {
+          // Update selections in parent state (won't rebuild sheet UI)
+          setState(() {
+            if (type != null) {
+              _selectedType = (type == 'all' ? null : type);
+            }
+            if (currency != null) {
+              _selectedCurrency = (currency == 'all' ? null : currency);
+            }
+            if (date != null) {
+              _selectedDate = date;
+            }
+          });
+        },
+        onReset: () {
+          // Clear all filters
+          Navigator.of(context).pop({
+            'type': null,
+            'currency': null,
+            'date': null,
+          });
+        },
+        onApply: ({String? type, String? currency, DateTime? date}) {
+          Navigator.of(context).pop({
+            'type': (type == 'all' ? null : type),
+            'currency': (currency == 'all' ? null : currency),
+            'date': date,
+          });
+        },
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedType = result['type'];
+        _selectedCurrency = result['currency'];
+        _selectedDate = result['date'];
+      });
+      fetchTransactions();
+    }
   }
 
   @override
@@ -61,13 +140,40 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            getLocalizedSystemAccountName(context, widget.account['name'])),
+        title: _isSearching
+            ? CommonSearchBar(
+                controller: _searchController,
+                debounceDuration: const Duration(milliseconds: 500),
+                isLoading: isLoading,
+                onChanged: (_) => fetchTransactions(),
+                onSubmitted: (_) => fetchTransactions(),
+                onCancel: () => setState(() => _isSearching = false),
+                onClear: () {
+                  _searchController.clear();
+                  fetchTransactions();
+                },
+                hintText: loc.search,
+              )
+            : Text(
+                getLocalizedSystemAccountName(context, widget.account['name'])),
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+              tooltip: loc.search,
+            ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterModal,
+            tooltip: loc.filter,
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : transactions.isEmpty
-              ? const Center(child: Text('No transactions found'))
+              ? Center(child: Text(loc.noTransactionsFound))
               : NestedScrollView(
                   headerSliverBuilder: (context, innerScroll) => [
                     SliverToBoxAdapter(
@@ -226,7 +332,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             Text(formatLocalizedDate(context, tx['date']),
                 style: const TextStyle(fontSize: 13)),
             Text(
-              tx['description'],
+              tx['description'] ?? '',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -240,11 +346,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 _showDetails(tx);
                 break;
               case 'edit':
-                // edit
-
+                // TODO: implement edit
                 break;
               case 'delete':
-                //
+                // TODO: implement delete
                 break;
               default:
                 break;

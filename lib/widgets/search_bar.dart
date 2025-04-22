@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utils/debouncer.dart';
 
 /// A reusable, customizable search bar for accounts, with debounce, loading indicator, and clear/cancel actions.
-class AccountSearchBar extends StatefulWidget {
+class CommonSearchBar extends StatefulWidget {
   /// Text controller for the search input.
   final TextEditingController controller;
 
@@ -28,7 +28,7 @@ class AccountSearchBar extends StatefulWidget {
   /// Custom hint text. Defaults to localized 'search'.
   final String? hintText;
 
-  const AccountSearchBar({
+  const CommonSearchBar({
     Key? key,
     required this.controller,
     required this.onChanged,
@@ -41,10 +41,10 @@ class AccountSearchBar extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _AccountSearchBarState createState() => _AccountSearchBarState();
+  _CommonSearchBarState createState() => _CommonSearchBarState();
 }
 
-class _AccountSearchBarState extends State<AccountSearchBar> {
+class _CommonSearchBarState extends State<CommonSearchBar> {
   late Debouncer _debouncer;
   late FocusNode _focusNode;
 
@@ -57,7 +57,7 @@ class _AccountSearchBarState extends State<AccountSearchBar> {
   }
 
   @override
-  void didUpdateWidget(covariant AccountSearchBar oldWidget) {
+  void didUpdateWidget(covariant CommonSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.debounceDuration != widget.debounceDuration) {
       _debouncer =

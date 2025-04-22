@@ -10,7 +10,7 @@ import '../../utils/utilities.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import '../../widgets/journal_filter_bottom_sheet.dart';
-import '../../widgets/journal_search_bar.dart';
+import '../../widgets/search_bar.dart';
 import '../../widgets/journal_details_widget.dart';
 
 class JournalScreen extends StatefulWidget {
@@ -335,7 +335,7 @@ class _JournalScreenState extends State<JournalScreen> {
           onPressed: widget.openDrawer,
         ),
         title: _isSearching
-            ? JournalSearchBar(
+            ? CommonSearchBar(
                 controller: _searchController,
                 debounceDuration: const Duration(milliseconds: 500),
                 isLoading: _isLoading,

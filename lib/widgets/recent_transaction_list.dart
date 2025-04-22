@@ -66,7 +66,7 @@ class RecentTransactionList extends StatelessWidget {
                   ],
                 ),
                 trailing: Text(
-                  '${_amountFormatter.format(tx['amount'])} ${tx['currency']}',
+                  '\u200E${_amountFormatter.format(tx['amount'])} ${tx['currency']}',
                   style: TextStyle(color: color),
                 ),
                 contentPadding:
