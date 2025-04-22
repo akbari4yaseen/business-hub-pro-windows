@@ -9,6 +9,7 @@ class AccountTile extends StatelessWidget {
   final Map<String, dynamic> account;
   final bool isActive;
   final void Function(String) onActionSelected;
+  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   const AccountTile({
     Key? key,
@@ -69,7 +70,7 @@ class AccountTile extends StatelessWidget {
           children: balances.entries.map((e) {
             final bal = e.value['summary']['balance'] as double? ?? 0.0;
             return Text(
-              '\u200E${NumberFormat('#,###.##').format(bal)} ${e.value['currency']}',
+              '\u200E${_amountFormatter.format(bal)} ${e.value['currency']}',
               style: TextStyle(
                 color: bal >= 0 ? Colors.green[700] : Colors.red[700],
                 fontSize: 12,

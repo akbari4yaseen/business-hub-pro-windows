@@ -23,6 +23,7 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   static const _pageSize = 30;
+  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -253,7 +254,7 @@ class _JournalScreenState extends State<JournalScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '\u200E${NumberFormat('#,###.##').format(j['amount'])} ${j['currency']}',
+                    '\u200E${_amountFormatter.format(j['amount'])} ${j['currency']}',
                     style: const TextStyle(
                       fontSize: 14,
                     ),

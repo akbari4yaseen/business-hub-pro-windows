@@ -1,4 +1,3 @@
-import 'package:BusinessHub/utils/date_formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,6 +7,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../database/account_db.dart';
 import '../../../widgets/transaction_details_widget.dart';
+import '../../../utils/date_formatters.dart';
+import '../../../utils/utilities.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -21,6 +22,7 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   List<Map<String, dynamic>> transactions = [];
   bool isLoading = true;
+  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   @override
   void initState() {
@@ -59,7 +61,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.account['name']),
+        title: Text(
+            getLocalizedSystemAccountName(context, widget.account['name'])),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -138,7 +141,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       style: TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
-                    NumberFormat("#,###.##").format(credit),
+                    _amountFormatter.format(credit),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -153,7 +156,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       style: TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
-                    NumberFormat("#,###.##").format(debit),
+                    _amountFormatter.format(debit),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -172,7 +175,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   style: TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
-                '\u200E${NumberFormat("#,###.##").format(balance)}',
+                '\u200E${_amountFormatter.format(balance)}',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -211,13 +214,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(
-          '\u200E${NumberFormat('#,###.##').format(tx['amount'])} ${tx['currency']}',
+          '\u200E${_amountFormatter.format(tx['amount'])} ${tx['currency']}',
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${loc.balance}: \u200E${NumberFormat('#,###.##').format(tx['balance'])} ${tx['currency']}',
+              '${loc.balance}: \u200E${_amountFormatter.format(tx['balance'])} ${tx['currency']}',
               style: TextStyle(fontSize: 14, color: balanceColor),
             ),
             Text(formatLocalizedDate(context, tx['date']),
