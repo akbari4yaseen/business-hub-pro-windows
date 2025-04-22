@@ -9,7 +9,8 @@ class TransactionFilterBottomSheet extends StatelessWidget {
   final List<String> currencyOptions;
   final void Function({String? type, String? currency, DateTime? date}) onApply;
   final VoidCallback onReset;
-  final void Function({String? type, String? currency, DateTime? date}) onChanged;
+  final void Function({String? type, String? currency, DateTime? date})
+      onChanged;
 
   const TransactionFilterBottomSheet({
     Key? key,
@@ -29,7 +30,8 @@ class TransactionFilterBottomSheet extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(16)),
+        padding:
+            MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(16)),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return ConstrainedBox(
@@ -41,17 +43,21 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(loc.filter, style: Theme.of(context).textTheme.titleMedium),
+                    Text(loc.filter,
+                        style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 16),
                     // Transaction Type FilterChips
-                    Text(loc.transactionType, style: Theme.of(context).textTheme.labelMedium),
+                    Text(loc.transactionType,
+                        style: Theme.of(context).textTheme.labelMedium),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 8,
                       children: typeOptions.map((type) {
                         final isSelected = (selectedType ?? 'all') == type;
                         return FilterChip(
-                          label: Text(type == 'all' ? loc.all : (type == 'credit' ? loc.credit : loc.debit)),
+                          label: Text(type == 'all'
+                              ? loc.all
+                              : (type == 'credit' ? loc.credit : loc.debit)),
                           selected: isSelected,
                           onSelected: (_) => onChanged(type: type),
                         );
@@ -59,17 +65,21 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     // Currency FilterChips
-                    Text(loc.currency, style: Theme.of(context).textTheme.labelMedium),
+
+                    Text(loc.currency,
+                        style: Theme.of(context).textTheme.labelMedium),
                     const SizedBox(height: 4),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: currencyOptions.map((currency) {
-                          final isSelected = (selectedCurrency ?? 'all') == currency;
+                          final isSelected =
+                              (selectedCurrency ?? 'all') == currency;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
-                              label: Text(currency == 'all' ? loc.all : currency),
+                              label:
+                                  Text(currency == 'all' ? loc.all : currency),
                               selected: isSelected,
                               onSelected: (_) => onChanged(currency: currency),
                             ),
@@ -78,6 +88,7 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
+
                     // Date Picker
                     InkWell(
                       onTap: () async {

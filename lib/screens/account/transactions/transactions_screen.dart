@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../../../providers/theme_provider.dart';
 import '../../../database/account_db.dart';
+import '../../../database/database_helper.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction_details_widget.dart';
 import '../../../widgets/search_bar.dart';
 import '../../../widgets/transaction_filter_bottom_sheet.dart';
@@ -22,100 +23,143 @@ class TransactionsScreen extends StatefulWidget {
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
-  List<Map<String, dynamic>> transactions = [];
-  bool isLoading = true;
+  static const int _pageSize = 30;
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
-  // Search and filter state
+  List<Map<String, dynamic>> transactions = [];
+  bool isLoading = false;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String? _selectedType;
   String? _selectedCurrency;
   DateTime? _selectedDate;
+  List<String> currencyOptions = [];
+
+  int _currentPage = 0;
+  bool _hasMore = true;
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
-    fetchTransactions();
+    _scrollController.addListener(_onScroll);
+    _refreshTransactions();
   }
 
-  Future<void> fetchTransactions() async {
+  Future<void> _loadCurrencies() async {
+    final list = await DatabaseHelper().getDistinctCurrencies();
+    list.sort();
+    currencyOptions = ['all', ...list];
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore &&
+        !isLoading) {
+      _fetchNextPage();
+    }
+  }
+
+  Future<void> _refreshTransactions() async {
     setState(() {
-      isLoading = true;
+      transactions.clear();
+      _currentPage = 0;
+      _hasMore = true;
+    });
+    await _fetchNextPage(reset: true);
+  }
+
+  Future<void> _fetchNextPage({bool reset = false}) async {
+    if (!_hasMore && !reset) return;
+    setState(() {
+      if (reset) isLoading = true;
+      _isLoadingMore = !reset;
     });
     final txs = await AccountDBHelper().getTransactions(
       widget.account['id'],
-      // searchQuery: _searchController.text,
-      // transactionType: _selectedType,
-      // currency: _selectedCurrency,
-      // exactDate: _selectedDate,
+      offset: _currentPage * _pageSize,
+      limit: _pageSize,
+      searchQuery: _searchController.text,
+      transactionType: _selectedType,
+      currency: _selectedCurrency,
+      exactDate: _selectedDate,
     );
     if (!mounted) return;
     setState(() {
-      transactions = txs;
-      isLoading = false;
+      if (reset) {
+        transactions = txs;
+        isLoading = false;
+      } else {
+        transactions.addAll(txs);
+      }
+      _isLoadingMore = false;
+      if (txs.length < _pageSize) {
+        _hasMore = false;
+      } else {
+        _currentPage++;
+      }
     });
   }
 
-  void _showFilterModal() async {
-    // Define available filter options
-    final typeOptions = ['all', 'credit', 'debit'];
-    final balancesMap =
-        widget.account['balances'] as Map<String, dynamic>? ?? {};
-    final currencyOptions = ['all', ...balancesMap.keys.toList()];
+  void _showFilterModal() {
+    String? tmpType = _selectedType;
+    String? tmpCurrency = _selectedCurrency;
+    DateTime? tmpDate = _selectedDate;
+    _loadCurrencies();
 
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final typeList = ['all', 'credit', 'debit'];
+
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => TransactionFilterBottomSheet(
-        selectedType: _selectedType ?? 'all',
-        selectedCurrency: _selectedCurrency ?? 'all',
-        selectedDate: _selectedDate,
-        typeOptions: typeOptions,
-        currencyOptions: currencyOptions,
-        onChanged: ({String? type, String? currency, DateTime? date}) {
-          // Update selections in parent state (won't rebuild sheet UI)
-          setState(() {
-            if (type != null) {
-              _selectedType = (type == 'all' ? null : type);
-            }
-            if (currency != null) {
-              _selectedCurrency = (currency == 'all' ? null : currency);
-            }
-            if (date != null) {
-              _selectedDate = date;
-            }
-          });
-        },
-        onReset: () {
-          // Clear all filters
-          Navigator.of(context).pop({
-            'type': null,
-            'currency': null,
-            'date': null,
-          });
-        },
-        onApply: ({String? type, String? currency, DateTime? date}) {
-          Navigator.of(context).pop({
-            'type': (type == 'all' ? null : type),
-            'currency': (currency == 'all' ? null : currency),
-            'date': date,
-          });
-        },
+      backgroundColor: Colors.transparent,
+      builder: (c) => StatefulBuilder(
+        builder: (c2, setModal) => Material(
+          color: Theme.of(context).canvasColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: TransactionFilterBottomSheet(
+            selectedType: tmpType,
+            selectedCurrency: tmpCurrency,
+            selectedDate: tmpDate,
+            typeOptions: typeList,
+            currencyOptions: currencyOptions,
+            onChanged: ({type, currency, date}) {
+              setModal(() {
+                tmpType = type;
+                tmpCurrency = currency;
+                tmpDate = date;
+              });
+            },
+            onReset: () {
+              setModal(() {
+                tmpType = null;
+                tmpCurrency = null;
+                tmpDate = null;
+              });
+            },
+            onApply: ({type, currency, date}) {
+              setState(() {
+                _selectedType = tmpType;
+                _selectedCurrency = tmpCurrency;
+                _selectedDate = tmpDate;
+              });
+              Navigator.pop(context);
+              _refreshTransactions();
+            },
+          ),
+        ),
       ),
     );
-
-    if (result != null) {
-      setState(() {
-        _selectedType = result['type'];
-        _selectedCurrency = result['currency'];
-        _selectedDate = result['date'];
-      });
-      fetchTransactions();
-    }
   }
 
   @override
@@ -124,38 +168,43 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final loc = AppLocalizations.of(context)!;
 
-    Widget summaryCard = SizedBox(
-      height: 167,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: balances.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (context, idx) {
-          final entry = balances.entries.elementAt(idx);
-          return _buildBalanceCard(entry);
-        },
-      ),
-    );
+    final summaryCard = balances.isNotEmpty
+        ? SizedBox(
+            height: 167,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: balances.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, idx) {
+                final entry = balances.entries.elementAt(idx);
+                return _buildBalanceCard(entry);
+              },
+            ),
+          )
+        : const SizedBox.shrink();
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,
                 debounceDuration: const Duration(milliseconds: 500),
                 isLoading: isLoading,
-                onChanged: (_) => fetchTransactions(),
-                onSubmitted: (_) => fetchTransactions(),
+                onChanged: (_) => _refreshTransactions(),
+                onSubmitted: (_) => _refreshTransactions(),
                 onCancel: () => setState(() => _isSearching = false),
                 onClear: () {
                   _searchController.clear();
-                  fetchTransactions();
+                  _refreshTransactions();
                 },
                 hintText: loc.search,
               )
             : Text(
-                getLocalizedSystemAccountName(context, widget.account['name'])),
+                getLocalizedSystemAccountName(context, widget.account['name']),
+                style: const TextStyle(fontSize: 18),
+              ),
         actions: [
           if (!_isSearching)
             IconButton(

@@ -93,7 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
       itemBuilder: (_) => [
         PopupMenuItem(value: 'profile', child: Text(loc.profile)),
         PopupMenuItem(value: 'notifications', child: Text(loc.notifications)),
-        PopupMenuItem(value: 'help', child: Text(loc.help)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'logout', child: Text(loc.logout)),
       ],

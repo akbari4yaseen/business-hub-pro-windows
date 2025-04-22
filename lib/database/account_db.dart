@@ -367,58 +367,100 @@ class AccountDBHelper {
     return rows;
   }
 
-  Future<List<Map<String, dynamic>>> getTransactions(int accountId) async {
-    return await _fetchTransactions(accountId);
+  Future<List<Map<String, dynamic>>> getTransactions(
+    int accountId, {
+    int offset = 0,
+    int limit = 30,
+    String? searchQuery,
+    String? transactionType,
+    String? currency,
+    DateTime? exactDate,
+  }) async {
+    return await _fetchTransactions(
+      accountId,
+      offset: offset,
+      limit: limit,
+      searchQuery: searchQuery,
+      transactionType: transactionType,
+      currency: currency,
+      exactDate: exactDate,
+    );
   }
 
-// Private method to fetch transactions with balance calculations
-  Future<List<Map<String, dynamic>>> _fetchTransactions(int? accountId) async {
-    Database db = await database;
+  /// Fetch transactions with filters and running balance (descending order)
+  Future<List<Map<String, dynamic>>> _fetchTransactions(
+    int? accountId, {
+    int offset = 0,
+    int limit = 30,
+    String? searchQuery,
+    String? transactionType,
+    String? currency,
+    DateTime? exactDate,
+  }) async {
+    final db = await database;
+    final List<String> where = [];
+    final List<dynamic> args = [];
+    if (accountId != null) {
+      where.add('account_id = ?');
+      args.add(accountId);
+    }
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      where.add('(LOWER(description) LIKE ?)');
+      args.add('%${searchQuery.toLowerCase()}%');
+    }
+    if (transactionType != null && transactionType.isNotEmpty) {
+      where.add('transaction_type = ?');
+      args.add(transactionType);
+    }
+    if (currency != null && currency.isNotEmpty) {
+      where.add('currency = ?');
+      args.add(currency);
+    }
+    if (exactDate != null) {
+      // Accept both 'YYYY-MM-DD' and full ISO string
+      where.add("DATE(date) = DATE(?)");
+      args.add(exactDate.toIso8601String().substring(0, 10));
+    }
+    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
 
-    String query = '''
-    SELECT * FROM account_details
-    ${accountId != null ? "WHERE account_id = ?" : ""}
-    ORDER BY date ASC, id ASC
-  
-  ''';
+    final query = '''
+      SELECT * FROM account_details
+      $whereClause
+      ORDER BY date DESC, id DESC
+      LIMIT ? OFFSET ?
+    ''';
+    args.addAll([limit, offset]);
 
-    List<dynamic> args = [];
-    if (accountId != null) args.add(accountId);
+    final rows = await db.rawQuery(query, args);
 
-    List<Map<String, dynamic>> rows = await db.rawQuery(query, args);
-
-    Map<String, double> balanceMap = {};
-    List<Map<String, dynamic>> transactionDetails = [];
-
-    for (var row in rows) {
-      double creditAmount = 0.0;
-      double debitAmount = 0.0;
-
-      if (row['transaction_type'] == 'credit') {
-        creditAmount = (row['amount'] as num).toDouble();
-      } else if (row['transaction_type'] == 'debit') {
-        debitAmount = (row['amount'] as num).toDouble();
+    // Calculate running balance for each currency (descending order)
+    final Map<String, double> runningBalance = {};
+    final List<Map<String, dynamic>> results = [];
+    for (final row in rows) {
+      final String curr = row['currency'] as String;
+      final String type = row['transaction_type'] as String;
+      final double amount = (row['amount'] as num).toDouble();
+      double prevBalance = runningBalance[curr] ?? 0.0;
+      double balance = prevBalance;
+      if (type == 'credit') {
+        balance += amount;
+      } else if (type == 'debit') {
+        balance -= amount;
       }
-
-      double balance =
-          (balanceMap[row['currency']] ?? 0.0) + creditAmount - debitAmount;
-      balanceMap[row['currency']] = balance;
-
-      transactionDetails.add({
+      runningBalance[curr] = balance;
+      results.add({
         'id': row['id'],
         'date': row['date'],
         'description': row['description'],
         'transaction_group': row['transaction_group'],
         'transaction_id': row['transaction_id'],
-        'amount': (row['amount'] as num).toDouble(),
-        'transaction_type': row['transaction_type'],
+        'amount': amount,
+        'transaction_type': type,
         'balance': balance,
-        'currency': row['currency'],
+        'currency': curr,
       });
     }
-
-    return transactionDetails.reversed
-        .toList(); // Show latest transactions first
+    return results.reversed.toList(); // Show latest transactions first
   }
 
   Future<Map<String, int>> getAccountCounts() async {
