@@ -329,13 +329,13 @@ class _AccountScreenState extends State<AccountScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("تأیید حذف"),
-        content: Text(
-            "آیا مطمئن هستید که می‌خواهید ${account['name']} را حذف کنید؟"),
+        title: Text(AppLocalizations.of(context)!.confirmDelete),
+        content: Text(AppLocalizations.of(context)!
+            .deleteAccountConfirm(account['name'])), // Add this key to ARB
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("لغو")),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           TextButton(
             onPressed: () {
               setState(() {
@@ -348,7 +348,8 @@ class _AccountScreenState extends State<AccountScreen>
               });
               Navigator.pop(context);
             },
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.red)), // Existing key
           ),
         ],
       ),
@@ -359,9 +360,9 @@ class _AccountScreenState extends State<AccountScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("تأیید غیرفعالسازی"),
-        content: Text(
-            "آیا مطمئن هستید که می‌خواهید حساب ${account['name']} را غیرفعال کنید؟"),
+        title: Text(AppLocalizations.of(context)!.confirmDeactivate),
+        content: Text(AppLocalizations.of(context)!
+            .deactivateAccountConfirm(account['name'])), // Add this key to ARB
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
@@ -375,8 +376,8 @@ class _AccountScreenState extends State<AccountScreen>
               });
               Navigator.pop(context);
             },
-            child: const Text('غیرفعال کردن حساب',
-                style: TextStyle(color: Colors.orange)),
+            child: Text(AppLocalizations.of(context)!.deactivateAccount,
+                style: const TextStyle(color: Colors.orange)), // Existing key
           ),
         ],
       ),
@@ -387,9 +388,9 @@ class _AccountScreenState extends State<AccountScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("تأیید فعالسازی مجدد"),
-        content:
-            Text("آیا می‌خواهید حساب ${account['name']} را دوباره فعال کنید؟"),
+        title: Text(AppLocalizations.of(context)!.confirmReactivate),
+        content: Text(AppLocalizations.of(context)!
+            .reactivateAccountConfirm(account['name'])), // Add this key to ARB
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
@@ -403,8 +404,8 @@ class _AccountScreenState extends State<AccountScreen>
               });
               Navigator.pop(context);
             },
-            child:
-                const Text('فعال‌سازی', style: TextStyle(color: Colors.green)),
+            child: Text(AppLocalizations.of(context)!.reactivate,
+                style: const TextStyle(color: Colors.green)), // Existing key
           ),
         ],
       ),
@@ -412,22 +413,31 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   String _buildShareMessage(Map<String, dynamic> account) {
+    final loc = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final formattedDate = formatLocalizedDateTime(context, now);
     final balances = account['balances'] as Map<String, dynamic>;
+
     final lines = balances.entries.map((e) {
       final cur = e.value['currency'] ?? e.key;
       final bal = e.value['summary']['balance'] as double? ?? 0.0;
-      return '•  $cur: ${NumberFormat('#,###.##').format(bal)}';
+      return '•  ${NumberFormat('#,###.##').format(bal)} $cur';
     }).join('\n');
+
     final info = Provider.of<InfoProvider>(context, listen: false).info;
-    final footer = info.name ?? 'BusinessHub';
-    var msg =
-        'Hello *${account['name']}*,\n\n*Current Balances:*\n$lines\n\n*Timestamp:* $formattedDate';
+    final appName = info.name ?? loc.appName;
+
+    final header = loc.shareMessageHeader(account['name']);
+    final timestamp = loc.shareMessageTimestamp(formattedDate);
+    final footer = loc.shareMessageFooter(appName);
+
+    var msg = '$header\n$lines\n\n$timestamp';
+
     if (balances.values.any((e) => (e['summary']['balance'] as num) < 0)) {
-      msg += '\n\n💡 *Please pay the remaining balance.*';
+      msg += '\n\n${loc.shareMessagePaymentReminder}';
     }
-    return '$msg\n\n---\n$footer';
+
+    return '$msg\n\n$footer';
   }
 
   Future<void> _shareBalances(Map<String, dynamic> account,
@@ -531,7 +541,9 @@ class _AccountScreenState extends State<AccountScreen>
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
-        tooltip: _isAtTop ? loc.addAccount : 'Scroll to Top',
+        tooltip: _isAtTop
+            ? loc.addAccount
+            : AppLocalizations.of(context)!.scrollToTop,
         mini: !_isAtTop,
         child: FaIcon(
             _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp,
@@ -547,7 +559,8 @@ class _AccountScreenState extends State<AccountScreen>
     return RefreshIndicator(
       onRefresh: _loadAccounts,
       child: accounts.isEmpty && !isLoadingMore
-          ? Center(child: Text("No accounts available"))
+          ? Center(
+              child: Text(AppLocalizations.of(context)!.noAccountsAvailable))
           : ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
@@ -568,10 +581,11 @@ class _AccountScreenState extends State<AccountScreen>
                       child: Center(child: CircularProgressIndicator()),
                     );
                   } else {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: Text("No more accounts")),
-                    );
+                    return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                            child: Text(
+                                AppLocalizations.of(context)!.noMoreAccounts)));
                   }
                 }
               },
@@ -655,22 +669,38 @@ class AccountTile extends StatelessWidget {
               itemBuilder: (_) => [
                 if (isActive) ...[
                   _buildMenuItem(
-                      'transactions', FontAwesomeIcons.listUl, 'معاملات حساب'),
+                      'transactions',
+                      FontAwesomeIcons.listUl,
+                      AppLocalizations.of(context)!
+                          .transactions), // Existing key
                   if (account['id'] > 10) ...[
                     _buildMenuItem(
-                        'edit', FontAwesomeIcons.userPen, 'ویرایش حساب'),
-                    _buildMenuItem('deactivate', FontAwesomeIcons.userSlash,
-                        'غیرفعال کردن حساب'),
+                        'edit',
+                        FontAwesomeIcons.userPen,
+                        AppLocalizations.of(context)!
+                            .editAccount), // Existing key
+                    _buildMenuItem(
+                        'deactivate',
+                        FontAwesomeIcons.userSlash,
+                        AppLocalizations.of(context)!
+                            .deactivateAccount), // Existing key
                   ],
                 ] else if (account['id'] > 10)
-                  _buildMenuItem('reactivate', FontAwesomeIcons.userCheck,
-                      'فعال‌سازی مجدد حساب'),
+                  _buildMenuItem(
+                      'reactivate',
+                      FontAwesomeIcons.userCheck,
+                      AppLocalizations.of(context)!
+                          .reactivateAccount), // Existing key
                 if (account['id'] > 10)
-                  _buildMenuItem('delete', FontAwesomeIcons.trash, 'حذف حساب'),
+                  _buildMenuItem(
+                      'delete',
+                      FontAwesomeIcons.trash,
+                      AppLocalizations.of(context)!
+                          .deleteAccount), // Existing key
                 _buildMenuItem('share', FontAwesomeIcons.shareNodes,
-                    'اشتراک گذاری بیلانس'),
-                _buildMenuItem(
-                    'whatsapp', FontAwesomeIcons.whatsapp, 'ارسال بیلانس'),
+                    AppLocalizations.of(context)!.shareBalance), // Existing key
+                _buildMenuItem('whatsapp', FontAwesomeIcons.whatsapp,
+                    AppLocalizations.of(context)!.sendBalance), // Existing key
               ],
             ),
           ],

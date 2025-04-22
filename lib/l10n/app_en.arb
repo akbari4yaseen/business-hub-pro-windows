@@ -59,9 +59,13 @@
   "amountRequired": "Amount is required",
   "search": "Search",
   "searchJournal": "Search journals...",
+  "deleteAccountConfirm": "Are you sure you want to delete {accountName}?",
+  "deactivateAccountConfirm": "Are you sure you want to deactivate account {accountName}?",
+  "reactivateAccountConfirm": "Do you want to reactivate account {accountName}?",
+  "noAccountsAvailable": "No accounts available",
+  "noMoreAccounts": "No more accounts",
   "searchAccount": "Search accounts...",
   "all": "All",
-  "noAccountsAvailable": "No accounts available",
   "changePassword": "Change Password",
   "currentPassword": "Current Password",
   "newPassword": "New Password",
@@ -154,5 +158,10 @@
   "company": "Company",
   "errorDeletingJournal": "Error deleting journal. Please try again.",
   "errorLoadingJournal": "Error loading journal entries. Please try again.",
-  "storagePermissionRequired": "Storage permission is required to back up."
+  "storagePermissionRequired": "Storage permission is required to back up.",
+  "scrollToTop": "Scroll to top",
+  "shareMessageHeader": "📢 Dear *{name}*,\n\nHere is the detailed summary of your account balances across all available currencies. This report reflects the most recent transactions recorded in our system.\n\nPlease review the balances below carefully to stay updated and avoid any potential discrepancies.\n\n*Balances:*",
+  "shareMessageTimestamp": "*Timestamp:* {date}",
+  "shareMessageFooter": "---------------\n{appName}",
+  "shareMessagePaymentReminder": "💡 *Please pay the remaining balance.*"
 }
