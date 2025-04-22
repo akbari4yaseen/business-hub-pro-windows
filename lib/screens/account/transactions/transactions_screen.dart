@@ -26,6 +26,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   static const int _pageSize = 30;
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
+  final ScrollController _scrollController = ScrollController();
+
   List<Map<String, dynamic>> transactions = [];
   bool isLoading = false;
   bool _isSearching = false;
@@ -37,8 +39,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   int _currentPage = 0;
   bool _hasMore = true;
-  final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
+  bool _isAtTop = true;
 
   @override
   void initState() {
@@ -47,26 +49,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _refreshTransactions();
   }
 
-  Future<void> _loadCurrencies() async {
-    final list = await DatabaseHelper().getDistinctCurrencies();
-    list.sort();
-    currencyOptions = ['all', ...list];
-  }
-
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+    final pos = _scrollController.position;
+
+    // load more when near bottom
+    if (pos.pixels >= pos.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         _hasMore &&
         !isLoading) {
       _fetchNextPage();
+    }
+
+    // hide/show FAB based on whether we're at the top
+    final atTop = pos.pixels <= 0;
+    if (atTop != _isAtTop) {
+      setState(() => _isAtTop = atTop);
     }
   }
 
@@ -85,6 +91,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (reset) isLoading = true;
       _isLoadingMore = !reset;
     });
+
     final txs = await AccountDBHelper().getTransactions(
       widget.account['id'],
       offset: _currentPage * _pageSize,
@@ -94,6 +101,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       currency: _selectedCurrency,
       exactDate: _selectedDate,
     );
+
     if (!mounted) return;
     setState(() {
       if (reset) {
@@ -111,12 +119,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     });
   }
 
+  Future<void> _loadCurrencies() async {
+    final list = await DatabaseHelper().getDistinctCurrencies();
+    list.sort();
+    currencyOptions = ['all', ...list];
+  }
+
   void _showFilterModal() {
     String? tmpType = _selectedType;
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
     _loadCurrencies();
-
     final typeList = ['all', 'credit', 'debit'];
 
     showModalBottomSheet(
@@ -168,21 +181,44 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final loc = AppLocalizations.of(context)!;
 
-    final summaryCard = balances.isNotEmpty
-        ? SizedBox(
-            height: 167,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: balances.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 16),
-              itemBuilder: (context, idx) {
-                final entry = balances.entries.elementAt(idx);
-                return _buildBalanceCard(entry);
-              },
-            ),
-          )
-        : const SizedBox.shrink();
+    Widget sliverHeader = SliverToBoxAdapter(
+      child: Container(
+        decoration: BoxDecoration(
+          color: themeProvider.cardBackgroundColor,
+          borderRadius:
+              const BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.only(top: 16, bottom: 24),
+        child: balances.isNotEmpty
+            ? SizedBox(
+                height: 167,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: balances.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, idx) {
+                    final entry = balances.entries.elementAt(idx);
+                    return _buildBalanceCard(entry);
+                  },
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+    );
+
+    Widget sliverList = SliverPadding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final tx = transactions[index];
+            return _buildTransactionCard(tx, loc);
+          },
+          childCount: transactions.length,
+        ),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -223,29 +259,40 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : transactions.isEmpty
               ? Center(child: Text(loc.noTransactionsFound))
-              : NestedScrollView(
-                  headerSliverBuilder: (context, innerScroll) => [
-                    SliverToBoxAdapter(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: themeProvider.cardBackgroundColor,
-                          borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(24)),
+              : CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    sliverHeader,
+                    sliverList,
+                    if (_isLoadingMore)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                  Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
                         ),
-                        padding: const EdgeInsets.only(top: 16, bottom: 24),
-                        child: summaryCard,
                       ),
-                    ),
                   ],
-                  body: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: transactions.length,
-                    itemBuilder: (context, index) {
-                      final tx = transactions[index];
-                      return _buildTransactionCard(tx, loc);
-                    },
-                  ),
                 ),
+    // only show the FAB if we're NOT at the top
+      floatingActionButton: _isAtTop
+          ? null
+          : FloatingActionButton(
+              mini: true,
+              child: const FaIcon(FontAwesomeIcons.angleUp, size: 18),
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                );
+              },
+            ),
     );
   }
 
@@ -331,7 +378,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               const SizedBox(height: 4),
               Text(
                 '\u200E${_amountFormatter.format(balance)}',
-                style: TextStyle(
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold),
@@ -357,6 +404,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final icon = isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus;
     final color = isCredit ? Colors.green : Colors.red;
     final balanceColor = tx['balance'] >= 0 ? Colors.green : Colors.red;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -400,35 +448,45 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               case 'delete':
                 // TODO: implement delete
                 break;
-              default:
-                break;
             }
           },
           itemBuilder: (_) => [
             PopupMenuItem(
-                value: 'details',
-                child: ListTile(
-                    leading: const Icon(Icons.info), title: Text(loc.details))),
+              value: 'details',
+              child: ListTile(
+                leading: const Icon(Icons.info),
+                title: Text(loc.details),
+              ),
+            ),
             PopupMenuItem(
-                value: 'share',
-                child: ListTile(
-                    leading: const Icon(Icons.share), title: Text(loc.share))),
+              value: 'share',
+              child: ListTile(
+                leading: const Icon(Icons.share),
+                title: Text(loc.share),
+              ),
+            ),
             PopupMenuItem(
-                value: 'edit',
-                child: ListTile(
-                    leading: const Icon(Icons.edit, color: Colors.blue),
-                    title: Text(loc.edit))),
+              value: 'edit',
+              child: ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: Text(loc.edit),
+              ),
+            ),
             PopupMenuItem(
-                value: 'delete',
-                child: ListTile(
-                    leading: const Icon(Icons.delete, color: Colors.redAccent),
-                    title: Text(loc.delete))),
+              value: 'delete',
+              child: ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: Text(loc.delete),
+              ),
+            ),
             PopupMenuItem(
-                value: 'print',
-                enabled: false,
-                child: ListTile(
-                    leading: const Icon(Icons.print, color: Colors.grey),
-                    title: Text(loc.printDisabled))),
+              value: 'print',
+              enabled: false,
+              child: ListTile(
+                leading: const Icon(Icons.print, color: Colors.grey),
+                title: Text(loc.printDisabled),
+              ),
+            ),
           ],
         ),
       ),
