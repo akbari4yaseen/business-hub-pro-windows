@@ -163,5 +163,14 @@
   "shareMessageHeader": "📢 Dear *{name}*,\n\nHere is the detailed summary of your account balances across all available currencies. This report reflects the most recent transactions recorded in our system.\n\nPlease review the balances below carefully to stay updated and avoid any potential discrepancies.\n\n*Balances:*",
   "shareMessageTimestamp": "*Timestamp:* {date}",
   "shareMessageFooter": "---------------\n{appName}",
-  "shareMessagePaymentReminder": "💡 *Please pay the remaining balance.*"
+  "shareMessagePaymentReminder": "💡 *Please pay the remaining balance.*",
+  "profile": "Profile",
+  "notifications": "Notifications",
+  "statsLoadError": "Error loading account stats",
+  "allAccounts": "All",
+  "activeAccountsShort": "Active",
+  "deactivatedAccountsShort": "Inactive",
+  "newTransaction": "New Transaction",
+  "recentTransactions": "Recent Transactions",
+  "noRecentTransactions": "No recent transactions"
 }

@@ -40,9 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Example backup logic
-    int daysSinceLastBackup = 10;
-    bool isBackupOverdue = daysSinceLastBackup > 7;
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -71,22 +68,22 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'profile',
-                child: Text('پروفایل'),
+                child: Text(loc.profile),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'notifications',
-                child: Text('اطلاعیه‌ها'),
+                child: Text(loc.notifications),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'help',
-                child: Text('راهنما'),
+                child: Text(loc.help),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'logout',
-                child: Text('خروج'),
+                child: Text(loc.logout),
               ),
             ],
           ),
@@ -108,8 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 if (snapshot.hasError || !snapshot.hasData) {
-                  return const Center(
-                      child: Text('خطا در بارگذاری  آمار حساب‌ها'));
+                  return Center(
+                      child: Text(loc.statsLoadError));
                 }
 
                 final data = snapshot.data!;
@@ -117,15 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildAccountStateCard(
-                        'همه',
+                        loc.allAccounts,
                         _format(data["total_accounts"]!),
                         FontAwesomeIcons.users),
                     _buildAccountStateCard(
-                        'فعال',
+                        loc.activeAccountsShort,
                         _format(data["activated_accounts"]!),
                         FontAwesomeIcons.userCheck),
                     _buildAccountStateCard(
-                        'غیرفعال',
+                        loc.deactivatedAccountsShort,
                         _format(data["deactivated_accounts"]!),
                         FontAwesomeIcons.userSlash),
                   ],
@@ -140,12 +137,12 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildActionButton(
-                  'معامله جدید',
+                  loc.newTransaction,
                   Icons.add,
                   () => Navigator.pushNamed(context, '/journal/add'),
                 ),
                 _buildActionButton(
-                  'حساب‌ها',
+                  loc.accounts,
                   Icons.supervisor_account_outlined,
                   () {
                     Provider.of<BottomNavigationProvider>(context,
@@ -154,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 _buildActionButton(
-                  'گزارش‌ها',
+                  loc.reports,
                   Icons.bar_chart,
                   () {
                     Provider.of<BottomNavigationProvider>(context,
@@ -163,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 _buildActionButton(
-                  'تنظیمات',
+                  loc.settings,
                   Icons.settings,
                   () => Navigator.pushNamed(context, '/settings'),
                 ),
@@ -176,8 +173,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const BackupRestoreCard(),
 
             const SizedBox(height: 20),
-            const Text(
-              'تراکنش‌های اخیر',
+            Text(
+              loc.recentTransactions,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -196,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             .map((entry) => _buildTransactionTile(entry.value,
                                 entry.key == recentTransactions.length - 1))
                             .toList()
-                        : [const Center(child: Text('No recent transactions'))],
+                        : [Center(child: Text(loc.noRecentTransactions))],
                   ),
                 ],
               ),
