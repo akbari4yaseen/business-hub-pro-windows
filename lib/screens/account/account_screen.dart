@@ -13,6 +13,7 @@ import 'add_account_screen.dart';
 import '../../widgets/account_filter_bottom_sheet.dart';
 import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
+import '../../widgets/account_search_bar.dart';
 
 class AccountScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -59,13 +60,7 @@ class _AccountScreenState extends State<AccountScreen>
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController()
-      ..addListener(() {
-        final query = _searchController.text.trim();
-        if (query != _searchQuery) {
-          setState(() => _searchQuery = query);
-        }
-      });
+    _searchController = TextEditingController();
     _tabController = TabController(length: 2, vsync: this);
     _scrollController.addListener(_updateScrollPosition);
     _scrollController.addListener(_onScroll);
@@ -372,38 +367,6 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
-  Widget _buildSearchField(AppLocalizations loc) {
-    return Container(
-      height: 40,
-      alignment: Alignment.center,
-      child: TextField(
-        controller: _searchController,
-        autofocus: true,
-        decoration: InputDecoration(
-          hintText: loc.search,
-          border: InputBorder.none,
-          prefixIcon: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => setState(() {
-              _isSearching = false;
-              _searchController.clear();
-              _searchQuery = '';
-            }),
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => setState(() {
-                    _searchController.clear();
-                    _searchQuery = '';
-                  }),
-                )
-              : null,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -418,7 +381,31 @@ class _AccountScreenState extends State<AccountScreen>
           onPressed: widget.openDrawer,
         ),
         title: _isSearching
-            ? _buildSearchField(loc)
+            ? AccountSearchBar(
+                controller: _searchController,
+                debounceDuration: const Duration(milliseconds: 500),
+                isLoading: _isLoading,
+                hintText: loc.search,
+                onChanged: (value) {
+                  final query = value.trim();
+                  if (query != _searchQuery) {
+                    setState(() => _searchQuery = query);
+                    _loadAccounts();
+                  }
+                },
+                onCancel: () => setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _loadAccounts();
+                }),
+                onClear: () => setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _loadAccounts();
+                }),
+                onSubmitted: (_) => _loadAccounts(),
+              )
             : Text(loc.accounts, style: const TextStyle(fontSize: 20)),
         actions: [
           if (!_isSearching)

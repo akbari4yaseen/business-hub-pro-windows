@@ -52,7 +52,7 @@ class JournalSearchBar extends StatefulWidget {
     required this.onCancel,
     this.onClear,
     this.onSubmitted,
-    this.debounceDuration = const Duration(milliseconds: 300),
+    this.debounceDuration = const Duration(milliseconds: 500),
     this.isLoading = false,
     this.hintText,
   }) : super(key: key);

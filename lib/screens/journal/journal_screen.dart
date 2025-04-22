@@ -336,7 +336,7 @@ class _JournalScreenState extends State<JournalScreen> {
         title: _isSearching
             ? JournalSearchBar(
                 controller: _searchController,
-                debounceDuration: const Duration(milliseconds: 400),
+                debounceDuration: const Duration(milliseconds: 500),
                 isLoading: _isLoading,
                 onChanged: (_) => _refreshJournals(),
                 onSubmitted: (_) => _refreshJournals(),
