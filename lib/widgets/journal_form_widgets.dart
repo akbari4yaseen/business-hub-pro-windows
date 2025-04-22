@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utils/utilities.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// A reusable field for selecting an account.
 class AccountField extends StatelessWidget {
@@ -60,6 +61,8 @@ class JournalToggleButtons extends StatelessWidget {
     return Row(
       children: options.map((opt) {
         final isSel = selected == opt.toLowerCase();
+        final isCredit = opt.toLowerCase() == 'credit';
+
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -69,8 +72,18 @@ class JournalToggleButtons extends StatelessWidget {
                 foregroundColor: isSel ? Colors.white : Colors.black,
               ),
               onPressed: () => onChanged(opt.toLowerCase()),
-              child: Text(
-                opt == 'credit' ? localizations.credit : localizations.debit,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isCredit ? FontAwesomeIcons.circlePlus : FontAwesomeIcons.circleMinus,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isCredit ? localizations.credit : localizations.debit,
+                  ),
+                ],
               ),
             ),
           ),

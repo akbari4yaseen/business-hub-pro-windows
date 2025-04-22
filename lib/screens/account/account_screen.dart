@@ -47,8 +47,18 @@ class _AccountScreenState extends State<AccountScreen>
   List<String> _currencyOptions = [];
   bool _currenciesLoaded = false;
 
+  // Pagination state for active accounts
   List<Map<String, dynamic>> _activeAccounts = [];
+  int _activeOffset = 0;
+  final int _limit = 30;
+  bool _activeHasMore = true;
+  bool _isLoadingMoreActive = false;
+
+  // Pagination state for deactivated accounts
   List<Map<String, dynamic>> _deactivatedAccounts = [];
+  int _deactivatedOffset = 0;
+  bool _deactivatedHasMore = true;
+  bool _isLoadingMoreDeactivated = false;
 
   @override
   void initState() {
@@ -62,6 +72,7 @@ class _AccountScreenState extends State<AccountScreen>
       });
     _tabController = TabController(length: 2, vsync: this);
     _scrollController.addListener(_updateScrollPosition);
+    _scrollController.addListener(_onScroll);
     _loadAccounts();
     _loadCurrencies();
   }
@@ -83,17 +94,88 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> _loadAccounts() async {
+    setState(() {
+      _isLoading = true;
+      _activeAccounts = [];
+      _deactivatedAccounts = [];
+      _activeOffset = 0;
+      _deactivatedOffset = 0;
+      _activeHasMore = true;
+      _deactivatedHasMore = true;
+    });
+    await Future.wait([
+      _loadMoreActiveAccounts(reset: true),
+      _loadMoreDeactivatedAccounts(reset: true),
+    ]);
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadMoreActiveAccounts({bool reset = false}) async {
+    if (_isLoadingMoreActive || !_activeHasMore) return;
+    setState(() => _isLoadingMoreActive = true);
     try {
-      final activeRaw = await AccountDBHelper().getActiveAccounts();
-      final deactRaw = await AccountDBHelper().getDeactivatedAccounts();
+      final offset = reset ? 0 : _activeOffset;
+      final accounts = await AccountDBHelper().getActiveAccountsPage(
+        offset: offset,
+        limit: _limit,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+      );
       if (!mounted) return;
       setState(() {
-        _activeAccounts = _mapWithBalances(activeRaw);
-        _deactivatedAccounts = _mapWithBalances(deactRaw);
-        _isLoading = false;
+        if (reset) {
+          _activeAccounts = _mapWithBalances(accounts);
+          _activeOffset = accounts.length;
+        } else {
+          _activeAccounts.addAll(_mapWithBalances(accounts));
+          _activeOffset += accounts.length;
+        }
+        _activeHasMore = accounts.length == _limit;
+        _isLoadingMoreActive = false;
       });
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoadingMoreActive = false);
+    }
+  }
+
+  Future<void> _loadMoreDeactivatedAccounts({bool reset = false}) async {
+    if (_isLoadingMoreDeactivated || !_deactivatedHasMore) return;
+    setState(() => _isLoadingMoreDeactivated = true);
+    try {
+      final offset = reset ? 0 : _deactivatedOffset;
+      final accounts = await AccountDBHelper().getDeactivatedAccountsPage(
+        offset: offset,
+        limit: _limit,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (reset) {
+          _deactivatedAccounts = _mapWithBalances(accounts);
+          _deactivatedOffset = accounts.length;
+        } else {
+          _deactivatedAccounts.addAll(_mapWithBalances(accounts));
+          _deactivatedOffset += accounts.length;
+        }
+        _deactivatedHasMore = accounts.length == _limit;
+        _isLoadingMoreDeactivated = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingMoreDeactivated = false);
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    if (maxScroll - currentScroll <= 200) {
+      if (_tabController.index == 0) {
+        _loadMoreActiveAccounts();
+      } else {
+        _loadMoreDeactivatedAccounts();
+      }
     }
   }
 
@@ -450,6 +532,7 @@ class _AccountScreenState extends State<AccountScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
         tooltip: _isAtTop ? loc.addAccount : 'Scroll to Top',
+        mini: !_isAtTop,
         child: FaIcon(
             _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp,
             size: 18),
@@ -457,23 +540,44 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
-  Widget _buildListView(List<Map<String, dynamic>> accounts, bool isActive) =>
-      RefreshIndicator(
-        onRefresh: _loadAccounts,
-        child: accounts.isEmpty
-            ? Center(child: Text("No accounts available"))
-            : ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
-                itemCount: accounts.length,
-                itemBuilder: (_, i) => AccountTile(
-                  account: accounts[i],
-                  isActive: isActive,
-                  onActionSelected: (action) =>
-                      _handleAccountAction(action, accounts[i], isActive),
-                ),
-              ),
-      );
+  Widget _buildListView(List<Map<String, dynamic>> accounts, bool isActive) {
+    final isLoadingMore =
+        isActive ? _isLoadingMoreActive : _isLoadingMoreDeactivated;
+    final hasMore = isActive ? _activeHasMore : _deactivatedHasMore;
+    return RefreshIndicator(
+      onRefresh: _loadAccounts,
+      child: accounts.isEmpty && !isLoadingMore
+          ? Center(child: Text("No accounts available"))
+          : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
+              itemCount: accounts.length + (hasMore || isLoadingMore ? 1 : 0),
+              itemBuilder: (_, i) {
+                if (i < accounts.length) {
+                  return AccountTile(
+                    account: accounts[i],
+                    isActive: isActive,
+                    onActionSelected: (action) =>
+                        _handleAccountAction(action, accounts[i], isActive),
+                  );
+                } else {
+                  // Loading indicator or end message
+                  if (isLoadingMore) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: Text("No more accounts")),
+                    );
+                  }
+                }
+              },
+            ),
+    );
+  }
 
   void _scrollToTop() => _scrollController.animateTo(0,
       duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);

@@ -2,6 +2,138 @@ import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
 class AccountDBHelper {
+  // Pagination for active accounts
+  Future<List<Map<String, dynamic>>> getActiveAccountsPage({
+    int offset = 0,
+    int limit = 30,
+    String? searchQuery,
+  }) async {
+    final db = await database;
+    final where = <String>[];
+    final args = <dynamic>[];
+    where.add('accounts.id <> 2 AND accounts.active = 1');
+    if (searchQuery?.isNotEmpty ?? false) {
+      where.add(
+          '(LOWER(accounts.name) LIKE ? OR LOWER(accounts.address) LIKE ? OR LOWER(accounts.phone) LIKE ?)');
+      final q = '%${searchQuery!.toLowerCase()}%';
+      args.addAll([q, q, q]);
+    }
+    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
+    final sql = '''
+      SELECT 
+        accounts.id, 
+        accounts.name, 
+        accounts.phone, 
+        accounts.account_type, 
+        accounts.address, 
+        accounts.active, 
+        accounts.created_at,
+        SUM(account_details.amount) AS amount, 
+        account_details.currency, 
+        account_details.transaction_type 
+      FROM accounts 
+      LEFT JOIN account_details ON accounts.id = account_details.account_id 
+      $whereClause
+      GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
+      ORDER BY accounts.id DESC
+      LIMIT ? OFFSET ?;
+    ''';
+    args.addAll([limit, offset]);
+    final rows = await db.rawQuery(sql, args);
+    Map<int, Map<String, dynamic>> accountDataMap = {};
+    for (var row in rows) {
+      int accountId = row['id'] as int;
+      accountDataMap.putIfAbsent(accountId, () {
+        return {
+          'id': row['id'],
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'address': row['address'],
+          'active': row['active'],
+          'created_at': row['created_at'],
+          'account_details': [],
+        };
+      });
+      if (row['amount'] != null &&
+          row['currency'] != null &&
+          row['transaction_type'] != null) {
+        accountDataMap[accountId]!['account_details'].add({
+          'amount': row['amount'],
+          'currency': row['currency'],
+          'transaction_type': row['transaction_type'],
+        });
+      }
+    }
+    return accountDataMap.values.toList();
+  }
+
+  // Pagination for deactivated accounts
+  Future<List<Map<String, dynamic>>> getDeactivatedAccountsPage({
+    int offset = 0,
+    int limit = 30,
+    String? searchQuery,
+  }) async {
+    final db = await database;
+    final where = <String>[];
+    final args = <dynamic>[];
+    where.add('accounts.active = 0');
+    if (searchQuery?.isNotEmpty ?? false) {
+      where.add(
+          '(LOWER(accounts.name) LIKE ? OR LOWER(accounts.address) LIKE ? OR LOWER(accounts.phone) LIKE ?)');
+      final q = '%${searchQuery!.toLowerCase()}%';
+      args.addAll([q, q, q]);
+    }
+    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
+    final sql = '''
+      SELECT 
+        accounts.id, 
+        accounts.name, 
+        accounts.phone, 
+        accounts.account_type, 
+        accounts.address, 
+        accounts.active, 
+        accounts.created_at,
+        SUM(account_details.amount) AS amount, 
+        account_details.currency, 
+        account_details.transaction_type 
+      FROM accounts 
+      LEFT JOIN account_details ON accounts.id = account_details.account_id 
+      $whereClause
+      GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
+      ORDER BY accounts.id DESC
+      LIMIT ? OFFSET ?;
+    ''';
+    args.addAll([limit, offset]);
+    final rows = await db.rawQuery(sql, args);
+    Map<int, Map<String, dynamic>> accountDataMap = {};
+    for (var row in rows) {
+      int accountId = row['id'] as int;
+      accountDataMap.putIfAbsent(accountId, () {
+        return {
+          'id': row['id'],
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'address': row['address'],
+          'active': row['active'],
+          'created_at': row['created_at'],
+          'account_details': [],
+        };
+      });
+      if (row['amount'] != null &&
+          row['currency'] != null &&
+          row['transaction_type'] != null) {
+        accountDataMap[accountId]!['account_details'].add({
+          'amount': row['amount'],
+          'currency': row['currency'],
+          'transaction_type': row['transaction_type'],
+        });
+      }
+    }
+    return accountDataMap.values.toList();
+  }
+
   static final AccountDBHelper _instance = AccountDBHelper._internal();
 
   factory AccountDBHelper() {

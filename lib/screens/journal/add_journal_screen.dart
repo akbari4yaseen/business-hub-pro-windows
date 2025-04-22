@@ -162,7 +162,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [NumberInputFormatter()],
-                maxLength: 9,
+                maxLength: 15,
                 validator: (v) =>
                     v?.isEmpty == true ? loc.amountRequired : null,
               ),
