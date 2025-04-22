@@ -9,7 +9,7 @@ import '../../database/journal_db.dart';
 import '../../utils/utilities.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../widgets/journal_form_widgets.dart';
-import 'number_input_formatter.dart';
+import '../../utils/number_input_formatter.dart';
 
 class EditJournalScreen extends StatefulWidget {
   final Map<String, dynamic> journal;

@@ -1,22 +1,18 @@
-import 'package:BusinessHub/utils/date_time_picker_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../database/account_db.dart';
 import '../../database/database_helper.dart';
 import '../../utils/transaction_helper.dart';
-import '../../utils/utilities.dart';
-import '../../providers/info_provider.dart';
+import '../../utils/account_share_helper.dart';
 
-import 'transactions_screen.dart';
+import 'transactions/transactions_screen.dart';
 import 'edit_account_screen.dart';
 import 'add_account_screen.dart';
-import 'account_filter_bottom_sheet.dart';
+import '../../widgets/account_filter_bottom_sheet.dart';
+import '../../widgets/account_action_dialogs.dart';
+import '../../widgets/account_list_view.dart';
 
 class AccountScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -317,10 +313,10 @@ class _AccountScreenState extends State<AccountScreen>
         _confirmDelete(account, isActive);
         break;
       case 'share':
-        _shareBalances(account);
+        await shareAccountBalances(context, account);
         break;
       case 'whatsapp':
-        _shareBalances(account, viaWhatsApp: true);
+        await shareAccountBalances(context, account, viaWhatsApp: true);
         break;
     }
   }
@@ -328,30 +324,18 @@ class _AccountScreenState extends State<AccountScreen>
   void _confirmDelete(Map<String, dynamic> account, bool isActive) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.confirmDelete),
-        content: Text(AppLocalizations.of(context)!
-            .deleteAccountConfirm(account['name'])), // Add this key to ARB
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context)!.cancel)),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                if (isActive) {
-                  _activeAccounts.remove(account);
-                } else {
-                  _deactivatedAccounts.remove(account);
-                }
-                AccountDBHelper().deleteAccount(account['id']);
-              });
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.delete,
-                style: const TextStyle(color: Colors.red)), // Existing key
-          ),
-        ],
+      builder: (_) => ConfirmDeleteDialog(
+        accountName: account['name'],
+        onConfirm: () {
+          setState(() {
+            if (isActive) {
+              _activeAccounts.remove(account);
+            } else {
+              _deactivatedAccounts.remove(account);
+            }
+            AccountDBHelper().deleteAccount(account['id']);
+          });
+        },
       ),
     );
   }
@@ -359,27 +343,15 @@ class _AccountScreenState extends State<AccountScreen>
   void _confirmDeactivate(Map<String, dynamic> account) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.confirmDeactivate),
-        content: Text(AppLocalizations.of(context)!
-            .deactivateAccountConfirm(account['name'])), // Add this key to ARB
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("لغو")),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _activeAccounts.remove(account);
-                _deactivatedAccounts.add(account);
-                AccountDBHelper().deactivateAccount(account['id']);
-              });
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.deactivateAccount,
-                style: const TextStyle(color: Colors.orange)), // Existing key
-          ),
-        ],
+      builder: (_) => ConfirmDeactivateDialog(
+        accountName: account['name'],
+        onConfirm: () {
+          setState(() {
+            _activeAccounts.remove(account);
+            _deactivatedAccounts.add(account);
+            AccountDBHelper().deactivateAccount(account['id']);
+          });
+        },
       ),
     );
   }
@@ -387,73 +359,17 @@ class _AccountScreenState extends State<AccountScreen>
   void _confirmReactivate(Map<String, dynamic> account) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.confirmReactivate),
-        content: Text(AppLocalizations.of(context)!
-            .reactivateAccountConfirm(account['name'])), // Add this key to ARB
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("لغو")),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _deactivatedAccounts.remove(account);
-                _activeAccounts.add(account);
-                AccountDBHelper().activateAccount(account['id']);
-              });
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.reactivate,
-                style: const TextStyle(color: Colors.green)), // Existing key
-          ),
-        ],
+      builder: (_) => ConfirmReactivateDialog(
+        accountName: account['name'],
+        onConfirm: () {
+          setState(() {
+            _deactivatedAccounts.remove(account);
+            _activeAccounts.add(account);
+            AccountDBHelper().activateAccount(account['id']);
+          });
+        },
       ),
     );
-  }
-
-  String _buildShareMessage(Map<String, dynamic> account) {
-    final loc = AppLocalizations.of(context)!;
-    final now = DateTime.now();
-    final formattedDate = formatLocalizedDateTime(context, now);
-    final balances = account['balances'] as Map<String, dynamic>;
-
-    final lines = balances.entries.map((e) {
-      final cur = e.value['currency'] ?? e.key;
-      final bal = e.value['summary']['balance'] as double? ?? 0.0;
-      return '•  ${NumberFormat('#,###.##').format(bal)} $cur';
-    }).join('\n');
-
-    final info = Provider.of<InfoProvider>(context, listen: false).info;
-    final appName = info.name ?? loc.appName;
-
-    final header = loc.shareMessageHeader(account['name']);
-    final timestamp = loc.shareMessageTimestamp(formattedDate);
-    final footer = loc.shareMessageFooter(appName);
-
-    var msg = '$header\n$lines\n\n$timestamp';
-
-    if (balances.values.any((e) => (e['summary']['balance'] as num) < 0)) {
-      msg += '\n\n${loc.shareMessagePaymentReminder}';
-    }
-
-    return '$msg\n\n$footer';
-  }
-
-  Future<void> _shareBalances(Map<String, dynamic> account,
-      {bool viaWhatsApp = false}) async {
-    final msg = _buildShareMessage(account);
-    if (viaWhatsApp) {
-      final phone = account['phone'] ?? '';
-      if (phone.isEmpty) return;
-      final uri =
-          Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(msg)}');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } else {
-      await Share.share(msg);
-    }
   }
 
   Widget _buildSearchField(AppLocalizations loc) {
@@ -532,8 +448,26 @@ class _AccountScreenState extends State<AccountScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildListView(filteredActive, true),
-                      _buildListView(filteredDeactivated, false),
+                      AccountListView(
+                        accounts: filteredActive,
+                        isActive: true,
+                        isLoadingMore: _isLoadingMoreActive,
+                        hasMore: _activeHasMore,
+                        onLoadMore: _loadMoreActiveAccounts,
+                        onRefresh: _loadAccounts,
+                        onActionSelected: _handleAccountAction,
+                        scrollController: _scrollController,
+                      ),
+                      AccountListView(
+                        accounts: filteredDeactivated,
+                        isActive: false,
+                        isLoadingMore: _isLoadingMoreDeactivated,
+                        hasMore: _deactivatedHasMore,
+                        onLoadMore: _loadMoreDeactivatedAccounts,
+                        onRefresh: _loadAccounts,
+                        onActionSelected: _handleAccountAction,
+                        scrollController: _scrollController,
+                      )
                     ],
                   ),
                 ),
@@ -552,47 +486,6 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
-  Widget _buildListView(List<Map<String, dynamic>> accounts, bool isActive) {
-    final isLoadingMore =
-        isActive ? _isLoadingMoreActive : _isLoadingMoreDeactivated;
-    final hasMore = isActive ? _activeHasMore : _deactivatedHasMore;
-    return RefreshIndicator(
-      onRefresh: _loadAccounts,
-      child: accounts.isEmpty && !isLoadingMore
-          ? Center(
-              child: Text(AppLocalizations.of(context)!.noAccountsAvailable))
-          : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
-              itemCount: accounts.length + (hasMore || isLoadingMore ? 1 : 0),
-              itemBuilder: (_, i) {
-                if (i < accounts.length) {
-                  return AccountTile(
-                    account: accounts[i],
-                    isActive: isActive,
-                    onActionSelected: (action) =>
-                        _handleAccountAction(action, accounts[i], isActive),
-                  );
-                } else {
-                  // Loading indicator or end message
-                  if (isLoadingMore) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  } else {
-                    return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Center(
-                            child: Text(
-                                AppLocalizations.of(context)!.noMoreAccounts)));
-                  }
-                }
-              },
-            ),
-    );
-  }
-
   void _scrollToTop() => _scrollController.animateTo(0,
       duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
 
@@ -600,124 +493,5 @@ class _AccountScreenState extends State<AccountScreen>
     final result = await Navigator.push(
         context, MaterialPageRoute(builder: (_) => AddAccountScreen()));
     if (result != null) _loadAccounts();
-  }
-}
-
-class AccountTile extends StatelessWidget {
-  final Map<String, dynamic> account;
-  final bool isActive;
-  final void Function(String) onActionSelected;
-
-  const AccountTile(
-      {Key? key,
-      required this.account,
-      required this.isActive,
-      required this.onActionSelected})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final balances = account['balances'] as Map<String, dynamic>;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        leading: Icon(
-          isActive ? Icons.account_circle : Icons.no_accounts_outlined,
-          size: 40,
-          color: isActive ? Colors.blue : Colors.grey,
-        ),
-        title: Text(
-          account['id'] <= 10
-              ? getLocalizedSystemAccountName(context, account['name'])
-              : account['name'],
-          style: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(getLocalizedAccountType(context, account['account_type']),
-                style: const TextStyle(fontSize: 13)),
-            Text('\u200E${account['phone']}',
-                style: const TextStyle(fontSize: 13)),
-            Text('${account['address']}', style: const TextStyle(fontSize: 13)),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: balances.entries.map((e) {
-                final bal = e.value['summary']['balance'] as double? ?? 0.0;
-                return Text(
-                  '\u200E${NumberFormat('#,###.##').format(bal)} ${e.value['currency']}',
-                  style: TextStyle(
-                    color: bal >= 0 ? Colors.green[700] : Colors.red[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(width: 10),
-            PopupMenuButton<String>(
-              onSelected: onActionSelected,
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (_) => [
-                if (isActive) ...[
-                  _buildMenuItem(
-                      'transactions',
-                      FontAwesomeIcons.listUl,
-                      AppLocalizations.of(context)!
-                          .transactions), // Existing key
-                  if (account['id'] > 10) ...[
-                    _buildMenuItem(
-                        'edit',
-                        FontAwesomeIcons.userPen,
-                        AppLocalizations.of(context)!
-                            .editAccount), // Existing key
-                    _buildMenuItem(
-                        'deactivate',
-                        FontAwesomeIcons.userSlash,
-                        AppLocalizations.of(context)!
-                            .deactivateAccount), // Existing key
-                  ],
-                ] else if (account['id'] > 10)
-                  _buildMenuItem(
-                      'reactivate',
-                      FontAwesomeIcons.userCheck,
-                      AppLocalizations.of(context)!
-                          .reactivateAccount), // Existing key
-                if (account['id'] > 10)
-                  _buildMenuItem(
-                      'delete',
-                      FontAwesomeIcons.trash,
-                      AppLocalizations.of(context)!
-                          .deleteAccount), // Existing key
-                _buildMenuItem('share', FontAwesomeIcons.shareNodes,
-                    AppLocalizations.of(context)!.shareBalance), // Existing key
-                _buildMenuItem('whatsapp', FontAwesomeIcons.whatsapp,
-                    AppLocalizations.of(context)!.sendBalance), // Existing key
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  PopupMenuItem<String> _buildMenuItem(
-      String value, IconData icon, String text) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(children: [
-        FaIcon(icon, size: 16),
-        const SizedBox(width: 8),
-        Text(text)
-      ]),
-    );
   }
 }

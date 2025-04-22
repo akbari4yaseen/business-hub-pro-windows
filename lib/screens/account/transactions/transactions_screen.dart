@@ -5,9 +5,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../../providers/theme_provider.dart';
-import '../../database/account_db.dart';
-import '../../widgets/transaction_details_widget.dart';
+import '../../../providers/theme_provider.dart';
+import '../../../database/account_db.dart';
+import '../../../widgets/transaction_details_widget.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;

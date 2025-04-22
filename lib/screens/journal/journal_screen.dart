@@ -9,7 +9,7 @@ import '../../database/database_helper.dart';
 import '../../utils/utilities.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
-import 'journal_filter_bottom_sheet.dart';
+import '../../widgets/journal_filter_bottom_sheet.dart';
 import '../../widgets/journal_search_bar.dart';
 import '../../widgets/journal_details_widget.dart';
 
