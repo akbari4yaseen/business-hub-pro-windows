@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'database_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -85,6 +86,23 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.business,
               text: AppLocalizations.of(context)!.companyInfo,
               onTap: () => Navigator.pushNamed(context, '/company_info'),
+            ),
+
+            _buildSettingsOption(
+              context,
+              icon: Icons.storage,
+              text: 'Database Settings',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DatabaseSettingsScreen(
+                    lastOnlineBackupDays: 3, // TODO: fetch real value
+                    lastOfflineBackupDays: 5, // TODO: fetch real value
+                    onOnlineBackup: () {}, // TODO: implement
+                    onOfflineBackup: () {}, // TODO: implement
+                    onRestore: () {}, // TODO: implement
+                  ),
+                ),
+              ),
             ),
 
             _buildSettingsOption(
