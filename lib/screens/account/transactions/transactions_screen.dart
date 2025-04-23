@@ -258,7 +258,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : transactions.isEmpty
-              ? Center(child: Text(loc.noTransactionsFound))
+              ? Center(
+                  child: Text(loc
+                      .noTransactionsFound)) // Add 'noTransactionsFound' to localization if missing
               : CustomScrollView(
                   controller: _scrollController,
                   slivers: [
@@ -279,7 +281,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ),
                   ],
                 ),
-    // only show the FAB if we're NOT at the top
+      // only show the FAB if we're NOT at the top
       floatingActionButton: _isAtTop
           ? null
           : FloatingActionButton(
@@ -297,6 +299,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _buildBalanceCard(MapEntry<String, dynamic> entry) {
+    final loc = AppLocalizations.of(context)!;
     final currency = entry.value['currency'] ?? entry.key;
     final summary = entry.value['summary'] ?? {};
     final credit = summary['credit'] ?? 0;
@@ -339,8 +342,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Credit',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(loc.credit,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
                     _amountFormatter.format(credit),
@@ -354,8 +358,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Debit',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(loc.debit,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
                     _amountFormatter.format(debit),
@@ -373,8 +378,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             children: [
               Divider(color: Colors.white.withValues(alpha: 0.5)),
               const SizedBox(height: 8),
-              const Text('Balance',
-                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(loc.balance,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 '\u200E${_amountFormatter.format(balance)}',
