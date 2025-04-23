@@ -175,5 +175,7 @@
   "recentTransactions": "معاملات اخیر",
   "noRecentTransactions": "معامله اخیر وجود ندارد",
   "noTransactionsFound": "معامله‌ای وجود ندارد",
+  "transactionEditError": "خطا در ویرایش روزنامچه",
+  "transactionNotFound": "معامله‌ای وجود ندارد",
   "transactionDeleteError": "خطا در حذف معامله"
 }

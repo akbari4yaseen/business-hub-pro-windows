@@ -175,5 +175,7 @@
   "recentTransactions": "Recent Transactions",
   "noRecentTransactions": "No recent transactions",
   "noTransactionsFound": "No transactions",
+  "transactionEditError": "Failed to edit Transaction",
+  "transactionNotFound": "Journal transaction not found",
   "transactionDeleteError": "Failed to delete Transaction"
 }

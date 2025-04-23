@@ -6,6 +6,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../database/account_db.dart';
 import '../../../database/journal_db.dart';
+import '../../journal/edit_journal_screen.dart';
 import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction_details_widget.dart';
@@ -427,6 +428,37 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  Future<void> _handleEdit(Map<String, dynamic> tx, AppLocalizations loc) async {
+    if (tx['transaction_group'] != 'journal') return;
+    final context = this.context;
+    try {
+      final journal = await JournalDBHelper().getJournalById(tx['transaction_id']);
+      if (journal == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.transactionNotFound)),
+          );
+        }
+        return;
+      }
+      final edited = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EditJournalScreen(journal: journal),
+        ),
+      );
+      if (edited == true) {
+        await _refreshTransactions();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.transactionEditError)),
+        );
+      }
+    }
+  }
+
   Future<void> _handleDelete(
       Map<String, dynamic> tx, AppLocalizations loc) async {
     final context = this.context;
@@ -507,7 +539,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 _showDetails(tx);
                 break;
               case 'edit':
-                // TODO: implement edit
+                _handleEdit(tx, loc);
                 break;
               case 'delete':
                 _handleDelete(tx, loc);
