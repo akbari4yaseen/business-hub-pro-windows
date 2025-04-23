@@ -248,7 +248,7 @@ class _JournalScreenState extends State<JournalScreen> {
               title: Text(
                 '${getLocalizedSystemAccountName(context, j['account_name'])} — '
                 '${getLocalizedSystemAccountName(context, j['track_name'])}',
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
