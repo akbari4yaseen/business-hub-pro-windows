@@ -222,7 +222,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        centerTitle: false,
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,
@@ -248,10 +247,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               onPressed: () => setState(() => _isSearching = true),
               tooltip: loc.search,
             ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterModal,
-            tooltip: loc.filter,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'filter':
+                  _showFilterModal();
+                  break;
+                case 'print':
+                  // TODO: Implement print functionality
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'filter',
+                child: ListTile(
+                  leading: const Icon(Icons.filter_list),
+                  title: Text(loc.filter),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'print',
+                child: ListTile(
+                  leading: const Icon(Icons.print),
+                  title: Text(loc.print),
+                ),
+              ),
+            ],
           ),
         ],
       ),

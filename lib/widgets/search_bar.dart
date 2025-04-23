@@ -10,7 +10,7 @@ class CommonSearchBar extends StatefulWidget {
   /// Called (debounced) whenever the text changes.
   final ValueChanged<String> onChanged;
 
-  /// Called when the user taps the cancel (back) icon.
+  /// Called when the user taps the cancel (search_off) icon.
   final VoidCallback onCancel;
 
   /// Called when the user taps the clear icon. If null, defaults to clearing input and re-focusing.
@@ -99,7 +99,7 @@ class _CommonSearchBarState extends State<CommonSearchBar> {
                 const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             border: InputBorder.none,
             prefixIcon: IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.search_off),
               onPressed: widget.onCancel,
               tooltip: loc.cancel,
             ),

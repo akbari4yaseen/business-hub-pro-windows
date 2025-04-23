@@ -134,6 +134,7 @@
   "share": "Share",
   "edit": "Edit",
   "printDisabled": "Print (Disabled)",
+  "print": "Print",
   "noJournalEntries": "No journal entries found.",
   "clear": "Clear",
   "reset": "Reset",
