@@ -19,6 +19,8 @@ import 'screens/settings/settings_screen.dart';
 import 'screens/settings/user_settings.dart';
 import 'screens/settings/company_info.dart';
 import 'screens/login_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'providers/notification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +31,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // ⚠️ This must stay here, above MyApp, so MyApp can read it:
         ChangeNotifierProvider(create: (_) => ThemeProvider(settingsProvider)),
+
+        // 🆕  new NotificationProvider
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+
         ChangeNotifierProvider(create: (_) => BottomNavigationProvider()),
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => InfoProvider()),
@@ -62,6 +69,7 @@ class MyApp extends StatelessWidget {
         '/settings': (_) => const SettingsScreen(),
         '/user_settings': (_) => const UserSettingsScreen(),
         '/company_info': (_) => const CompanyInfoScreen(),
+        '/notifications': (_) => NotificationsScreen(),
       },
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
@@ -148,5 +156,3 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
     );
   }
 }
-
-// Note: Removed const constructors with null openDrawer and updated routes accordingly.
