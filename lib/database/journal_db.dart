@@ -14,21 +14,37 @@ class JournalDBHelper {
     int? offset,
   }) async {
     final db = await _db;
-    final sql = '''
-      SELECT
-        j.*,
-        acc_account.name AS account_name,
-        acc_track.name   AS track_name
-      FROM journal j
-      JOIN accounts acc_account ON j.account_id = acc_account.id
-      JOIN accounts acc_track   ON j.track_id   = acc_track.id
-      ORDER BY j.id DESC
-      ${limit != null ? 'LIMIT ?' : ''}
-      ${offset != null ? 'OFFSET ?' : ''}
-    ''';
     final args = <dynamic>[];
-    if (limit != null) args.add(limit);
-    if (offset != null) args.add(offset);
+
+    // Build the inner SELECT on journal
+    var inner = StringBuffer('SELECT * FROM journal ORDER BY id DESC');
+    if (limit != null) {
+      inner.write(' LIMIT ?');
+      args.add(limit);
+      if (offset != null) {
+        inner.write(' OFFSET ?');
+        args.add(offset);
+      }
+    } else if (offset != null) {
+      // SQLite requires LIMIT if you want OFFSET alone
+      inner.write(' LIMIT -1 OFFSET ?');
+      args.add(offset);
+    }
+
+    // Now join account names to that paginated journal set
+    final sql = '''
+    SELECT
+      j2.*,
+      acc_account.name AS account_name,
+      acc_track.name   AS track_name
+    FROM (
+      ${inner.toString()}
+    ) AS j2
+    JOIN accounts acc_account ON j2.account_id = acc_account.id
+    JOIN accounts acc_track   ON j2.track_id   = acc_track.id
+    ORDER BY j2.id DESC;
+  ''';
+
     return db.rawQuery(sql, args);
   }
 
@@ -448,9 +464,11 @@ extension JournalPaging on JournalDBHelper {
     final where = <String>[];
     final args = <dynamic>[];
 
+    // Build filters
     if (searchQuery?.isNotEmpty ?? false) {
-      where.add(
-          '(LOWER(j.description) LIKE ? OR LOWER(acc_account.name) LIKE ? OR LOWER(acc_track.name) LIKE ?)');
+      where.add('(LOWER(j.description) LIKE ? '
+          'OR LOWER(acc_account.name) LIKE ? '
+          'OR LOWER(acc_track.name) LIKE ?)');
       final q = '%${searchQuery!.toLowerCase()}%';
       args.addAll([q, q, q]);
     }
@@ -469,11 +487,10 @@ extension JournalPaging on JournalDBHelper {
 
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
 
-    final sql = '''
+    // Inner subquery: filter+order+page the journal rows (with joins for filtering by names)
+    final innerSql = '''
       SELECT
-        j.*,
-        acc_account.name AS account_name,
-        acc_track.name   AS track_name
+        j.*
       FROM journal j
       JOIN accounts acc_account ON j.account_id = acc_account.id
       JOIN accounts acc_track   ON j.track_id   = acc_track.id
@@ -481,8 +498,22 @@ extension JournalPaging on JournalDBHelper {
       ORDER BY j.id DESC
       LIMIT ? OFFSET ?
     ''';
-
     args.addAll([limit, offset]);
+
+    // Outer query: attach account_name & track_name, preserve ordering
+    final sql = '''
+      SELECT
+        j2.*,
+        acc_account.name AS account_name,
+        acc_track.name   AS track_name
+      FROM (
+        $innerSql
+      ) AS j2
+      JOIN accounts acc_account ON j2.account_id = acc_account.id
+      JOIN accounts acc_track   ON j2.track_id   = acc_track.id
+      ORDER BY j2.id DESC
+    ''';
+
     return await db.rawQuery(sql, args);
   }
 }

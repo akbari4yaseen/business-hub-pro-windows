@@ -47,7 +47,7 @@ class _AccountScreenState extends State<AccountScreen>
   // Pagination state for active accounts
   List<Map<String, dynamic>> _activeAccounts = [];
   int _activeOffset = 0;
-  final int _limit = 30;
+  final int _limit = 10;
   bool _activeHasMore = true;
   bool _isLoadingMoreActive = false;
 
