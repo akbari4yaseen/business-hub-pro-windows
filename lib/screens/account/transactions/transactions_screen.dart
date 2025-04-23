@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../database/account_db.dart';
+import '../../../database/journal_db.dart';
 import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction_details_widget.dart';
@@ -426,6 +427,42 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  Future<void> _handleDelete(
+      Map<String, dynamic> tx, AppLocalizations loc) async {
+    final context = this.context;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.confirmDelete),
+        content: Text(loc.confirmDeleteJournal),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                if (tx['transaction_group'] == 'journal') {
+                  await JournalDBHelper().deleteJournal(tx['transaction_id']);
+                  await _refreshTransactions();
+                } else {
+                  return;
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.transactionDeleteError)),
+                  );
+                }
+              }
+            },
+            child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTransactionCard(Map<String, dynamic> tx, AppLocalizations loc) {
     final isCredit = tx['transaction_type'] == 'credit';
     final icon = isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus;
@@ -473,7 +510,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 // TODO: implement edit
                 break;
               case 'delete':
-                // TODO: implement delete
+                _handleDelete(tx, loc);
                 break;
             }
           },

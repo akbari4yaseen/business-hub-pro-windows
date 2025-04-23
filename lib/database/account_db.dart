@@ -460,7 +460,7 @@ class AccountDBHelper {
         'currency': curr,
       });
     }
-    return results.reversed.toList(); // Show latest transactions first
+    return results;
   }
 
   Future<Map<String, int>> getAccountCounts() async {

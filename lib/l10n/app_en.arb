@@ -174,5 +174,6 @@
   "newTransaction": "New Transaction",
   "recentTransactions": "Recent Transactions",
   "noRecentTransactions": "No recent transactions",
-  "noTransactionsFound": "No transactions"
+  "noTransactionsFound": "No transactions",
+  "transactionDeleteError": "Failed to delete Transaction"
 }

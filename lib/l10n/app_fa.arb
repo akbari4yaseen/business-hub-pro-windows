@@ -174,5 +174,6 @@
   "newTransaction": "معامله جدید",
   "recentTransactions": "معاملات اخیر",
   "noRecentTransactions": "معامله اخیر وجود ندارد",
-  "noTransactionsFound": "معامله‌ای وجود ندارد"
+  "noTransactionsFound": "معامله‌ای وجود ندارد",
+  "transactionDeleteError": "خطا در حذف معامله"
 }
