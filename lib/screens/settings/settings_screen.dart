@@ -91,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
             _buildSettingsOption(
               context,
               icon: Icons.storage,
-              text: 'Database Settings',
+              text: AppLocalizations.of(context)!.databaseSettings,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => DatabaseSettingsScreen(

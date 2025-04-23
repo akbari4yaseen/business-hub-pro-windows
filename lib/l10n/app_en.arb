@@ -177,5 +177,19 @@
   "noTransactionsFound": "No transactions",
   "transactionEditError": "Failed to edit Transaction",
   "transactionNotFound": "Journal transaction not found",
-  "transactionDeleteError": "Failed to delete Transaction"
+  "transactionDeleteError": "Failed to delete Transaction",
+  "onlineBackupSuccess": "Online backup successful",
+  "onlineBackupFailed": "Online backup failed",
+  "localBackupSuccess": "Local backup successful",
+  "localBackupFailed": "Local backup failed",
+  "confirmRestore": "Confirm Restore",
+  "restoreOverwriteWarning": "This will overwrite existing data. Continue?",
+  "restoreSuccess": "Database restored successfully",
+  "restoreFailed": "Database restore failed",
+  "databaseSettings": "Database Settings",
+  "lastOnlineBackup": "Last Online Backup",
+  "lastOfflineBackup": "Last Offline Backup",
+  "backupOnline": "Backup Online",
+  "backupLocal": "Backup Local",
+  "restoreDatabase": "Restore Database"
 }

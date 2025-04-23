@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DatabaseSettingsScreen extends StatefulWidget {
   final int lastOnlineBackupDays;
@@ -38,11 +39,11 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     try {
       await Future<void>.delayed(Duration.zero, widget.onOnlineBackup);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Online backup successful')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.onlineBackupSuccess)),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Online backup failed')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.onlineBackupFailed)),
       );
     } finally {
       setState(() => _isOnlineBackingUp = false);
@@ -54,11 +55,11 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     try {
       await Future<void>.delayed(Duration.zero, widget.onOfflineBackup);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Local backup successful')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.localBackupSuccess)),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Local backup failed')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.localBackupFailed)),
       );
     } finally {
       setState(() => _isOfflineBackingUp = false);
@@ -69,15 +70,15 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Confirm Restore'),
-        content: Text('This will overwrite existing data. Continue?'),
+        title: Text(AppLocalizations.of(context)!.confirmRestore),
+        content: Text(AppLocalizations.of(context)!.restoreOverwriteWarning),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel')),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('Restore')),
+              child: Text(AppLocalizations.of(context)!.restore)),
         ],
       ),
     );
@@ -87,11 +88,11 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     try {
       await Future<void>.delayed(Duration.zero, widget.onRestore);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Database restored successfully')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.restoreSuccess)),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Database restore failed')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.restoreFailed)),
       );
     } finally {
       setState(() => _isRestoring = false);
@@ -103,7 +104,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text('Database Settings'),
+        title: Text(AppLocalizations.of(context)!.databaseSettings),
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -114,14 +115,14 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
               _buildStatusCard(
                 context,
                 icon: Icons.cloud_done_rounded,
-                title: 'Last Online Backup',
+                title: AppLocalizations.of(context)!.lastOnlineBackup,
                 subtitle: _formatDate(widget.lastOnlineBackupDays),
               ),
               const SizedBox(height: 12),
               _buildStatusCard(
                 context,
                 icon: Icons.save_alt_rounded,
-                title: 'Last Offline Backup',
+                title: AppLocalizations.of(context)!.lastOfflineBackup,
                 subtitle: _formatDate(widget.lastOfflineBackupDays),
               ),
               const SizedBox(height: 24),
@@ -146,7 +147,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                               children: [
                                 Icon(Icons.cloud_upload_rounded),
                                 SizedBox(width: 8),
-                                Text('Backup Online')
+                                Text(AppLocalizations.of(context)!.backupOnline)
                               ],
                             ),
                     ),
@@ -172,7 +173,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                               children: [
                                 Icon(Icons.download_for_offline_rounded),
                                 SizedBox(width: 8),
-                                Text('Backup Local')
+                                Text(AppLocalizations.of(context)!.backupLocal)
                               ],
                             ),
                     ),
@@ -200,7 +201,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                           children: [
                             Icon(Icons.restore_rounded),
                             SizedBox(width: 8),
-                            Text('Restore Database')
+                            Text(AppLocalizations.of(context)!.restoreDatabase)
                           ],
                         ),
                 ),

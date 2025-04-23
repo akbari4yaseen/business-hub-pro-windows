@@ -177,5 +177,19 @@
   "noTransactionsFound": "معامله‌ای وجود ندارد",
   "transactionEditError": "خطا در ویرایش روزنامچه",
   "transactionNotFound": "معامله‌ای وجود ندارد",
-  "transactionDeleteError": "خطا در حذف معامله"
+  "transactionDeleteError": "خطا در حذف معامله",
+  "onlineBackupSuccess": "پشتیبان‌گیری آنلاین با موفقیت انجام شد",
+  "onlineBackupFailed": "پشتیبان‌گیری آنلاین ناموفق بود",
+  "localBackupSuccess": "پشتیبان‌گیری محلی با موفقیت انجام شد",
+  "localBackupFailed": "پشتیبان‌گیری محلی ناموفق بود",
+  "confirmRestore": "تأیید بازیابی",
+  "restoreOverwriteWarning": "این عمل داده‌های موجود را بازنویسی می‌کند. ادامه می‌دهید؟",
+  "restoreSuccess": "بازیابی پایگاه داده با موفقیت انجام شد",
+  "restoreFailed": "بازیابی پایگاه داده ناموفق بود",
+  "databaseSettings": "تنظیمات پایگاه داده",
+  "lastOnlineBackup": "آخرین پشتیبان‌گیری آنلاین",
+  "lastOfflineBackup": "آخرین پشتیبان‌گیری آفلاین",
+  "backupOnline": "پشتیبان‌گیری آنلاین",
+  "backupLocal": "پشتیبان‌گیری محلی",
+  "restoreDatabase": "بازیابی پایگاه داده"
 }
