@@ -66,6 +66,17 @@ class DbInit {
     ''');
 
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS reminders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        scheduledTime TEXT NOT NULL,
+        isRepeating INTEGER NOT NULL,
+        repeatInterval TEXT
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         key TEXT UNIQUE NOT NULL,

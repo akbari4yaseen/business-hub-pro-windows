@@ -39,6 +39,37 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final nav = Provider.of<BottomNavigationProvider>(context, listen: false);
+
+    // Define all your actions here
+    final actions = <_ActionData>[
+      _ActionData(
+        label: loc.newTransaction,
+        icon: Icons.add,
+        onPressed: () => Navigator.pushNamed(context, '/journal/add'),
+      ),
+      _ActionData(
+        label: loc.accounts,
+        icon: Icons.supervisor_account_outlined,
+        onPressed: () => nav.updateIndex(2),
+      ),
+      _ActionData(
+        label: loc.reports,
+        icon: Icons.bar_chart,
+        onPressed: () => nav.updateIndex(3),
+      ),
+      _ActionData(
+        label: loc.settings,
+        icon: Icons.settings,
+        onPressed: () => Navigator.pushNamed(context, '/settings'),
+      ),
+      _ActionData(
+        label: loc.reminders,
+        icon: Icons.alarm,
+        onPressed: () => Navigator.pushNamed(context, '/reminders'),
+      ),
+      // add more here as needed
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
             AccountStateSection(future: _statsFuture),
             const SizedBox(height: 16),
-            ActionButtonsSection(loc: loc),
+            ActionButtonsSection(actions: actions),
             const SizedBox(height: 16),
             const BackupRestoreCard(),
             const SizedBox(height: 20),
@@ -95,6 +126,84 @@ class _HomeScreenState extends State<HomeScreen> {
         PopupMenuItem(value: 'notifications', child: Text(loc.notifications)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'logout', child: Text(loc.logout)),
+      ],
+    );
+  }
+}
+
+// Data class for actions
+class _ActionData {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  _ActionData({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+}
+
+class ActionButtonsSection extends StatelessWidget {
+  final List<_ActionData> actions;
+  const ActionButtonsSection({Key? key, required this.actions})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 92, // enough room for FAB + label
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: actions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final action = actions[index];
+          return _ActionButton(
+            label: action.label,
+            icon: action.icon,
+            onPressed: action.onPressed,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _ActionButton({
+    Key? key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        FloatingActionButton(
+          onPressed: onPressed,
+          backgroundColor: Colors.blueAccent,
+          child: Icon(icon, color: Colors.white),
+        ),
+        const SizedBox(height: 8),
+        // Constrain the width so that long labels get ellipsized
+        SizedBox(
+          width: 70, // pick a width that fits your layout
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 14),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
   }
@@ -179,69 +288,6 @@ class _AccountCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ActionButtonsSection extends StatelessWidget {
-  final AppLocalizations loc;
-  const ActionButtonsSection({Key? key, required this.loc}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final nav = Provider.of<BottomNavigationProvider>(context, listen: false);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _ActionButton(
-          label: loc.newTransaction,
-          icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/journal/add'),
-        ),
-        _ActionButton(
-          label: loc.accounts,
-          icon: Icons.supervisor_account_outlined,
-          onPressed: () => nav.updateIndex(2),
-        ),
-        _ActionButton(
-          label: loc.reports,
-          icon: Icons.bar_chart,
-          onPressed: () => nav.updateIndex(3),
-        ),
-        _ActionButton(
-          label: loc.settings,
-          icon: Icons.settings,
-          onPressed: () => Navigator.pushNamed(context, '/settings'),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _ActionButton({
-    Key? key,
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FloatingActionButton(
-          onPressed: onPressed,
-          backgroundColor: Colors.blueAccent,
-          child: Icon(icon, color: Colors.white),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 14)),
-      ],
     );
   }
 }

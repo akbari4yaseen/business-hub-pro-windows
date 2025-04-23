@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/reminders_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -70,6 +71,7 @@ class MyApp extends StatelessWidget {
         '/user_settings': (_) => const UserSettingsScreen(),
         '/company_info': (_) => const CompanyInfoScreen(),
         '/notifications': (_) => NotificationsScreen(),
+        '/reminders': (_) => RemindersScreen(),
       },
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

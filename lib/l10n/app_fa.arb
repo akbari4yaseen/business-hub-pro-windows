@@ -191,5 +191,7 @@
   "lastOfflineBackup": "آخرین پشتیبان‌گیری آفلاین",
   "backupOnline": "پشتیبان‌گیری آنلاین",
   "backupLocal": "پشتیبان‌گیری محلی",
-  "restoreDatabase": "بازیابی دیتابیس"
+  "restoreDatabase": "بازیابی دیتابیس",
+  "reminders": "یادآور‌ها",
+  "reminder": "یادآور"
 }

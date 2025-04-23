@@ -191,5 +191,7 @@
   "lastOfflineBackup": "Last Offline Backup",
   "backupOnline": "Backup Online",
   "backupLocal": "Backup Local",
-  "restoreDatabase": "Restore Database"
+  "restoreDatabase": "Restore Database",
+  "reminders": "Reminders",
+  "reminder": "Reminder"
 }
