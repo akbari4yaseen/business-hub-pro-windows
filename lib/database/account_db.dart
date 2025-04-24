@@ -513,6 +513,48 @@ class AccountDBHelper {
     return results;
   }
 
+  Future<List<Map<String, dynamic>>> getTransactionsForPrint(
+      int? accountId) async {
+    final db = await database;
+
+    final query = '''
+      SELECT * FROM account_details
+      WHERE account_id = ?
+      ORDER BY date DESC, id DESC
+    ''';
+
+    final rows = await db.rawQuery(query, [accountId]);
+
+    // Calculate running balance for each currency (descending order)
+    final Map<String, double> runningBalance = {};
+    final List<Map<String, dynamic>> results = [];
+    for (final row in rows) {
+      final String curr = row['currency'] as String;
+      final String type = row['transaction_type'] as String;
+      final double amount = (row['amount'] as num).toDouble();
+      double prevBalance = runningBalance[curr] ?? 0.0;
+      double balance = prevBalance;
+      if (type == 'credit') {
+        balance += amount;
+      } else if (type == 'debit') {
+        balance -= amount;
+      }
+      runningBalance[curr] = balance;
+      results.add({
+        'id': row['id'],
+        'date': row['date'],
+        'description': row['description'],
+        'transaction_group': row['transaction_group'],
+        'transaction_id': row['transaction_id'],
+        'amount': amount,
+        'transaction_type': type,
+        'balance': balance,
+        'currency': curr,
+      });
+    }
+    return results.reversed.toList();
+  }
+
   Future<Map<String, int>> getAccountCounts() async {
     final db = await database;
 

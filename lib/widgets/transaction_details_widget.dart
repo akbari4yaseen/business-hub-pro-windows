@@ -56,7 +56,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                         transaction['description'] ?? loc.noDescription),
                     _detailItem(
                       loc.date,
-                      formatLocalizedDate(context, transaction['date']),
+                      formatLocalizedDateTime(context, transaction['date']),
                     ),
                     _detailItem(
                       loc.amount,

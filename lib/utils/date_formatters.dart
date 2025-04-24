@@ -7,7 +7,12 @@ String formatDateTime(String date) {
   return DateFormat('yyyy-MM-dd | hh:mm a', 'en').format(parsedDate);
 }
 
-String formatJalaliDate(String date) {
+String formatDate(String date) {
+  DateTime parsedDate = DateTime.parse(date);
+  return DateFormat('yyyy-MM-dd', 'en').format(parsedDate);
+}
+
+String formatJalaliDateTime(String date) {
   DateTime gregorianDate = DateTime.parse(date);
   Jalali jalaliDate = Jalali.fromDateTime(gregorianDate);
 
@@ -26,6 +31,17 @@ String formatJalaliDate(String date) {
   return '${replaceEnglishNumbers(persianDate)} | ${replaceEnglishNumbers(persianTime)}';
 }
 
+String formatJalaliDate(String date) {
+  DateTime gregorianDate = DateTime.parse(date);
+  Jalali jalaliDate = Jalali.fromDateTime(gregorianDate);
+
+  // Convert English numbers to Persian numbers
+  String persianDate =
+      '${jalaliDate.year}-${jalaliDate.month.toString().padLeft(2, '0')}-${jalaliDate.day.toString().padLeft(2, '0')}';
+
+  return '${replaceEnglishNumbers(persianDate)}';
+}
+
 // Function to replace English digits with Persian digits
 String replaceEnglishNumbers(String input) {
   const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -37,16 +53,25 @@ String replaceEnglishNumbers(String input) {
   return input;
 }
 
+String formatLocalizedDateTime(BuildContext context, String date) {
+  final localeCode = Localizations.localeOf(context).languageCode;
+  if (localeCode.startsWith('fa')) {
+    return formatJalaliDateTime(date);
+  }
+  return formatDateTime(date);
+}
+
 String formatLocalizedDate(BuildContext context, String date) {
   final localeCode = Localizations.localeOf(context).languageCode;
   if (localeCode.startsWith('fa')) {
     return formatJalaliDate(date);
   }
-  return formatDateTime(date);
+  return formatDate(date);
 }
 
 /// Extension on DateTime to simplify localized formatting directly on the object.
 extension LocalizedDateExtension on String {
   /// Formats this date according to the current locale in [context].
-  String localized(BuildContext context) => formatLocalizedDate(context, this);
+  String localized(BuildContext context) =>
+      formatLocalizedDateTime(context, this);
 }

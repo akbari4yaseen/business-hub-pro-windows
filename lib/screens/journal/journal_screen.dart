@@ -260,7 +260,7 @@ class _JournalScreenState extends State<JournalScreen> {
                     ),
                   ),
                   Text(
-                      '${loc.date}: ${formatLocalizedDate(context, j['date'])}',
+                      '${loc.date}: ${formatLocalizedDateTime(context, j['date'])}',
                       style: const TextStyle(fontSize: 13)),
                   Text(
                     j['description'],

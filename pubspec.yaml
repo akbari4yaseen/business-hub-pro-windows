@@ -45,7 +45,10 @@ flutter:
   fonts:
     - family: Vazir
       fonts:
-        - asset: assets/fonts/Vazir.ttf
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+    - family: VazirBold
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
     - family: IRANSans
       fonts:
         - asset: assets/fonts/IRANSans.ttf

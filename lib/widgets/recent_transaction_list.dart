@@ -57,7 +57,7 @@ class RecentTransactionList extends StatelessWidget {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(formatLocalizedDate(context, tx['date'])),
+                    Text(formatLocalizedDateTime(context, tx['date'])),
                     Text(
                       tx['description'],
                       maxLines: 1,

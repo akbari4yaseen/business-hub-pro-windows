@@ -56,7 +56,7 @@ class JournalDetailsWidget extends StatelessWidget {
                     _detailItem(loc.description,
                         journal['description'] ?? loc.noDescription),
                     _detailItem(loc.date,
-                        formatLocalizedDate(context, journal['date'])),
+                        formatLocalizedDateTime(context, journal['date'])),
                     _detailItem(
                       loc.amount,
                       '\u200E${NumberFormat('#,###.##').format(journal['amount'])} ${journal['currency']}',

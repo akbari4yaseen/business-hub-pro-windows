@@ -14,6 +14,7 @@ import '../../../widgets/search_bar.dart';
 import '../../../widgets/transaction_filter_bottom_sheet.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
+import 'print_transactions.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -256,7 +257,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   _showFilterModal();
                   break;
                 case 'print':
-                  // TODO: Implement print functionality
+                  PrintTransactions.printTransactions(context, widget.account);
+
                   break;
               }
             },
@@ -428,11 +430,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Future<void> _handleEdit(Map<String, dynamic> tx, AppLocalizations loc) async {
+  Future<void> _handleEdit(
+      Map<String, dynamic> tx, AppLocalizations loc) async {
     if (tx['transaction_group'] != 'journal') return;
     final context = this.context;
     try {
-      final journal = await JournalDBHelper().getJournalById(tx['transaction_id']);
+      final journal =
+          await JournalDBHelper().getJournalById(tx['transaction_id']);
       if (journal == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -522,7 +526,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               '${loc.balance}: \u200E${_amountFormatter.format(tx['balance'])} ${tx['currency']}',
               style: TextStyle(fontSize: 14, color: balanceColor),
             ),
-            Text(formatLocalizedDate(context, tx['date']),
+            Text(formatLocalizedDateTime(context, tx['date']),
                 style: const TextStyle(fontSize: 13)),
             Text(
               tx['description'] ?? '',
@@ -543,6 +547,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 break;
               case 'delete':
                 _handleDelete(tx, loc);
+                break;
+              case 'print':
+                // print later
                 break;
             }
           },
@@ -577,10 +584,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
             PopupMenuItem(
               value: 'print',
-              enabled: false,
               child: ListTile(
-                leading: const Icon(Icons.print, color: Colors.grey),
-                title: Text(loc.printDisabled),
+                leading: const Icon(Icons.print, color: Colors.blue),
+                title: Text(loc.print),
               ),
             ),
           ],
