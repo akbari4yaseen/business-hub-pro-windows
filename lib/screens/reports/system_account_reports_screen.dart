@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import '../../database/account_db.dart';
+import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
 
 class SystemAccountReportsScreen extends StatefulWidget {
@@ -34,7 +34,7 @@ class _SystemAccountReportsScreenState
   }
 
   void _loadAccounts() {
-    _accountsFuture = AccountDBHelper().getSystemAccounts();
+    _accountsFuture = ReportsDBHelper().getSystemAccounts();
   }
 
   Future<void> _refresh() async {
@@ -141,11 +141,10 @@ class _SystemAccountReportsScreenState
                       children: [
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final columns =
-                                constraints.maxWidth > 600 ? 4 : 2;
-                            final itemWidth = (constraints.maxWidth -
-                                    (columns - 1) * 12) /
-                                columns;
+                            final columns = constraints.maxWidth > 600 ? 4 : 2;
+                            final itemWidth =
+                                (constraints.maxWidth - (columns - 1) * 12) /
+                                    columns;
                             return Wrap(
                               spacing: 12,
                               runSpacing: 12,

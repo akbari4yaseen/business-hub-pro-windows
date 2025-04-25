@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'account_reports_screen.dart';
+import 'accounts/account_reports_screen.dart';
 import 'system_account_reports_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
