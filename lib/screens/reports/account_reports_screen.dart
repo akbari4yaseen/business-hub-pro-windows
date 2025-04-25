@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../database/account_db.dart';
+import '../../utils/utilities.dart';
 
 class AccountReportsScreen extends StatefulWidget {
   const AccountReportsScreen({Key? key}) : super(key: key);
@@ -11,6 +12,18 @@ class AccountReportsScreen extends StatefulWidget {
 
 class _AccountReportsScreenState extends State<AccountReportsScreen> {
   late Future<List<Map<String, dynamic>>> _accountTypeCountsFuture;
+
+  // Friendly, pastel-ish accent colors for up to 8 segments
+  static const List<Color> _pieColors = [
+    Colors.redAccent,
+    Colors.blueAccent,
+    Colors.greenAccent,
+    Colors.orangeAccent,
+    Colors.purpleAccent,
+    Colors.tealAccent,
+    Colors.amberAccent,
+    Colors.indigoAccent,
+  ];
 
   @override
   void initState() {
@@ -24,7 +37,7 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Account Reports'),
+        title: const Text('Account Reports'),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -34,7 +47,6 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
           Card(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 4,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -64,48 +76,29 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
                             sectionsSpace: 4,
                             centerSpaceRadius: 40,
                             sections: data.asMap().entries.map((entry) {
-                              final index = entry.key;
+                              final idx = entry.key;
                               final item = entry.value;
                               final count = item['count'] as int;
-                              final percent = total > 0 ? (count / total) : 0.0;
-
-                              final color = theme.colorScheme.primary
-                                  .withOpacity((index + 1) / (data.length + 1));
+                              final color = _pieColors[idx % _pieColors.length];
 
                               return PieChartSectionData(
                                 value: count.toDouble(),
                                 color: color,
                                 radius: 60,
-                                title: '${(percent * 100).toStringAsFixed(1)}%',
-                                titleStyle: theme.textTheme.titleSmall
-                                    ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
+                                title:
+                                    '${(count / total * 100).toStringAsFixed(1)}%',
+                                titleStyle:
+                                    theme.textTheme.titleSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               );
                             }).toList(),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: data.map((item) {
-                          final count = item['count'] as int;
-                          final percent = total > 0 ? (count / total) : 0.0;
-                          final color = theme.colorScheme.primary.withOpacity(
-                              (data.indexOf(item) + 1) / (data.length + 1));
-                          return Chip(
-                            backgroundColor: color.withOpacity(0.2),
-                            avatar:
-                                CircleAvatar(backgroundColor: color, radius: 6),
-                            label: Text(
-                              '${item['account_type']} (${count}, ${(percent * 100).toStringAsFixed(1)}%)',
-                              style: theme.textTheme.labelSmall,
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                      _buildLegend(data, total, theme),
                     ],
                   );
                 },
@@ -118,7 +111,6 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
           Card(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 4,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -159,6 +151,49 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
               theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
+    );
+  }
+
+  Widget _buildLegend(
+    List<Map<String, dynamic>> data,
+    int total,
+    ThemeData theme,
+  ) {
+    return Column(
+      children: data.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final item = entry.value;
+        final cnt = item['count'] as int;
+        final pct = total > 0 ? (cnt / total) : 0.0;
+        final color = _pieColors[idx % _pieColors.length];
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  getLocalizedAccountType(context, item['account_type']),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Text(
+                '$cnt (${(pct * 100).toStringAsFixed(1)}%)',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
