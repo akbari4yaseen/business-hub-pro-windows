@@ -193,5 +193,9 @@
   "backupLocal": "پشتیبان‌گیری محلی",
   "restoreDatabase": "بازیابی دیتابیس",
   "reminders": "یادآور‌ها",
-  "reminder": "یادآور"
+  "reminder": "یادآور",
+  "systemAccount": "حساب‌های سیستم",
+  "error": "خطا",
+  "noSystemAccountsFound": "هیچ حساب سیستم یافت نشد.",
+  "currencies": "ارزها"
 }

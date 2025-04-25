@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../database/account_db.dart';
+import '../../utils/utilities.dart';
 
 class SystemAccountReportsScreen extends StatefulWidget {
   const SystemAccountReportsScreen({Key? key}) : super(key: key);
@@ -19,10 +21,10 @@ class _SystemAccountReportsScreenState
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   static const _systemAccounts = <int, _AccountMeta>{
-    1: _AccountMeta('Treasure', Icons.account_balance_wallet, Colors.amber),
-    3: _AccountMeta('Asset', Icons.pie_chart, Colors.blue),
-    9: _AccountMeta('Profit', Icons.trending_up, Colors.green),
-    10: _AccountMeta('Loss', Icons.trending_down, Colors.red),
+    1: _AccountMeta('treasure', Icons.account_balance_wallet, Colors.amber),
+    3: _AccountMeta('asset', Icons.pie_chart, Colors.blue),
+    9: _AccountMeta('profit', Icons.trending_up, Colors.green),
+    10: _AccountMeta('loss', Icons.trending_down, Colors.red),
   };
 
   @override
@@ -63,10 +65,13 @@ class _SystemAccountReportsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('System Account Reports')),
+      appBar: AppBar(
+        title: Text(loc.systemAccount),
+      ),
       body: RefreshIndicator(
         onRefresh: _refresh,
         color: theme.colorScheme.primary,
@@ -78,8 +83,10 @@ class _SystemAccountReportsScreenState
             }
             if (snap.hasError) {
               return Center(
-                child: Text('Error: ${snap.error}',
-                    style: theme.textTheme.bodyMedium),
+                child: Text(
+                  '${loc.error}: ${snap.error}',
+                  style: theme.textTheme.bodyMedium,
+                ),
               );
             }
 
@@ -90,9 +97,9 @@ class _SystemAccountReportsScreenState
             if (accounts.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 200),
-                  Center(child: Text('No system accounts found.'))
+                children: [
+                  const SizedBox(height: 200),
+                  Center(child: Text(loc.noSystemAccountsFound)),
                 ],
               );
             }
@@ -111,7 +118,6 @@ class _SystemAccountReportsScreenState
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Theme(
-                    // remove ExpansionTile's top/bottom borders
                     data: Theme.of(context)
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
@@ -121,9 +127,13 @@ class _SystemAccountReportsScreenState
                         backgroundColor: meta.color.withAlpha(50),
                         child: Icon(meta.icon, color: meta.color),
                       ),
-                      title: Text(meta.name, style: theme.textTheme.titleLarge),
+                      title: Text(
+                        // your helper will pick the right localized name
+                        getLocalizedSystemAccountName(context, meta.name),
+                        style: theme.textTheme.titleLarge,
+                      ),
                       subtitle: Text(
-                        'Currencies: ${summary.length}',
+                        '${loc.currencies}: ${summary.length}',
                         style: theme.textTheme.bodySmall,
                       ),
                       childrenPadding: const EdgeInsets.symmetric(
@@ -131,15 +141,15 @@ class _SystemAccountReportsScreenState
                       children: [
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final columns = constraints.maxWidth > 600 ? 4 : 2;
-                            final itemWidth =
-                                (constraints.maxWidth - (columns - 1) * 12) /
-                                    columns;
+                            final columns =
+                                constraints.maxWidth > 600 ? 4 : 2;
+                            final itemWidth = (constraints.maxWidth -
+                                    (columns - 1) * 12) /
+                                columns;
                             return Wrap(
                               spacing: 12,
                               runSpacing: 12,
                               children: summary.entries.map((entry) {
-                                // Format each amount as a String
                                 final creditStr = _amountFormatter
                                     .format(entry.value['credit']!);
                                 final debitStr = _amountFormatter
@@ -154,6 +164,7 @@ class _SystemAccountReportsScreenState
                                     credit: creditStr,
                                     debit: debitStr,
                                     balance: balanceStr,
+                                    balanceLabel: loc.balance,
                                   ),
                                 );
                               }).toList(),
@@ -185,6 +196,7 @@ class _CurrencyCard extends StatelessWidget {
   final String credit;
   final String debit;
   final String balance;
+  final String balanceLabel;
 
   const _CurrencyCard({
     Key? key,
@@ -192,6 +204,7 @@ class _CurrencyCard extends StatelessWidget {
     required this.credit,
     required this.debit,
     required this.balance,
+    required this.balanceLabel,
   }) : super(key: key);
 
   @override
@@ -222,7 +235,7 @@ class _CurrencyCard extends StatelessWidget {
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 8),
-            Text('Balance', style: theme.textTheme.labelSmall),
+            Text(balanceLabel, style: theme.textTheme.labelSmall),
             const SizedBox(height: 4),
             Text(balance, style: theme.textTheme.headlineSmall),
           ],
