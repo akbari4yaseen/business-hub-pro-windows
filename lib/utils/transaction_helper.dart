@@ -1,30 +1,38 @@
-Map<String, Map<String, dynamic>> aggregateTransactions(List<Map<String, dynamic>>? transactions) {
-  Map<String, Map<String, dynamic>> result = {};
+Map<String, Map<String, dynamic>> aggregateTransactions(
+  List<Map<String, dynamic>>? transactions,
+) {
+  if (transactions == null) return {};
 
-  transactions?.forEach((transaction) {
-    String currency = transaction['currency'];
-    double amount = (transaction['amount'] as num).toDouble();
-    String transactionType = transaction['transaction_type'];
+  // First pass: sum credits & debits per currency
+  final sums = <String, Map<String, double>>{};
+  for (var tx in transactions) {
+    final currency = tx['currency'] as String;
+    final amount = (tx['amount'] as num).toDouble();
+    final type = tx['transaction_type'] as String;
 
-    // Initialize the object for the current currency if not already present
-    result[currency] ??= {'credit': 0.0, 'debit': 0.0};
+    sums.update(
+      currency,
+      (existing) {
+        existing[type] = (existing[type] ?? 0) + amount;
+        return existing;
+      },
+      ifAbsent: () => {
+        'credit': type == 'credit' ? amount : 0.0,
+        'debit': type == 'debit' ? amount : 0.0,
+      },
+    );
+  }
 
-    // Update the credit or debit amount based on the transaction type
-    if (transactionType == 'credit') {
-      result[currency]!['credit'] += amount;
-    } else if (transactionType == 'debit') {
-      result[currency]!['debit'] += amount;
-    }
-  });
-
-  // Format the final output
-  return result.map((currency, summary) {
+  // Second pass: build the final structure with balances
+  return sums.map((currency, summary) {
+    final credit = summary['credit']!;
+    final debit = summary['debit']!;
     return MapEntry(currency, {
       'currency': currency,
       'summary': {
-        'credit': summary['credit'],
-        'debit': summary['debit'],
-        'balance': summary['credit'] - summary['debit'],
+        'credit': credit,
+        'debit': debit,
+        'balance': credit - debit,
       },
     });
   });

@@ -10,7 +10,7 @@ const Map<String, Map<String, String>> localizedCurrencyNames = {
     "fa": "روپیه پاکستان",
     "ps": "پاکستانۍ روپۍ"
   },
-  "IRR": {"en": "Iranian Rial", "fa": "تومان", "ps": "تومان"},
+  "IRR": {"en": "Iranian Toman", "fa": "تومان ایران", "ps": "ایران تومان"},
   "TRY": {"en": "Turkish Lira", "fa": "لیر ترکیه", "ps": "ترک لیره"},
   "SAR": {"en": "Saudi Riyal", "fa": "ریال سعودی", "ps": "سعودي ریال"},
   "INR": {"en": "Indian Rupee", "fa": "روپیه هند", "ps": "هندي روپۍ"},

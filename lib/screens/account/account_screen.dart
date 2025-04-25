@@ -184,11 +184,7 @@ class _AccountScreenState extends State<AccountScreen>
     return list
         .map((acct) => {
               ...acct,
-              'balances': aggregateTransactions(
-                (acct['account_details'] as List?)
-                        ?.cast<Map<String, dynamic>>() ??
-                    [],
-              ),
+              'balances': aggregateTransactions(acct['account_details'])
             })
         .toList();
   }
