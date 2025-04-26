@@ -23,9 +23,9 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
           const SizedBox(height: 8),
           const AccountTypeChart(),
           const SizedBox(height: 24),
-          _buildSectionTitle(context, Icons.show_chart, loc.dailyBalances),
+          _buildSectionTitle(context, Icons.account_balance_wallet, loc.accountBalances),
           const SizedBox(height: 8),
-          const DailyBalancesChart(),
+          // const AccountBalances(),
         ],
       ),
     );

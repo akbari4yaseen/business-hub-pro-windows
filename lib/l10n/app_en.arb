@@ -202,6 +202,7 @@
   "noDataAvailable": "No Data Available",
   "accountReports": "Account Reports",
   "accountReportsDesc": "Pie chart of account types, balances, and more",
+  "dailyBalancesDesc": "Line chart showing daily account balances",
   "systemAccountReports": "System Account Reports",
   "systemAccountReportsDesc": "List of system accounts and balances",
   "moreVisualizations": "More Visualizations",
@@ -218,5 +219,6 @@
   "metricCurrentBalance": "Current Balance",
   "metricChange": "Change",
   "dailyBalances": "Daily Balances",
+  "accountBalances": "All Account Balances",
   "accountsByType": "Accounts by Type"
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'accounts/account_reports_screen.dart';
 import 'system_account_reports_screen.dart';
+import './accounts/daily_balances_chart.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ReportsScreen extends StatelessWidget {
@@ -30,6 +31,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const AccountReportsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.show_chart),
+              title: Text(loc.dailyBalances),
+              subtitle: Text(loc.dailyBalancesDesc),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DailyBalancesChart(),
                   ),
                 );
               },

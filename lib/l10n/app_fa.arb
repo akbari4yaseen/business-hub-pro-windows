@@ -202,6 +202,7 @@
   "noDataAvailable": "اطلاعات وجود ندارد",
   "accountReports": "گزارش حساب‌ها",
   "accountReportsDesc": "نمودار دایره‌ای انواع حساب، بیلانس‌ها و موارد دیگر",
+  "dailyBalancesDesc": "نمودار خطی بیلانس روزانه حساب‌ها",
   "systemAccountReports": "گزارش حساب‌های سیستم",
   "systemAccountReportsDesc": "لیست حساب‌های سیستم و بیلانس‌ها",
   "moreVisualizations": "بصری‌سازی‌های بیشتر",
@@ -218,5 +219,6 @@
   "metricCurrentBalance": "بیلانس فعلی",
   "metricChange": "تغییرات",
   "dailyBalances": "بیلانس روزانه",
+  "accountBalances": "بیلانس حساب‌ها",
   "accountsByType": "حساب‌ها بر اساس نوع"
 }

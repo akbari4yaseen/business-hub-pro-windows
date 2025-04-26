@@ -126,221 +126,237 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
       {'key': 'all', 'label': loc.periodAll},
     ];
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      appBar: AppBar(title: Text(loc.dailyBalances)),
+      body: ListView(
+          // padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedAccountType,
-                    decoration: InputDecoration(
-                      labelText: loc.accountLabel,
-                      filled: true,
-                      fillColor: cs.primary.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                    items: accountTypes.entries
-                        .map((e) => DropdownMenuItem(
-                            value: e.key, child: Text(e.value)))
-                        .toList(),
-                    onChanged: (v) => _onFilter(v, null, null),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _FilterDropdown(
-                    label: loc.currency,
-                    value: _selectedCurrency,
-                    items: currencies,
-                    onChanged: (v) => _onFilter(null, v, null),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: periodOptions.map((p) {
-                final sel = p['key'] == _selectedPeriod;
-                return ChoiceChip(
-                  label: Text(p['label']!),
-                  selected: sel,
-                  checkmarkColor: Colors.white,
-                  onSelected: (_) => _onFilter(null, null, p['key']),
-                  selectedColor: cs.primary,
-                  backgroundColor: cs.primary.withValues(alpha: 0.1),
-                  labelStyle: TextStyle(color: sel ? cs.onPrimary : cs.primary),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            FutureBuilder<_ChartData>(
-              future: _chartFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = snapshot.data!;
-                final spots = data.spots;
-                final dates = data.dates;
-                if (spots.isEmpty) {
-                  return SizedBox(
-                    height: 200,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.insert_chart_outlined,
-                            size: 48,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(loc.noDataAvailable,
-                              style: theme.textTheme.bodyMedium),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                final current = spots.last.y;
-                final minY = spots.map((e) => e.y).reduce(min) * 0.95;
-                final maxY = spots.map((e) => e.y).reduce(max) * 1.05;
-                final yInterval =
-                    ((maxY - minY) / 4).clamp(1.0, double.infinity);
-                final xInterval = (spots.length > 1)
-                    ? ((spots.length - 1) / 4).ceilToDouble()
-                    : 1.0;
-
-                return Column(
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(0)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Metric(
-                        label: loc.currentLabel,
-                        value: current,
-                        currency: _selectedCurrency),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedAccountType,
+                            decoration: InputDecoration(
+                              labelText: loc.accountLabel,
+                              filled: true,
+                              fillColor: cs.primary.withValues(alpha: 0.05),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            items: accountTypes.entries
+                                .map((e) => DropdownMenuItem(
+                                    value: e.key, child: Text(e.value)))
+                                .toList(),
+                            onChanged: (v) => _onFilter(v, null, null),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _FilterDropdown(
+                            label: loc.currency,
+                            value: _selectedCurrency,
+                            items: currencies,
+                            onChanged: (v) => _onFilter(null, v, null),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: periodOptions.map((p) {
+                        final sel = p['key'] == _selectedPeriod;
+                        return ChoiceChip(
+                          label: Text(p['label']!),
+                          selected: sel,
+                          checkmarkColor: Colors.white,
+                          onSelected: (_) => _onFilter(null, null, p['key']),
+                          selectedColor: cs.primary,
+                          backgroundColor: cs.primary.withValues(alpha: 0.1),
+                          labelStyle:
+                              TextStyle(color: sel ? cs.onPrimary : cs.primary),
+                        );
+                      }).toList(),
+                    ),
                     const SizedBox(height: 16),
-                    AspectRatio(
-                      aspectRatio: 1.7,
-                      child: LineChart(
-                        LineChartData(
-                          minY: minY,
-                          maxY: maxY,
-                          gridData: FlGridData(
-                            show: true,
-                            horizontalInterval: yInterval,
-                            getDrawingHorizontalLine: (_) => FlLine(
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.2),
-                              strokeWidth: 1,
-                            ),
-                          ),
-                          titlesData: FlTitlesData(
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                interval: yInterval,
-                                reservedSize: 48,
-                                getTitlesWidget: (val, meta) => Text(
-                                  NumberFormat.compactCurrency(
-                                          symbol: '', decimalDigits: 0)
-                                      .format(val),
-                                  style: theme.textTheme.bodySmall,
-                                ),
+                    FutureBuilder<_ChartData>(
+                      future: _chartFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        final data = snapshot.data!;
+                        final spots = data.spots;
+                        final dates = data.dates;
+                        if (spots.isEmpty) {
+                          return SizedBox(
+                            height: 200,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.insert_chart_outlined,
+                                    size: 48,
+                                    color: cs.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(loc.noDataAvailable,
+                                      style: theme.textTheme.bodyMedium),
+                                ],
                               ),
                             ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                interval: xInterval,
-                                getTitlesWidget: (val, meta) {
-                                  final idx =
-                                      val.toInt().clamp(0, dates.length - 1);
-                                  final date = dates[idx];
-                                  late DateFormat fmt;
-                                  switch (_selectedPeriod) {
-                                    case 'week':
-                                    case 'month':
-                                      fmt = _fmtShort;
-                                      break;
-                                    case '3months':
-                                      fmt = _fmtMonth;
-                                      break;
-                                    default:
-                                      fmt = _fmtYear;
-                                  }
-                                  return Text(fmt.format(date),
-                                      style: theme.textTheme.bodySmall);
-                                },
-                              ),
-                            ),
-                            topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                          ),
-                          lineTouchData: LineTouchData(
-                            touchTooltipData: LineTouchTooltipData(
-                              getTooltipItems: (spots) => spots.map((s) {
-                                final date = dates[s.spotIndex];
-                                return LineTooltipItem(
-                                  '${DateFormat.yMMMd().format(date)}\n${s.y.toStringAsFixed(2)}',
-                                  Theme.of(context)
-                                      .textTheme
-                                      .bodySmall!
-                                      .copyWith(color: cs.onSurface),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: spots,
-                              isCurved: true,
-                              barWidth: 3,
-                              dotData: FlDotData(show: false),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.4),
-                                    Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.05),
+                          );
+                        }
+
+                        final current = spots.last.y;
+                        final minY = spots.map((e) => e.y).reduce(min) * 0.95;
+                        final maxY = spots.map((e) => e.y).reduce(max) * 1.05;
+                        final yInterval =
+                            ((maxY - minY) / 4).clamp(1.0, double.infinity);
+                        final xInterval = (spots.length > 1)
+                            ? ((spots.length - 1) / 4).ceilToDouble()
+                            : 1.0;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _Metric(
+                                label: loc.currentLabel,
+                                value: current,
+                                currency: _selectedCurrency),
+                            const SizedBox(height: 16),
+                            AspectRatio(
+                              aspectRatio: 1.7,
+                              child: LineChart(
+                                LineChartData(
+                                  minY: minY,
+                                  maxY: maxY,
+                                  gridData: FlGridData(
+                                    show: true,
+                                    horizontalInterval: yInterval,
+                                    getDrawingHorizontalLine: (_) => FlLine(
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.2),
+                                      strokeWidth: 1,
+                                    ),
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        interval: yInterval,
+                                        reservedSize: 48,
+                                        getTitlesWidget: (val, meta) => Text(
+                                          NumberFormat.compactCurrency(
+                                                  symbol: '', decimalDigits: 0)
+                                              .format(val),
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      ),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        interval: xInterval,
+                                        getTitlesWidget: (val, meta) {
+                                          final idx = val
+                                              .toInt()
+                                              .clamp(0, dates.length - 1);
+                                          final date = dates[idx];
+                                          late DateFormat fmt;
+                                          switch (_selectedPeriod) {
+                                            case 'week':
+                                            case 'month':
+                                              fmt = _fmtShort;
+                                              break;
+                                            case '3months':
+                                              fmt = _fmtMonth;
+                                              break;
+                                            default:
+                                              fmt = _fmtYear;
+                                          }
+                                          return Text(fmt.format(date),
+                                              style: theme.textTheme.bodySmall);
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                    rightTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                  ),
+                                  lineTouchData: LineTouchData(
+                                    touchTooltipData: LineTouchTooltipData(
+                                      getTooltipItems: (spots) =>
+                                          spots.map((s) {
+                                        final date = dates[s.spotIndex];
+                                        return LineTooltipItem(
+                                          '${DateFormat.yMMMd().format(date)}\n${s.y.toStringAsFixed(2)}',
+                                          Theme.of(context)
+                                              .textTheme
+                                              .bodySmall!
+                                              .copyWith(color: cs.onSurface),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots,
+                                      isCurved: true,
+                                      barWidth: 3,
+                                      dotData: FlDotData(show: false),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.4),
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.05),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                      color: cs.primary,
+                                    ),
                                   ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
                                 ),
                               ),
-                              color: cs.primary,
                             ),
                           ],
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ],
-                );
-              },
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ]),
     );
   }
 
