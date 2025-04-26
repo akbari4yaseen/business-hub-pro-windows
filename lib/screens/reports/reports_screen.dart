@@ -24,9 +24,8 @@ class ReportsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.pie_chart),
-              title: const Text('Account Reports'),
-              subtitle:
-                  const Text('Pie chart of account types, balances, and more'),
+              title: Text(loc.accountReports),
+              subtitle: Text(loc.accountReportsDesc),
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -39,8 +38,8 @@ class ReportsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('System Account Reports'),
-              subtitle: const Text('List of system accounts and balances'),
+              title: Text(loc.systemAccountReports),
+              subtitle: Text(loc.systemAccountReportsDesc),
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -53,9 +52,8 @@ class ReportsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.show_chart),
-              title: const Text('More Visualizations'),
-              subtitle:
-                  const Text('Future charts and analytics will appear here'),
+              title: Text(loc.moreVisualizations),
+              subtitle: Text(loc.moreVisualizationsDesc),
               enabled: false,
             ),
           ),

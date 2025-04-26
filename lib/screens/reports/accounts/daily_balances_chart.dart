@@ -1,7 +1,12 @@
 import 'dart:math';
+import 'package:BusinessHub/utils/account_types.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../../../database/reports_db.dart';
+import '../../../constants/currencies.dart';
 
 class DailyBalancesChart extends StatefulWidget {
   const DailyBalancesChart({Key? key}) : super(key: key);
@@ -11,29 +16,10 @@ class DailyBalancesChart extends StatefulWidget {
 }
 
 class _DailyBalancesChartState extends State<DailyBalancesChart> {
-  // Filter options
-  final List<String> _accountTypes = [
-    'Customer',
-    'Supplier',
-    'Owner',
-    'Exchanger'
-  ];
-  final List<String> _currencies = ['USD', 'AFN', 'EUR', 'GBP'];
-  final List<String> _periodOptions = [
-    '1W',
-    '1M',
-    '3M',
-    '6M',
-    '1Y',
-    '3Y',
-    'All'
-  ];
+  String _selectedAccountType = 'customer';
+  String _selectedCurrency = 'AFN';
+  String _selectedPeriod = 'week';
 
-  String _selectedAccountType = 'Customer';
-  String _selectedCurrency = 'USD';
-  String _selectedPeriod = '1W';
-
-  // Cached data by filter key
   final Map<String, List<FlSpot>> _dataCache = {};
   final Map<String, List<DateTime>> _dateCache = {};
 
@@ -48,88 +34,94 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(
-        const Duration(milliseconds: 300)); // simulate data fetch
-    _updateChartData();
-    setState(() => _isLoading = false);
-  }
-
-  void _updateChartData() {
     final key = '$_selectedAccountType|$_selectedCurrency|$_selectedPeriod';
     if (_dataCache.containsKey(key)) {
-      _chartData = _dataCache[key]!;
-      _chartDates = _dateCache[key]!;
+      setState(() {
+        _chartData = _dataCache[key]!;
+        _chartDates = _dateCache[key]!;
+      });
       return;
     }
-    final rand = Random();
+
+    setState(() => _isLoading = true);
+
     final now = DateTime.now();
-    final List<DateTime> dates = [];
-    final List<FlSpot> spots = [];
-
-    int count;
-    Duration stepDays = const Duration(days: 1);
-    int stepMonths = 0;
-
+    late DateTime startDate;
     switch (_selectedPeriod) {
-      case '1W':
-        count = 7;
+      case 'week':
+        startDate = now.subtract(const Duration(days: 6));
         break;
-      case '1M':
-        count = 30;
+      case 'month':
+        startDate = DateTime(now.year, now.month - 1, now.day);
         break;
-      case '3M':
-        count = 13;
-        stepDays = const Duration(days: 7);
+      case '3months':
+        startDate = DateTime(now.year, now.month - 3, now.day);
         break;
-      case '6M':
-        count = 6;
-        stepMonths = 1;
+      case '6months':
+        startDate = DateTime(now.year, now.month - 6, now.day);
         break;
-      case '1Y':
-        count = 12;
-        stepMonths = 1;
+      case 'year':
+        startDate = DateTime(now.year - 1, now.month, now.day);
         break;
-      case '3Y':
-        count = 12;
-        stepMonths = 3;
+      case '3years':
+        startDate = DateTime(now.year - 3, now.month, now.day);
         break;
-      case 'All':
-        count = 24;
-        stepMonths = 1;
+      case 'all':
+        startDate = DateTime(1970);
         break;
       default:
-        count = 30;
+        startDate = DateTime(now.year, now.month - 1, now.day);
     }
+    final endDate = now;
 
-    for (int i = 0; i < count; i++) {
-      DateTime date;
-      if (stepMonths > 0) {
-        date = DateTime(
-            now.year, now.month - (count - 1 - i) * stepMonths, now.day);
-      } else {
-        date = now.subtract(Duration(days: stepDays.inDays * (count - 1 - i)));
-      }
+    final rows = await ReportsDBHelper().getDailyBalances(
+      accountType: _selectedAccountType,
+      currency: _selectedCurrency,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    double cumulative = 0;
+    final List<DateTime> dates = [];
+    final List<FlSpot> spots = [];
+    for (var i = 0; i < rows.length; i++) {
+      final row = rows[i];
+      final date = DateTime.parse(row['date'] as String);
+      final net = (row['net'] as num).toDouble();
+      cumulative += net;
       dates.add(date);
-      spots.add(FlSpot(i.toDouble(), 1000 + rand.nextDouble() * 500));
+      spots.add(FlSpot(i.toDouble(), cumulative));
     }
 
     _dataCache[key] = spots;
     _dateCache[key] = dates;
-    _chartData = spots;
-    _chartDates = dates;
+    setState(() {
+      _chartData = spots;
+      _chartDates = dates;
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final accountTypes = getAccountTypes(loc);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
 
-    // Compute current metric
-    final double current = _chartData.isNotEmpty ? _chartData.last.y : 0.0;
+    // localized period options
+    final periodOptions = <Map<String, String>>[
+      {'key': 'week', 'label': loc.periodWeek},
+      {'key': 'month', 'label': loc.periodMonth},
+      {'key': '3months', 'label': loc.period3Months},
+      {'key': '6months', 'label': loc.period6Months},
+      {'key': 'year', 'label': loc.periodYear},
+      {'key': '3years', 'label': loc.period3Years},
+      {'key': 'all', 'label': loc.periodAll},
+    ];
 
-    // Chart bounds and intervals
+    final double current = _chartData.isNotEmpty ? _chartData.last.y : 0.0;
     final double minY = _chartData.isNotEmpty
         ? _chartData.map((e) => e.y).reduce(min) * 0.95
         : 0.0;
@@ -138,7 +130,8 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
         : 0.0;
     final int pts = _chartData.length;
     final double xInt = pts > 1 ? ((pts - 1) / 4).ceil().toDouble() : 1.0;
-    final double yInt = (maxY > minY) ? ((maxY - minY) / 4) : (maxY * 0.25);
+    final double rawYInt = (maxY > minY) ? ((maxY - minY) / 4) : (maxY * 0.25);
+    final double yInt = rawYInt > 0 ? rawYInt : 1.0;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -148,26 +141,38 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
-            // Current metric only
-            _buildMetric('Current', current, _selectedCurrency, cs.primary),
+            _buildMetric(
+                loc.currentLabel, current, _selectedCurrency, cs.primary),
             const SizedBox(height: 16),
-            // Filters
             Row(
               children: [
                 Expanded(
-                  child: _buildDropdown(
-                    label: 'Account',
+                  child: DropdownButtonFormField<String>(
                     value: _selectedAccountType,
-                    items: _accountTypes,
+                    decoration: InputDecoration(
+                      labelText: loc.accountLabel,
+                      filled: true,
+                      fillColor: cs.primary.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                    items: accountTypes.entries
+                        .map((e) => DropdownMenuItem(
+                            value: e.key, child: Text(e.value)))
+                        .toList(),
                     onChanged: (v) => _onFilter(v, null, null),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildDropdown(
-                    label: 'Currency',
+                    label: loc.currency,
                     value: _selectedCurrency,
-                    items: _currencies,
+                    items: currencies,
                     onChanged: (v) => _onFilter(null, v, null),
                   ),
                 ),
@@ -176,22 +181,42 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
-              children: _periodOptions.map((p) {
-                final bool sel = p == _selectedPeriod;
+              children: periodOptions.map((p) {
+                final bool sel = p['key'] == _selectedPeriod;
                 return ChoiceChip(
-                  label: Text(p),
+                  label: Text(p['label']!),
                   selected: sel,
-                  onSelected: (_) => _onFilter(null, null, p),
+                  onSelected: (_) => _onFilter(null, null, p['key']),
                   selectedColor: cs.primary,
-                  backgroundColor: cs.primary.withOpacity(0.1),
+                  backgroundColor: cs.primary.withValues(alpha: 0.1),
                   labelStyle: TextStyle(color: sel ? cs.onPrimary : cs.primary),
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            // Chart or loader
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
+            else if (_chartData.isEmpty)
+              SizedBox(
+                height: 200,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.insert_chart_outlined,
+                        size: 48,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        loc.noDataAvailable,
+                        style: tt.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              )
             else
               AspectRatio(
                 aspectRatio: 1.7,
@@ -203,7 +228,7 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
                       show: true,
                       horizontalInterval: yInt,
                       getDrawingHorizontalLine: (_) => FlLine(
-                        color: cs.onSurfaceVariant.withOpacity(0.2),
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.2),
                         strokeWidth: 1,
                       ),
                     ),
@@ -215,7 +240,7 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
                           reservedSize: 48,
                           getTitlesWidget: (val, meta) => Text(
                             NumberFormat.compactCurrency(
-                                    symbol: '\$', decimalDigits: 0)
+                                    symbol: '', decimalDigits: 0)
                                 .format(val),
                             style: tt.bodySmall,
                           ),
@@ -256,8 +281,8 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
                           show: true,
                           gradient: LinearGradient(
                             colors: [
-                              cs.primary.withOpacity(0.4),
-                              cs.primary.withOpacity(0.05)
+                              cs.primary.withValues(alpha: 0.4),
+                              cs.primary.withValues(alpha: 0.05)
                             ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -280,28 +305,28 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
       if (acc != null) _selectedAccountType = acc;
       if (cur != null) _selectedCurrency = cur;
       if (per != null) _selectedPeriod = per;
-      _loadData();
     });
+    _loadData();
   }
 
   Widget _bottomTitleWidgets(double value, TitleMeta meta) {
-    final int idx = value.toInt().clamp(0, _chartDates.length - 1);
+    final idx = value.toInt().clamp(0, _chartDates.length - 1);
     final date = _chartDates[idx];
-    DateFormat fmt;
+    late DateFormat fmt;
     switch (_selectedPeriod) {
-      case '1W':
-      case '1M':
+      case 'week':
+      case 'month':
         fmt = DateFormat.Md();
         break;
-      case '3M':
+      case '3months':
         fmt = DateFormat.MMMd();
         break;
-      case '6M':
-      case '1Y':
+      case '6months':
+      case 'year':
         fmt = DateFormat.yMMM();
         break;
-      case '3Y':
-      case 'All':
+      case '3years':
+      case 'all':
         fmt = DateFormat.y();
         break;
       default:
@@ -310,40 +335,27 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
     return Text(fmt.format(date), style: Theme.of(context).textTheme.bodySmall);
   }
 
-  // Helper to build summary metric
   Widget _buildMetric(
-    String label,
-    double value,
-    String currencyCode,
-    Color color,
-  ) {
+      String label, double value, String currencyCode, Color color) {
     final formatter = NumberFormat('#,###.##');
-    final formatted = formatter.format(value);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 12),
-        ),
-        Text(
-          '\u200E$formatted $currencyCode',
-          style: TextStyle(
-            color: color,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(label,
+            style:
+                TextStyle(color: color.withValues(alpha: 0.7), fontSize: 12)),
+        Text('\u200E${formatter.format(value)} $currencyCode',
+            style: TextStyle(
+                color: color, fontSize: 16, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
+  Widget _buildDropdown(
+      {required String label,
+      required String value,
+      required List<String> items,
+      required ValueChanged<String?> onChanged}) {
     final theme = Theme.of(context);
     return DropdownButtonFormField<String>(
       value: value,
@@ -352,9 +364,8 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
         filled: true,
         fillColor: theme.colorScheme.primary.withValues(alpha: 0.05),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       items:

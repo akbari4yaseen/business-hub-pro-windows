@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../../database/reports_db.dart';
 import '../../../utils/utilities.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AccountTypeChart extends StatefulWidget {
   const AccountTypeChart({Key? key}) : super(key: key);
@@ -35,6 +36,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -51,7 +53,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
             }
             final data = snap.data;
             if (data == null || data.isEmpty) {
-              return Text('No accounts found.',
+              return Text(loc.noDataAvailable,
                   style: theme.textTheme.bodyMedium);
             }
 
