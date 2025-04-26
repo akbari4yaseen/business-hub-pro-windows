@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../database/reports_db.dart';
@@ -16,9 +15,6 @@ class SystemAccountReportsScreen extends StatefulWidget {
 class _SystemAccountReportsScreenState
     extends State<SystemAccountReportsScreen> {
   late Future<List<Map<String, dynamic>>> _accountsFuture;
-
-  // Formatter with thousands separators and exactly two decimals
-  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   static const _systemAccounts = <int, _AccountMeta>{
     1: _AccountMeta('treasure', Icons.account_balance_wallet, Colors.amber),
@@ -104,77 +100,86 @@ class _SystemAccountReportsScreenState
               );
             }
 
-            return ListView.builder(
+            return ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: accounts.length,
-              itemBuilder: (context, idx) {
-                final acc = accounts[idx];
-                final id = acc['id'] as int;
-                final meta = _systemAccounts[id]!;
-                final details =
-                    List<Map<String, dynamic>>.from(acc['details'] as List);
-                final summary = _aggregate(details);
-
-                return Card(
+              children: [
+                Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      leading: CircleAvatar(
-                        backgroundColor: meta.color.withAlpha(50),
-                        child: Icon(meta.icon, color: meta.color),
-                      ),
-                      title: Text(
-                        // your helper will pick the right localized name
-                        getLocalizedSystemAccountName(context, meta.name),
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      subtitle: Text(
-                        '${loc.currencies}: ${summary.length}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      childrenPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth > 600 ? 4 : 2;
-                            final itemWidth =
-                                (constraints.maxWidth - (columns - 1) * 12) /
-                                    columns;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: summary.entries.map((entry) {
-                                final creditStr = _amountFormatter
-                                    .format(entry.value['credit']!);
-                                final debitStr = _amountFormatter
-                                    .format(entry.value['debit']!);
-                                final balanceStr = _amountFormatter
-                                    .format(entry.value['balance']!);
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: accounts.map((acc) {
+                        final id = acc['id'] as int;
+                        final meta = _systemAccounts[id]!;
+                        final details = List<Map<String, dynamic>>.from(
+                            acc['details'] as List);
+                        final summary = _aggregate(details);
 
-                                return SizedBox(
-                                  width: itemWidth,
-                                  child: _CurrencyCard(
-                                    currency: entry.key,
-                                    credit: creditStr,
-                                    debit: debitStr,
-                                    balance: balanceStr,
-                                    balanceLabel: loc.balance,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: meta.color.withAlpha(50),
+                                    child: Icon(meta.icon, color: meta.color),
                                   ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
-                      ],
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          getLocalizedSystemAccountName(
+                                              context, meta.name),
+                                          style: theme.textTheme.titleLarge,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${loc.currencies}: ${summary.length}',
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: summary.entries.map((entry) {
+                                    final credit = entry.value['credit']!;
+                                    final debit = entry.value['debit']!;
+                                    final balance = entry.value['balance']!;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: _CurrencyCard(
+                                        currency: entry.key,
+                                        credit: credit,
+                                        debit: debit,
+                                        balance: balance,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              if (acc != accounts.last) ...[
+                                const SizedBox(height: 24),
+                                const Divider(),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             );
           },
         ),
@@ -191,11 +196,11 @@ class _AccountMeta {
 }
 
 class _CurrencyCard extends StatelessWidget {
+  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
   final String currency;
-  final String credit;
-  final String debit;
-  final String balance;
-  final String balanceLabel;
+  final double credit;
+  final double debit;
+  final double balance;
 
   const _CurrencyCard({
     Key? key,
@@ -203,67 +208,101 @@ class _CurrencyCard extends StatelessWidget {
     required this.credit,
     required this.debit,
     required this.balance,
-    required this.balanceLabel,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(currency, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            _RowIconText(
-              icon: FontAwesomeIcons.plus,
-              text: credit,
-              iconColor: Colors.green,
-            ),
-            const SizedBox(height: 4),
-            _RowIconText(
-              icon: FontAwesomeIcons.minus,
-              text: debit,
-              iconColor: Colors.red,
-            ),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text(balanceLabel, style: theme.textTheme.labelSmall),
-            const SizedBox(height: 4),
-            Text(balance, style: theme.textTheme.headlineSmall),
-          ],
+    final loc = AppLocalizations.of(context)!;
+    return Container(
+      width: 240,
+      height: 167,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Colors.blue, Color(0xFF6353DA)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _RowIconText extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color iconColor;
-
-  const _RowIconText({
-    Key? key,
-    required this.icon,
-    required this.text,
-    required this.iconColor,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 6),
-        Text(text, style: Theme.of(context).textTheme.bodyMedium),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            currency,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.credit,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _amountFormatter.format(credit),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.debit,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _amountFormatter.format(debit),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Divider(color: Colors.white.withValues(alpha: 0.5)),
+              const SizedBox(height: 8),
+              Text(
+                loc.balance,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '\u200E${_amountFormatter.format(balance)}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

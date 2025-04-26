@@ -30,8 +30,8 @@ class RecentTransactionList extends StatelessWidget {
         }
         return Card(
           margin: EdgeInsets.zero,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

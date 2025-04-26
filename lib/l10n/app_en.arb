@@ -201,7 +201,7 @@
   "current": "Current",
   "noDataAvailable": "No Data Available",
   "accountReports": "Account Reports",
-  "accountReportsDesc": "Pie chart of account types, balances, and more",
+  "accountReportsDesc": "Account balances, and more",
   "dailyBalancesDesc": "Line chart showing daily account balances",
   "systemAccountReports": "System Account Reports",
   "systemAccountReportsDesc": "List of system accounts and balances",

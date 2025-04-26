@@ -1,7 +1,7 @@
+import 'account_reports_screen.dart';
 import 'package:flutter/material.dart';
-import 'accounts/account_reports_screen.dart';
 import 'system_account_reports_screen.dart';
-import './accounts/daily_balances_chart.dart';
+import 'daily_balances_chart.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ReportsScreen extends StatelessWidget {
@@ -24,7 +24,7 @@ class ReportsScreen extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(Icons.pie_chart),
+              leading: const Icon(Icons.attach_money),
               title: Text(loc.accountReports),
               subtitle: Text(loc.accountReportsDesc),
               onTap: () {

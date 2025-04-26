@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../providers/bottom_navigation_provider.dart';
@@ -10,6 +8,7 @@ import '../database/database_helper.dart';
 import '../database/user_dao.dart';
 import '../widgets/backup_restore_card.dart';
 import '../widgets/recent_transaction_list.dart';
+import '../widgets/account_type_chart.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -20,13 +19,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<Map<String, int>> _statsFuture;
   late Future<List<Map<String, dynamic>>> _transactionsFuture;
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = AccountDBHelper().getAccountCounts();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
   }
 
@@ -85,8 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            AccountStateSection(future: _statsFuture),
+            const AccountTypeChart(),
             const SizedBox(height: 16),
             ActionButtonsSection(actions: actions),
             const SizedBox(height: 16),
@@ -205,89 +201,6 @@ class _ActionButton extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class AccountStateSection extends StatelessWidget {
-  final Future<Map<String, int>> future;
-  const AccountStateSection({Key? key, required this.future}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    return FutureBuilder<Map<String, int>>(
-      future: future,
-      builder: (_, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || snapshot.data == null) {
-          return Center(child: Text(loc.statsLoadError));
-        }
-        final data = snapshot.data!;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _AccountCard(
-              title: loc.allAccounts,
-              value: _formatCompact(data['total_accounts']!),
-              icon: FontAwesomeIcons.users,
-            ),
-            _AccountCard(
-              title: loc.activeAccountsShort,
-              value: _formatCompact(data['activated_accounts']!),
-              icon: FontAwesomeIcons.userCheck,
-            ),
-            _AccountCard(
-              title: loc.deactivatedAccountsShort,
-              value: _formatCompact(data['deactivated_accounts']!),
-              icon: FontAwesomeIcons.userSlash,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  static String _formatCompact(int number) =>
-      NumberFormat.compact().format(number);
-}
-
-class _AccountCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _AccountCard({
-    Key? key,
-    required this.title,
-    required this.value,
-    required this.icon,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Icon(icon, size: 22, color: Colors.blueAccent),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Text(title, style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

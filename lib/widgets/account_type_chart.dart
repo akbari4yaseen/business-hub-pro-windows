@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-import '../../../database/reports_db.dart';
-import '../../../utils/utilities.dart';
+import '../database/reports_db.dart';
+import '../utils/utilities.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AccountTypeChart extends StatefulWidget {

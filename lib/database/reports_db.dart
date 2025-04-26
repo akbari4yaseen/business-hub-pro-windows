@@ -105,4 +105,48 @@ class ReportsDBHelper {
 
     return rows;
   }
+
+  /// Returns a list of maps: each contains account_type, currency, transaction_type, and sum of amount.
+  Future<List<Map<String, dynamic>>> getAccountBalances() async {
+    final db = await database;
+    final sql = '''
+      SELECT 
+        a.account_type, 
+        ad.currency, 
+        ad.transaction_type, 
+        SUM(ad.amount) AS total_amount
+      FROM accounts a
+      JOIN account_details ad ON a.id = ad.account_id
+      WHERE a.account_type IN (
+        'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company'
+      )
+      GROUP BY a.account_type, ad.currency, ad.transaction_type
+      ORDER BY a.account_type, ad.currency, ad.transaction_type
+    ''';
+    return await db.rawQuery(sql);
+  }
+
+  /// count the accounts by type
+  Future<Map<String, int>> getAccountCountByType() async {
+    final db = await database;
+    final sql = '''
+    SELECT 
+      a.account_type, 
+      COUNT(a.id) AS count
+    FROM accounts a
+    WHERE a.account_type IN (
+      'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company'
+    )
+    GROUP BY a.account_type
+  ''';
+    final rows = await db.rawQuery(sql);
+
+    // Build a map: {account_type: count}
+    final Map<String, int> counts = {};
+    for (final row in rows) {
+      counts[row['account_type'] as String] = row['count'] as int;
+    }
+
+    return counts;
+  }
 }

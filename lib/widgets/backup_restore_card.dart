@@ -104,8 +104,7 @@ class BackupRestoreCard extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
