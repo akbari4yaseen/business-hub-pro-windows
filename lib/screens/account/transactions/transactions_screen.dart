@@ -506,7 +506,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final balanceColor = tx['balance'] >= 0 ? Colors.green : Colors.red;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         contentPadding:

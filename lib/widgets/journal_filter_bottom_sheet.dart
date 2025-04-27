@@ -116,21 +116,26 @@ class JournalFilterBottomSheet extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        TextButton(
-                          onPressed: onReset,
-                          child: Text(loc.reset),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: onReset,
+                            child: Text(loc.reset),
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () => onApply(
-                            type: selectedType,
-                            currency: selectedCurrency,
-                            date: selectedDate,
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => onApply(
+                              type: selectedType,
+                              currency: selectedCurrency,
+                              date: selectedDate,
+                            ),
+                            child: Text(loc.apply),
                           ),
-                          child: Text(loc.apply),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
