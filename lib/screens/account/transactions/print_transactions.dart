@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
@@ -47,6 +48,8 @@ class PrintTransactions {
       ),
     );
 
+    final loc = AppLocalizations.of(context)!;
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -62,8 +65,11 @@ class PrintTransactions {
                   style: pw.TextStyle(
                       fontSize: 16, fontWeight: pw.FontWeight.bold),
                 ),
-                pw.Text('Printed: $printTimestamp',
-                    style: pw.TextStyle(fontSize: 9)),
+                pw.Text(
+                  '${loc.printed(printTimestamp)}',
+                  style: pw.TextStyle(fontSize: 9),
+                ),
+                // Add 'printed' key to your ARB: "printed": "Printed: {date}"
               ],
             ),
             pw.SizedBox(height: 2),
@@ -88,15 +94,22 @@ class PrintTransactions {
         footer: (pdfContext) => pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Text(
-            'Page ${pdfContext.pageNumber} of ${pdfContext.pagesCount}',
+            loc.pageOf(pdfContext.pageNumber, pdfContext.pagesCount),
             style: pw.TextStyle(fontSize: 10),
           ),
+          // Add 'pageOf' key to your ARB: "pageOf": "Page {page} of {total}"
         ),
         build: (pdfContext) {
           final List<pw.Widget> content = [];
 
           if (balances.isNotEmpty) {
-            final balanceHeaders = ['Currency', 'Credit', 'Debit', 'Balance'];
+            final balanceHeaders = [
+              loc.currency,
+              loc.credit,
+              loc.debit,
+              loc.balance,
+            ];
+            // Add keys: currency, credit, debit, balance
             final balanceRows = balances.entries.map((e) {
               final data = e.value as Map<String, dynamic>;
               final summary = (data['summary'] as Map<String, dynamic>?) ?? {};
@@ -112,9 +125,11 @@ class PrintTransactions {
             final rtlData =
                 balanceRows.map((r) => r.reversed.toList()).toList();
 
-            content.add(pw.Text('Account Balances:',
-                style: pw.TextStyle(
-                    fontSize: 14, fontWeight: pw.FontWeight.bold)));
+            content.add(pw.Text(
+              loc.balance,
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ));
+            // Add key: accountBalances
             content.add(pw.SizedBox(height: 4));
             content.add(
               pw.Directionality(
@@ -136,13 +151,14 @@ class PrintTransactions {
           }
 
           final txHeaders = [
-            'No.',
-            'Date',
-            'Description',
-            'Debit',
-            'Credit',
-            'Balance'
+            loc.no,
+            loc.date,
+            loc.description,
+            loc.debit,
+            loc.credit,
+            loc.balance,
           ];
+          // Add keys: no, date, description, debit, credit, balance
           final txRows = List.generate(txs.length, (i) {
             final tx = txs[i];
             final isCredit = tx['transaction_type'] == 'credit';
@@ -159,11 +175,13 @@ class PrintTransactions {
           final rtlTxHeaders = txHeaders.reversed.toList();
           final rtlTxRows = txRows.map((r) => r.reversed.toList()).toList();
 
-          final descIndex = rtlTxHeaders.indexOf('Description');
+          final descIndex = rtlTxHeaders.indexOf(loc.description);
 
-          content.add(pw.Text('Transactions:',
-              style:
-                  pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)));
+          content.add(pw.Text(
+            loc.transactions,
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ));
+          // Add key: transactions
           content.add(pw.SizedBox(height: 4));
           content.add(
             pw.Directionality(
@@ -180,8 +198,9 @@ class PrintTransactions {
                     pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                 cellStyle: pw.TextStyle(fontSize: 10),
                 cellAlignments: {
-                  rtlTxHeaders.indexOf('No.'): pw.Alignment.center,
-                  rtlTxHeaders.indexOf('Description'): pw.Alignment.centerRight,
+                  rtlTxHeaders.indexOf(loc.no): pw.Alignment.center,
+                  rtlTxHeaders.indexOf(loc.description):
+                      pw.Alignment.centerRight,
                 },
                 headerDecoration:
                     pw.BoxDecoration(color: PdfColor.fromInt(0xFFE0E0E0)),

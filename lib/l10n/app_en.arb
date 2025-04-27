@@ -222,8 +222,11 @@
   "metricCurrentBalance": "Current Balance",
   "metricChange": "Change",
   "dailyBalances": "Daily Balances",
-  "accountBalances": "All Account Balances",
+  "accountBalances": "Account Balances",
   "accountsByType": "Accounts by Type",
   "balanceLabel": "Balance ({currency})",
-  "totalCount": "Total: {count}"
+  "totalCount": "Total: {count}",
+  "printed": "Printed: {date}",
+  "pageOf": "Page {page} of {total}",
+  "no": "No."
 }

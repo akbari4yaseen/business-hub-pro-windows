@@ -225,5 +225,8 @@
   "accountBalances": "بیلانس حساب‌ها",
   "accountsByType": "حساب‌ها بر اساس نوع",
   "balanceLabel": "بیلانس ({currency})",
-  "totalCount": "تعداد: {count}"
+  "totalCount": "تعداد: {count}",
+  "printed": "چاپ شده: {date}",
+  "pageOf": "صفحه {page} از {total}",
+  "no": "شماره"
 }
