@@ -1,5 +1,8 @@
 {
   "appTitle": "BusinessHub",
+  "languageEnglish": "English",
+  "languageFarsi": "Farsi",
+  "languagePashto": "Pashto",
   "home": "Home",
   "journal": "Journal",
   "accounts": "Accounts",

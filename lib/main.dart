@@ -32,12 +32,8 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ⚠️ This must stay here, above MyApp, so MyApp can read it:
         ChangeNotifierProvider(create: (_) => ThemeProvider(settingsProvider)),
-
-        // 🆕  new NotificationProvider
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-
         ChangeNotifierProvider(create: (_) => BottomNavigationProvider()),
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => InfoProvider()),

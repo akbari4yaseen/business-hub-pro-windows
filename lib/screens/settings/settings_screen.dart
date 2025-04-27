@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: ListView(
           children: [
-            // Currency Settings
+            // Currency Settings (no localization for values)
             _buildDropdownSetting(
               context: context,
               icon: Icons.currency_exchange,
@@ -37,7 +37,7 @@ class SettingsScreen extends StatelessWidget {
                   settingsProvider.setSetting('default_currency', value!),
             ),
 
-            // Transaction Type Settings
+            // Transaction Type Settings (values localized)
             _buildDropdownSetting(
               context: context,
               icon: Icons.compare_arrows,
@@ -46,9 +46,19 @@ class SettingsScreen extends StatelessWidget {
               items: SettingsProvider.availableTransactionTypes,
               onChanged: (value) =>
                   settingsProvider.setSetting('default_transaction', value!),
+              itemLabelBuilder: (item) {
+                switch (item) {
+                  case 'credit':
+                    return AppLocalizations.of(context)!.credit;
+                  case 'debit':
+                    return AppLocalizations.of(context)!.debit;
+                  default:
+                    return item;
+                }
+              },
             ),
 
-            // Track Settings
+            // Track Settings (values localized)
             _buildDropdownSetting(
               context: context,
               icon: Icons.track_changes,
@@ -57,9 +67,19 @@ class SettingsScreen extends StatelessWidget {
               items: SettingsProvider.availableTrackOptions,
               onChanged: (value) =>
                   settingsProvider.setSetting('default_track_option', value!),
+              itemLabelBuilder: (item) {
+                switch (item) {
+                  case 'treasure':
+                    return AppLocalizations.of(context)!.treasure;
+                  case 'noTreasure':
+                    return AppLocalizations.of(context)!.noTreasure;
+                  default:
+                    return item;
+                }
+              },
             ),
 
-            // Language Settings
+            // Language Settings (values localized)
             _buildDropdownSetting(
               context: context,
               icon: Icons.language,
@@ -68,6 +88,18 @@ class SettingsScreen extends StatelessWidget {
               items: SettingsProvider.availableLanguages,
               onChanged: (value) =>
                   settingsProvider.setSetting('app_language', value!),
+              itemLabelBuilder: (item) {
+                switch (item) {
+                  case 'fa':
+                    return AppLocalizations.of(context)!.languageFarsi;
+                  case 'ps':
+                    return AppLocalizations.of(context)!.languagePashto;
+                  case 'en':
+                    return AppLocalizations.of(context)!.languageEnglish;
+                  default:
+                    return item;
+                }
+              },
             ),
 
             // Theme Settings
@@ -124,6 +156,7 @@ class SettingsScreen extends StatelessWidget {
     required String value,
     required List<String> items,
     required Function(String?) onChanged,
+    String Function(String)? itemLabelBuilder,
   }) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -135,9 +168,11 @@ class SettingsScreen extends StatelessWidget {
         trailing: DropdownButton<String>(
           value: value,
           items: items.map((String item) {
+            final label =
+                itemLabelBuilder != null ? itemLabelBuilder(item) : item;
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(item),
+              child: Text(label),
             );
           }).toList(),
           onChanged: onChanged,
