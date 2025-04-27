@@ -220,5 +220,7 @@
   "metricChange": "Change",
   "dailyBalances": "Daily Balances",
   "accountBalances": "All Account Balances",
-  "accountsByType": "Accounts by Type"
+  "accountsByType": "Accounts by Type",
+  "balanceLabel": "Balance ({currency})",
+  "totalCount": "Total: {count}"
 }

@@ -16,21 +16,20 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
   late Future<Map<String, int>> _futureCount;
 
   static const Map<String, AccountMeta> _accountMeta = {
-    'customer': AccountMeta(Icons.person, Colors.blue, 'Customer'),
-    'supplier': AccountMeta(Icons.local_shipping, Colors.orange, 'Supplier'),
-    'exchanger': AccountMeta(Icons.swap_horiz, Colors.purple, 'Exchanger'),
-    'bank': AccountMeta(Icons.account_balance, Colors.green, 'Bank'),
-    'income': AccountMeta(Icons.trending_up, Colors.lightGreen, 'Income'),
-    'expense': AccountMeta(Icons.trending_down, Colors.red, 'Expense'),
-    'owner': AccountMeta(Icons.emoji_people, Colors.indigo, 'Owner'),
-    'company': AccountMeta(Icons.business, Colors.teal, 'Company'),
+    'customer': AccountMeta(Icons.person, Colors.blue),
+    'supplier': AccountMeta(Icons.local_shipping, Colors.orange),
+    'exchanger': AccountMeta(Icons.swap_horiz, Colors.purple),
+    'bank': AccountMeta(Icons.account_balance, Colors.green),
+    'income': AccountMeta(Icons.trending_up, Colors.lightGreen),
+    'expense': AccountMeta(Icons.trending_down, Colors.red),
+    'owner': AccountMeta(Icons.emoji_people, Colors.indigo),
+    'company': AccountMeta(Icons.business, Colors.teal),
   };
 
   @override
   void initState() {
     super.initState();
     _futureBalances = _dbHelper.getAccountBalances();
-    // getAccountCountByType
     _futureCount = _dbHelper.getAccountCountByType();
   }
 
@@ -53,8 +52,10 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('Error: ${snapshot.error}',
-                    style: theme.textTheme.bodyMedium),
+                child: Text(
+                  '${loc.error}: ${snapshot.error}',
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
             );
           }
@@ -63,8 +64,10 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(loc.noDataAvailable,
-                    style: theme.textTheme.bodyMedium),
+                child: Text(
+                  loc.noDataAvailable,
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
             );
           }
@@ -72,11 +75,17 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
           final groups = _prepareGroups(data);
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: ExpansionPanelList.radio(
-              elevation: 1,
-              expandedHeaderPadding: EdgeInsets.zero,
-              children:
-                  groups.map((group) => _buildPanel(group, theme)).toList(),
+            child: Material(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ExpansionPanelList.radio(
+                expandedHeaderPadding: EdgeInsets.zero,
+                children: groups
+                    .map((group) => _buildPanel(group, theme, loc))
+                    .toList(),
+              ),
             ),
           );
         },
@@ -113,7 +122,8 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
     }).toList();
   }
 
-  ExpansionPanelRadio _buildPanel(AccountGroup group, ThemeData theme) {
+  ExpansionPanelRadio _buildPanel(
+      AccountGroup group, ThemeData theme, AppLocalizations loc) {
     return ExpansionPanelRadio(
       value: group.type,
       headerBuilder: (context, isOpen) {
@@ -121,16 +131,16 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
           future: _futureCount,
           builder: (context, snapshot) {
             final count = snapshot.data?[group.type] ?? 0;
-
             return ListTile(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               leading: CircleAvatar(
-                backgroundColor: group.meta.color.withValues(alpha: 0.1),
+                backgroundColor: group.meta.color.withAlpha(25),
                 child: Icon(group.meta.icon, color: group.meta.color),
               ),
-              title: Text(group.meta.label, style: theme.textTheme.titleLarge),
-              subtitle: Text('Total ${group.meta.label}: $count',
+              title: Text(_accountLabel(loc, group.type),
+                  style: theme.textTheme.titleLarge),
+              subtitle: Text(loc.totalCount(count.toString()),
                   style: theme.textTheme.bodySmall),
             );
           },
@@ -138,18 +148,40 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
       },
       body: Column(
         children: group.entries
-            .map((entry) => _EntryCard(entry: entry, theme: theme))
+            .map((entry) => _EntryCard(entry: entry, theme: theme, loc: loc))
             .toList(),
       ),
     );
+  }
+
+  String _accountLabel(AppLocalizations loc, String type) {
+    switch (type) {
+      case 'customer':
+        return loc.customer;
+      case 'supplier':
+        return loc.supplier;
+      case 'exchanger':
+        return loc.exchanger;
+      case 'bank':
+        return loc.bank;
+      case 'income':
+        return loc.income;
+      case 'expense':
+        return loc.expense;
+      case 'owner':
+        return loc.owner;
+      case 'company':
+        return loc.company;
+      default:
+        return type;
+    }
   }
 }
 
 class AccountMeta {
   final IconData icon;
   final Color color;
-  final String label;
-  const AccountMeta(this.icon, this.color, this.label);
+  const AccountMeta(this.icon, this.color);
 }
 
 class AccountGroup {
@@ -171,45 +203,63 @@ class _CurrencyEntry {
 class _EntryCard extends StatelessWidget {
   final _CurrencyEntry entry;
   final ThemeData theme;
-  const _EntryCard({Key? key, required this.entry, required this.theme})
+  final AppLocalizations loc;
+  const _EntryCard(
+      {Key? key, required this.entry, required this.theme, required this.loc})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat('#,###.##');
+    final balanceColor = entry.balance < 0 ? Colors.red : Colors.green;
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Credit', style: theme.textTheme.bodyMedium),
-                Text(formatter.format(entry.credit),
-                    style: theme.textTheme.bodyLarge),
+                Expanded(
+                  child: Text(loc.credit, style: theme.textTheme.bodyMedium),
+                ),
+                Expanded(
+                  child: Text(formatter.format(entry.credit),
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.end),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Debit', style: theme.textTheme.bodyMedium),
-                Text(formatter.format(entry.debit),
-                    style: theme.textTheme.bodyLarge),
+                Expanded(
+                  child: Text(loc.debit, style: theme.textTheme.bodyMedium),
+                ),
+                Expanded(
+                  child: Text(formatter.format(entry.debit),
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.end),
+                ),
               ],
             ),
             const Divider(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Balance (${entry.currency})',
-                    style: theme.textTheme.bodyMedium),
-                Text(formatter.format(entry.balance),
-                    style: theme.textTheme.titleMedium),
+                Expanded(
+                  child: Text(loc.balanceLabel(entry.currency),
+                      style: theme.textTheme.bodyMedium),
+                ),
+                Expanded(
+                  child: Text('\u200E${formatter.format(entry.balance)}',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: balanceColor),
+                      textAlign: TextAlign.end),
+                ),
               ],
             ),
           ],

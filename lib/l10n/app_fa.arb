@@ -220,5 +220,7 @@
   "metricChange": "تغییرات",
   "dailyBalances": "بیلانس روزانه",
   "accountBalances": "بیلانس حساب‌ها",
-  "accountsByType": "حساب‌ها بر اساس نوع"
+  "accountsByType": "حساب‌ها بر اساس نوع",
+  "balanceLabel": "بیلانس ({currency})",
+  "totalCount": "تعداد: {count}"
 }
