@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../models/reminder.dart';
 import '../database/reminder_db.dart';
+import '../utils/date_formatters.dart';
 
 enum _MenuOption { edit, delete }
 
@@ -270,9 +271,12 @@ class AddReminderSheet extends StatefulWidget {
 }
 
 class _AddReminderSheetState extends State<AddReminderSheet> {
+  final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleCtrl;
   late TextEditingController _descCtrl;
+  late final TextEditingController _dateCtrl;
   DateTime? _dateTime;
+  String? _dateError;
   bool _isRepeating = false;
   int _repeatInterval = Duration(days: 1).inMilliseconds;
 
@@ -280,12 +284,18 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   void initState() {
     super.initState();
     final r = widget.reminder;
+
     _titleCtrl = TextEditingController(text: r?.title ?? '');
     _descCtrl = TextEditingController(text: r?.description ?? '');
+    _dateCtrl = TextEditingController();
+
     if (r != null) {
       _dateTime = r.scheduledTime;
       _isRepeating = r.isRepeating;
       _repeatInterval = r.repeatInterval ?? _repeatInterval;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _dateCtrl.text = formatLocalizedDateTime(context, _dateTime.toString());
+      });
     }
   }
 
@@ -293,6 +303,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
+    _dateCtrl.dispose();
     super.dispose();
   }
 
@@ -312,91 +323,110 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
           : TimeOfDay.now(),
     );
     if (time == null) return;
-    setState(() => _dateTime =
-        DateTime(date.year, date.month, date.day, time.hour, time.minute));
+
+    setState(() {
+      _dateTime =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _dateCtrl.text = formatLocalizedDateTime(context, _dateTime.toString());
+      _dateError = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(widget.reminder == null ? 'New Reminder' : 'Edit Reminder',
-              style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleCtrl,
-            decoration: const InputDecoration(
-                labelText: 'Title', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _descCtrl,
-            decoration: const InputDecoration(
-                labelText: 'Description', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _pickDateTime,
-            icon: const Icon(Icons.calendar_today),
-            label: Text(
-              _dateTime == null
-                  ? 'Select date & time'
-                  : DateFormat('MMM dd, yyyy – hh:mm a').format(_dateTime!),
+      child: Form(
+        key: _formKey,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Text(widget.reminder == null ? 'New Reminder' : 'Edit Reminder',
+                style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _titleCtrl,
+              autofocus: true,
+              maxLength: 128,
+              decoration: const InputDecoration(labelText: 'Title'),
+              validator: (val) => (val == null || val.trim().isEmpty)
+                  ? 'Please enter a title'
+                  : null,
             ),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            title: const Text('Repeat'),
-            value: _isRepeating,
-            onChanged: (v) => setState(() => _isRepeating = v),
-          ),
-          if (_isRepeating)
-            DropdownButtonFormField<int>(
-              value: _repeatInterval,
-              decoration: const InputDecoration(
-                  labelText: 'Interval', border: OutlineInputBorder()),
-              items: [
-                DropdownMenuItem(
-                    child: const Text('Daily'),
-                    value: Duration(days: 1).inMilliseconds),
-                DropdownMenuItem(
-                    child: const Text('Weekly'),
-                    value: Duration(days: 7).inMilliseconds),
-              ],
-              onChanged: (v) => setState(() => _repeatInterval = v!),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descCtrl,
+              maxLines: 2,
+              maxLength: 512,
+              decoration: const InputDecoration(labelText: 'Description'),
             ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dateCtrl,
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: 'Date & Time',
+                prefixIcon: const Icon(Icons.calendar_today),
+                errorText: _dateError,
               ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_titleCtrl.text.isEmpty || _dateTime == null) return;
-                    final r = Reminder(
-                      id: widget.reminder?.id,
-                      title: _titleCtrl.text,
-                      description: _descCtrl.text,
-                      scheduledTime: _dateTime!,
-                      isRepeating: _isRepeating,
-                      repeatInterval: _isRepeating ? _repeatInterval : null,
-                    );
-                    widget.onSave(r);
-                  },
-                  child: const Text('Save'),
+              onTap: _pickDateTime,
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('Repeat'),
+              value: _isRepeating,
+              onChanged: (v) => setState(() => _isRepeating = v),
+            ),
+            if (_isRepeating)
+              DropdownButtonFormField<int>(
+                value: _repeatInterval,
+                decoration: const InputDecoration(labelText: 'Interval'),
+                items: [
+                  DropdownMenuItem(
+                      child: const Text('Daily'),
+                      value: Duration(days: 1).inMilliseconds),
+                  DropdownMenuItem(
+                      child: const Text('Weekly'),
+                      value: Duration(days: 7).inMilliseconds),
+                ],
+                onChanged: (v) => setState(() => _repeatInterval = v!),
+              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel')),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final form = _formKey.currentState!;
+                      if (!form.validate()) return;
+                      if (_dateTime == null) {
+                        setState(() {
+                          _dateError = 'Please pick date & time';
+                        });
+                        return;
+                      }
+                      final r = Reminder(
+                        id: widget.reminder?.id,
+                        title: _titleCtrl.text.trim(),
+                        description: _descCtrl.text.trim(),
+                        scheduledTime: _dateTime!,
+                        isRepeating: _isRepeating,
+                        repeatInterval: _isRepeating ? _repeatInterval : null,
+                      );
+                      widget.onSave(r);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
