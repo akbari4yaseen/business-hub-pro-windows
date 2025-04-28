@@ -76,6 +76,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         _reminderChannel.id,
         _reminderChannel.name,
         channelDescription: _reminderChannel.description,
+        icon: 'ic_stat_notify',
         importance: Importance.max,
         priority: Priority.high,
       ),
