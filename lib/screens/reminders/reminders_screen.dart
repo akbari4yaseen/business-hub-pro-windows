@@ -8,6 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../models/reminder.dart';
 import '../../database/reminder_db.dart';
 import 'add_reminder_sheet.dart';
+import '../../widgets/search_bar.dart';
 
 enum _MenuOption { edit, delete }
 
@@ -93,7 +94,10 @@ class RemindersScreen extends StatefulWidget {
 
 class _RemindersScreenState extends State<RemindersScreen> {
   List<Reminder> _reminders = [];
+  List<Reminder> _filteredReminders = [];
   bool _isLoading = true;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -107,7 +111,23 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final items = await ReminderDB().getReminders();
     setState(() {
       _reminders = items;
+      _applySearch(_searchController.text);
       _isLoading = false;
+    });
+  }
+
+  void _applySearch(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredReminders = List.from(_reminders);
+      });
+      return;
+    }
+    setState(() {
+      _filteredReminders = _reminders.where((r) =>
+        r.title.toLowerCase().contains(query.toLowerCase()) ||
+        r.description.toLowerCase().contains(query.toLowerCase())
+      ).toList();
     });
   }
 
@@ -116,6 +136,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
     r.id = id;
     await NotificationService.instance.schedule(r);
     await _fetchReminders();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _updateReminder(Reminder r) async {
@@ -180,13 +206,35 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.remindersTitle),
+        title: _isSearching
+            ? CommonSearchBar(
+                controller: _searchController,
+                debounceDuration: const Duration(milliseconds: 400),
+                isLoading: _isLoading,
+                onChanged: (query) => _applySearch(query),
+                onSubmitted: (query) => _applySearch(query),
+                onCancel: () => setState(() => _isSearching = false),
+                onClear: () {
+                  _searchController.clear();
+                  _applySearch('');
+                },
+                hintText: loc.search,
+              )
+            : Text(loc.remindersTitle),
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+              tooltip: loc.search,
+            ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchReminders,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _reminders.isEmpty
+            : _filteredReminders.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -200,9 +248,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _reminders.length,
+                    itemCount: _filteredReminders.length,
                     itemBuilder: (ctx, i) {
-                      final r = _reminders[i];
+                      final r = _filteredReminders[i];
                       final timeStr = DateFormat('MMM dd, yyyy – hh:mm a')
                           .format(r.scheduledTime.toLocal());
                       return Card(
