@@ -9,6 +9,15 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     
+     <!-- Exact-alarm permission for Android 12+ -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>  
+  <!-- If your app is calendar/alarm-centric, you may declare USE_EXACT_ALARM for Android ≤ 32 -->
+  <uses-permission
+      android:name="android.permission.USE_EXACT_ALARM"
+      android:maxSdkVersion="32"/>
+      
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
       <queries>
         <intent>
@@ -38,7 +47,8 @@
         android:icon="@mipmap/launcher_icon"
         android:requestLegacyExternalStorage="true"
         >
-        
+      
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -60,5 +70,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+             <!-- Flutter Local Notifications: schedule receiver -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        <!-- Flutter Local Notifications: reboot / app update listener -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+        
     </application>
 </manifest>

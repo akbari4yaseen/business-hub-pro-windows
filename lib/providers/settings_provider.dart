@@ -23,7 +23,7 @@ class SettingsProvider with ChangeNotifier {
 
   // Available options
   static const List<String> availableCurrencies = currencies;
-  static const List<String> availableLanguages = ['fa', 'ps', 'en'];
+  static const List<String> availableLanguages = ['fa', 'en'];
   static const List<String> availableTransactionTypes = ['credit', 'debit'];
   static const List<String> availableTrackOptions = ['treasure', 'noTreasure'];
   static const List<int> availableTracks = [1, 2];

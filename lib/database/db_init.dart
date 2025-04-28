@@ -67,12 +67,14 @@ class DbInit {
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS reminders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        scheduledTime TEXT NOT NULL,
-        isRepeating INTEGER NOT NULL,
-        repeatInterval TEXT
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        title            TEXT    NOT NULL,
+        description      TEXT    DEFAULT '',
+        scheduled_at     INTEGER NOT NULL,               -- ms since UNIX epoch
+        is_repeating     INTEGER NOT NULL DEFAULT 0,      -- 0 = false, 1 = true
+        repeat_interval  INTEGER,                         -- interval in milliseconds
+        created_at       INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+        updated_at       INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
       )
     ''');
 

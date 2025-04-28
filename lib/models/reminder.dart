@@ -1,41 +1,51 @@
-import 'package:flutter/material.dart';
-
 class Reminder {
   int? id;
   String title;
-  String? description;
+  String description;
   DateTime scheduledTime;
   bool isRepeating;
-  String? repeatInterval; // e.g. 'daily', 'weekly', etc.
+  int? repeatInterval;
+  DateTime? createdAt;
+  DateTime? updatedAt;
 
   Reminder({
     this.id,
     required this.title,
-    this.description,
+    this.description = '',
     required this.scheduledTime,
     this.isRepeating = false,
     this.repeatInterval,
+    this.createdAt,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'title': title,
       'description': description,
-      'scheduledTime': scheduledTime.toIso8601String(),
-      'isRepeating': isRepeating ? 1 : 0,
-      'repeatInterval': repeatInterval,
+      'scheduled_at': scheduledTime.millisecondsSinceEpoch,
+      'is_repeating': isRepeating ? 1 : 0,
+      'repeat_interval': repeatInterval,
     };
+    if (id != null) map['id'] = id;
+    return map;
   }
 
   factory Reminder.fromMap(Map<String, dynamic> map) {
     return Reminder(
-      id: map['id'],
-      title: map['title'],
-      description: map['description'],
-      scheduledTime: DateTime.parse(map['scheduledTime']),
-      isRepeating: map['isRepeating'] == 1,
-      repeatInterval: map['repeatInterval'],
+      id: map['id'] as int?,
+      title: map['title'] as String,
+      description: map['description'] as String,
+      scheduledTime:
+          DateTime.fromMillisecondsSinceEpoch(map['scheduled_at'] as int),
+      isRepeating: (map['is_repeating'] as int) == 1,
+      repeatInterval: map['repeat_interval'] as int?,
+      createdAt: map['created_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int)
+          : null,
+      updatedAt: map['updated_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['updated_at'] as int)
+          : null,
     );
   }
 }

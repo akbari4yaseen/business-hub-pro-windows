@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 enum NotificationType { info, error, reminder, system }
 
 class AppNotification {
