@@ -2,187 +2,292 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:intl/intl.dart';
 
 import '../models/reminder.dart';
 import '../database/reminder_db.dart';
 
-class RemindersScreen extends StatefulWidget {
-  const RemindersScreen({Key? key}) : super(key: key);
+enum _MenuOption { edit, delete }
 
-  @override
-  State<RemindersScreen> createState() => _RemindersScreenState();
-}
+/// Centralized notification service for initialization and scheduling
+class NotificationService {
+  NotificationService._();
+  static final NotificationService instance = NotificationService._();
 
-class _RemindersScreenState extends State<RemindersScreen> {
-  late Future<List<Reminder>> _remindersFuture;
-  final _notifications = FlutterLocalNotificationsPlugin();
-
-  // Define your channel once
-  static const AndroidNotificationChannel _reminderChannel =
-      AndroidNotificationChannel(
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
+  static const _channel = AndroidNotificationChannel(
     'reminders_channel',
     'Reminders',
     description: 'Reminder notifications',
     importance: Importance.max,
   );
 
-  @override
-  void initState() {
-    super.initState();
-
-    // 1️⃣ Initialize IANA tz database
+  Future<void> init() async {
     tz.initializeTimeZones();
-
-    // 2️⃣ Initialize notifications & permissions
-    _initializeNotifications();
-
-    // 3️⃣ Load existing reminders
-    _loadReminders();
-  }
-
-  Future<void> _initializeNotifications() async {
-    // a) Create channel & request any runtime perms on Android
-    final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+    final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
-    if (androidImpl != null) {
-      // Create (or update) the channel
-      await androidImpl.createNotificationChannel(_reminderChannel);
-
-      // Android 13+ — request POST_NOTIFICATIONS
-      final granted = await androidImpl.requestNotificationsPermission();
-      if (granted == false) {
-        debugPrint('❗️ Notification permission declined');
-      }
+    if (android != null) {
+      await android.createNotificationChannel(_channel);
+      final granted = await android.requestNotificationsPermission();
+      if (granted == false) debugPrint('Notification permission declined');
     }
-
-    // b) Finally initialize the plugin
-    const initSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    await _plugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
     );
-    await _notifications.initialize(initSettings);
   }
 
-  void _loadReminders() {
-    setState(() {
-      _remindersFuture = ReminderDB().getReminders();
-    });
-  }
-
-  Future<void> _scheduleNotification(Reminder r) async {
-    if (r.scheduledTime.isBefore(DateTime.now())) return;
-
+  Future<void> schedule(Reminder r) async {
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        _reminderChannel.id,
-        _reminderChannel.name,
-        channelDescription: _reminderChannel.description,
+        _channel.id,
+        _channel.name,
+        channelDescription: _channel.description,
         icon: 'ic_stat_notify',
         importance: Importance.max,
         priority: Priority.high,
       ),
     );
+    final scheduled = tz.TZDateTime.from(r.scheduledTime, tz.local);
 
     if (r.isRepeating && r.repeatInterval != null) {
-      final interval = (r.repeatInterval! == Duration(days: 7).inMilliseconds)
-          ? RepeatInterval.weekly
-          : RepeatInterval.daily;
-
-      await _notifications.periodicallyShow(
+      final match = r.repeatInterval == Duration(days: 7).inMilliseconds
+          ? DateTimeComponents.dayOfWeekAndTime
+          : DateTimeComponents.time;
+      await _plugin.zonedSchedule(
         r.id!,
         r.title,
         r.description.isNotEmpty ? r.description : 'Time for your reminder!',
-        interval,
+        scheduled,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: match,
       );
     } else {
-      await _notifications.zonedSchedule(
+      if (r.scheduledTime.isBefore(DateTime.now())) return;
+      await _plugin.zonedSchedule(
         r.id!,
         r.title,
         r.description.isNotEmpty ? r.description : 'Time for your reminder!',
-        tz.TZDateTime.from(r.scheduledTime, tz.local),
+        scheduled,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     }
   }
 
-  Future<void> _cancelNotification(int id) => _notifications.cancel(id);
+  Future<void> cancel(int id) => _plugin.cancel(id);
+}
 
-  Future<void> _showAddReminderDialog() async {
-    final newR = await showDialog<Reminder>(
+class RemindersScreen extends StatefulWidget {
+  const RemindersScreen({Key? key}) : super(key: key);
+  @override
+  _RemindersScreenState createState() => _RemindersScreenState();
+}
+
+class _RemindersScreenState extends State<RemindersScreen> {
+  List<Reminder> _reminders = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.instance.init();
+    _fetchReminders();
+  }
+
+  Future<void> _fetchReminders() async {
+    setState(() => _isLoading = true);
+    final items = await ReminderDB().getReminders();
+    setState(() {
+      _reminders = items;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _addReminder(Reminder r) async {
+    final id = await ReminderDB().insertReminder(r);
+    r.id = id;
+    await NotificationService.instance.schedule(r);
+    await _fetchReminders();
+  }
+
+  Future<void> _updateReminder(Reminder r) async {
+    await ReminderDB().updateReminder(r);
+    await NotificationService.instance.cancel(r.id!);
+    await NotificationService.instance.schedule(r);
+    await _fetchReminders();
+  }
+
+  Future<void> _confirmDelete(Reminder r) async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => const AddReminderDialog(),
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Reminder'),
+        content: const Text('Are you sure you want to delete this reminder?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await ReminderDB().deleteReminder(r.id!);
+      await NotificationService.instance.cancel(r.id!);
+      await _fetchReminders();
+    }
+  }
+
+  Future<void> _showAddSheet({Reminder? existing}) async {
+    final newR = await showModalBottomSheet<Reminder>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: AddReminderSheet(
+          reminder: existing,
+          onSave: (r) => Navigator.pop(context, r),
+        ),
+      ),
     );
     if (newR != null) {
-      final id = await ReminderDB().insertReminder(newR);
-      newR.id = id;
-      await _scheduleNotification(newR);
-      _loadReminders();
+      if (existing == null) {
+        await _addReminder(newR);
+      } else {
+        newR.id = existing.id;
+        await _updateReminder(newR);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders')),
-      body: FutureBuilder<List<Reminder>>(
-        future: _remindersFuture,
-        builder: (_, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final list = snap.data ?? [];
-          if (list.isEmpty) {
-            return const Center(child: Text('No reminders yet.'));
-          }
-          return ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (_, i) {
-              final r = list[i];
-              final dt = r.scheduledTime.toLocal();
-              final repeatText = r.isRepeating ? ' (repeats)' : '';
-              return ListTile(
-                title: Text(r.title),
-                subtitle: Text(
-                  '${r.description}\n'
-                  '${dt.toString()}$repeatText',
-                ),
-                isThreeLine: r.description.isNotEmpty,
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () async {
-                    await ReminderDB().deleteReminder(r.id!);
-                    await _cancelNotification(r.id!);
-                    _loadReminders();
-                  },
-                ),
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        title: const Text('Reminders'),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchReminders,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _reminders.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.notifications_off, size: 64),
+                        SizedBox(height: 16),
+                        Text('No reminders yet!',
+                            style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _reminders.length,
+                    itemBuilder: (ctx, i) {
+                      final r = _reminders[i];
+                      final timeStr = DateFormat('MMM dd, yyyy – hh:mm a')
+                          .format(r.scheduledTime.toLocal());
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          title: Text(r.title,
+                              style: const TextStyle(fontSize: 18)),
+                          subtitle: Text(
+                            '${r.description.isNotEmpty ? r.description + '\n' : ''}'
+                            '$timeStr${r.isRepeating ? ' • Repeats' : ''}',
+                          ),
+                          trailing: PopupMenuButton<_MenuOption>(
+                            onSelected: (opt) {
+                              switch (opt) {
+                                case _MenuOption.edit:
+                                  _showAddSheet(existing: r);
+                                  break;
+                                case _MenuOption.delete:
+                                  _confirmDelete(r);
+                                  break;
+                              }
+                            },
+                            itemBuilder: (ctx) => <PopupMenuEntry<_MenuOption>>[
+                              const PopupMenuItem(
+                                value: _MenuOption.edit,
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.edit,
+                                    color: Colors.blue,
+                                  ),
+                                  title: Text('Edit'),
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: _MenuOption.delete,
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  title: Text('Delete'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddReminderDialog,
+        onPressed: () => _showAddSheet(),
         child: const Icon(Icons.add),
       ),
     );
   }
 }
 
-class AddReminderDialog extends StatefulWidget {
-  const AddReminderDialog({Key? key}) : super(key: key);
+class AddReminderSheet extends StatefulWidget {
+  final Reminder? reminder;
+  final ValueChanged<Reminder> onSave;
+  const AddReminderSheet({this.reminder, required this.onSave, Key? key})
+      : super(key: key);
   @override
-  State<AddReminderDialog> createState() => _AddReminderDialogState();
+  _AddReminderSheetState createState() => _AddReminderSheetState();
 }
 
-class _AddReminderDialogState extends State<AddReminderDialog> {
-  final _titleCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
+class _AddReminderSheetState extends State<AddReminderSheet> {
+  late TextEditingController _titleCtrl;
+  late TextEditingController _descCtrl;
   DateTime? _dateTime;
   bool _isRepeating = false;
   int _repeatInterval = Duration(days: 1).inMilliseconds;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.reminder;
+    _titleCtrl = TextEditingController(text: r?.title ?? '');
+    _descCtrl = TextEditingController(text: r?.description ?? '');
+    if (r != null) {
+      _dateTime = r.scheduledTime;
+      _isRepeating = r.isRepeating;
+      _repeatInterval = r.repeatInterval ?? _repeatInterval;
+    }
+  }
 
   @override
   void dispose() {
@@ -195,51 +300,54 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
-      initialDate: now,
+      initialDate: _dateTime ?? now,
       firstDate: now,
       lastDate: DateTime(now.year + 5),
     );
     if (date == null) return;
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: _dateTime != null
+          ? TimeOfDay.fromDateTime(_dateTime!)
+          : TimeOfDay.now(),
     );
     if (time == null) return;
-    setState(() {
-      _dateTime =
-          DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    });
+    setState(() => _dateTime =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute));
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add Reminder'),
-      content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(widget.reminder == null ? 'New Reminder' : 'Edit Reminder',
+              style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 16),
           TextField(
             controller: _titleCtrl,
-            decoration: const InputDecoration(labelText: 'Title'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _descCtrl,
-            decoration: const InputDecoration(labelText: 'Description'),
+            decoration: const InputDecoration(
+                labelText: 'Title', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: Text(
-                _dateTime == null
-                    ? 'No date/time chosen'
-                    : _dateTime.toString(),
-              ),
+          TextField(
+            controller: _descCtrl,
+            decoration: const InputDecoration(
+                labelText: 'Description', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _pickDateTime,
+            icon: const Icon(Icons.calendar_today),
+            label: Text(
+              _dateTime == null
+                  ? 'Select date & time'
+                  : DateFormat('MMM dd, yyyy – hh:mm a').format(_dateTime!),
             ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: _pickDateTime,
-            ),
-          ]),
+          ),
           const SizedBox(height: 12),
           SwitchListTile(
             title: const Text('Repeat'),
@@ -249,41 +357,47 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
           if (_isRepeating)
             DropdownButtonFormField<int>(
               value: _repeatInterval,
-              decoration: const InputDecoration(labelText: 'Interval'),
+              decoration: const InputDecoration(
+                  labelText: 'Interval', border: OutlineInputBorder()),
               items: [
                 DropdownMenuItem(
-                  child: const Text('Daily'),
-                  value: Duration(days: 1).inMilliseconds,
-                ),
+                    child: const Text('Daily'),
+                    value: Duration(days: 1).inMilliseconds),
                 DropdownMenuItem(
-                  child: const Text('Weekly'),
-                  value: Duration(days: 7).inMilliseconds,
-                ),
+                    child: const Text('Weekly'),
+                    value: Duration(days: 7).inMilliseconds),
               ],
               onChanged: (v) => setState(() => _repeatInterval = v!),
             ),
-        ]),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_titleCtrl.text.isEmpty || _dateTime == null) return;
+                    final r = Reminder(
+                      id: widget.reminder?.id,
+                      title: _titleCtrl.text,
+                      description: _descCtrl.text,
+                      scheduledTime: _dateTime!,
+                      isRepeating: _isRepeating,
+                      repeatInterval: _isRepeating ? _repeatInterval : null,
+                    );
+                    widget.onSave(r);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_titleCtrl.text.isEmpty || _dateTime == null) return;
-            final r = Reminder(
-              title: _titleCtrl.text,
-              description: _descCtrl.text,
-              scheduledTime: _dateTime!,
-              isRepeating: _isRepeating,
-              repeatInterval: _isRepeating ? _repeatInterval : null,
-            );
-            Navigator.pop(context, r);
-          },
-          child: const Text('Add'),
-        ),
-      ],
     );
   }
 }
