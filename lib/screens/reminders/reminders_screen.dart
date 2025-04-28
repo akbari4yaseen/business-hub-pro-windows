@@ -191,7 +191,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.notifications_off, size: 64),
+                        const Icon(Icons.alarm_off, size: 64),
                         const SizedBox(height: 16),
                         Text(loc.noRemindersYet,
                             style: const TextStyle(fontSize: 18)),

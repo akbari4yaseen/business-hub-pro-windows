@@ -118,10 +118,34 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       itemBuilder: (_) => [
-        PopupMenuItem(value: 'profile', child: Text(loc.profile)),
-        PopupMenuItem(value: 'notifications', child: Text(loc.notifications)),
+        PopupMenuItem<String>(
+          value: 'profile',
+          child: ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(loc.profile),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'notifications',
+          child: ListTile(
+            leading: const Icon(Icons.notifications),
+            title: Text(loc.notifications),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
         const PopupMenuDivider(),
-        PopupMenuItem(value: 'logout', child: Text(loc.logout)),
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: ListTile(
+            leading: const Icon(Icons.logout),
+            title: Text(loc.logout),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
       ],
     );
   }

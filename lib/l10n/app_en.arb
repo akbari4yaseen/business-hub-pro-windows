@@ -245,5 +245,13 @@
   "defaultReminder": "Time for your reminder!",
   "repeats": "Repeats",
   "titleEmptyError": "Please enter a title",
-  "pickDateTimeError": "Please pick date & time"
+  "pickDateTimeError": "Please pick date & time",
+  "notificationsTitle": "Notifications",
+  "markAllReadTooltip": "Mark all as read",
+  "clearAllTooltip": "Clear all",
+  "clearAllNotificationsTitle": "Clear All Notifications",
+  "notificationDeleted": "Notification deleted",
+  "clearAllNotificationsContent": "Are you sure you want to clear all notifications?",
+  "noNotifications": "No notifications",
+  "undo": "UNDO"
 }
