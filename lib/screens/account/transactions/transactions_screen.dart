@@ -311,6 +311,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       floatingActionButton: _isAtTop
           ? null
           : FloatingActionButton(
+              heroTag: 'scroll_to_top_transactions_fab',
               mini: true,
               child: const FaIcon(FontAwesomeIcons.angleUp, size: 18),
               onPressed: () {

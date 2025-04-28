@@ -368,6 +368,7 @@ class _JournalScreenState extends State<JournalScreen> {
         child: bodyContent,
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'journal_add_fab',
         mini: !_isAtTop,
         child: FaIcon(
           _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,

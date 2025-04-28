@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/reminders_screen.dart';
+import 'screens/reminders/reminders_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';

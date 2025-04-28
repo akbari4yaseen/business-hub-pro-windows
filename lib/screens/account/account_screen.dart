@@ -457,6 +457,7 @@ class _AccountScreenState extends State<AccountScreen>
               ],
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'accounts_add_fab',
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
         tooltip: _isAtTop
             ? loc.addAccount
