@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/reminder.dart';
 import '../database/reminder_db.dart';
@@ -53,6 +54,8 @@ class NotificationService {
     );
     final scheduled = tz.TZDateTime.from(r.scheduledTime, tz.local);
 
+    final body = r.description.isNotEmpty ? r.description : '';
+
     if (r.isRepeating && r.repeatInterval != null) {
       final match = r.repeatInterval == Duration(days: 7).inMilliseconds
           ? DateTimeComponents.dayOfWeekAndTime
@@ -60,7 +63,7 @@ class NotificationService {
       await _plugin.zonedSchedule(
         r.id!,
         r.title,
-        r.description.isNotEmpty ? r.description : 'Time for your reminder!',
+        body,
         scheduled,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -71,7 +74,7 @@ class NotificationService {
       await _plugin.zonedSchedule(
         r.id!,
         r.title,
-        r.description.isNotEmpty ? r.description : 'Time for your reminder!',
+        body,
         scheduled,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -123,18 +126,19 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Future<void> _confirmDelete(Reminder r) async {
+    final loc = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Reminder'),
-        content: const Text('Are you sure you want to delete this reminder?'),
+        title: Text(loc.deleteReminderTitle),
+        content: Text(loc.deleteReminderConfirmation),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(loc.cancel)),
           ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete')),
+              child: Text(loc.delete)),
         ],
       ),
     );
@@ -173,9 +177,10 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reminders'),
+        title: Text(loc.remindersTitle),
       ),
       body: RefreshIndicator(
         onRefresh: _fetchReminders,
@@ -185,11 +190,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.notifications_off, size: 64),
-                        SizedBox(height: 16),
-                        Text('No reminders yet!',
-                            style: TextStyle(fontSize: 18)),
+                      children: [
+                        const Icon(Icons.notifications_off, size: 64),
+                        const SizedBox(height: 16),
+                        Text(loc.noRemindersYet,
+                            style: const TextStyle(fontSize: 18)),
                       ],
                     ),
                   )
@@ -212,7 +217,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                               style: const TextStyle(fontSize: 18)),
                           subtitle: Text(
                             '${r.description.isNotEmpty ? r.description + '\n' : ''}'
-                            '$timeStr${r.isRepeating ? ' • Repeats' : ''}',
+                            '$timeStr${r.isRepeating ? ' • ${loc.repeats}' : ''}',
                           ),
                           trailing: PopupMenuButton<_MenuOption>(
                             onSelected: (opt) {
@@ -226,24 +231,24 @@ class _RemindersScreenState extends State<RemindersScreen> {
                               }
                             },
                             itemBuilder: (ctx) => <PopupMenuEntry<_MenuOption>>[
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: _MenuOption.edit,
                                 child: ListTile(
-                                  leading: Icon(
+                                  leading: const Icon(
                                     Icons.edit,
                                     color: Colors.blue,
                                   ),
-                                  title: Text('Edit'),
+                                  title: Text(loc.edit),
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: _MenuOption.delete,
                                 child: ListTile(
-                                  leading: Icon(
+                                  leading: const Icon(
                                     Icons.delete,
                                     color: Colors.red,
                                   ),
-                                  title: Text('Delete'),
+                                  title: Text(loc.delete),
                                 ),
                               ),
                             ],
@@ -314,6 +319,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
       initialDate: _dateTime ?? now,
       firstDate: now,
       lastDate: DateTime(now.year + 5),
+      locale: Localizations.localeOf(context),
     );
     if (date == null) return;
     final time = await showTimePicker(
@@ -334,6 +340,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -341,16 +348,20 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            Text(widget.reminder == null ? 'New Reminder' : 'Edit Reminder',
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              widget.reminder == null
+                  ? loc.newReminderTitle
+                  : loc.editReminderTitle,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _titleCtrl,
               autofocus: true,
               maxLength: 128,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: loc.titleLabel),
               validator: (val) => (val == null || val.trim().isEmpty)
-                  ? 'Please enter a title'
+                  ? loc.titleEmptyError
                   : null,
             ),
             const SizedBox(height: 12),
@@ -358,14 +369,14 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
               controller: _descCtrl,
               maxLines: 2,
               maxLength: 512,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: InputDecoration(labelText: loc.descriptionLabel),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _dateCtrl,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Date & Time',
+                labelText: loc.dateTimeLabel,
                 prefixIcon: const Icon(Icons.calendar_today),
                 errorText: _dateError,
               ),
@@ -373,20 +384,20 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
             ),
             const SizedBox(height: 12),
             SwitchListTile(
-              title: const Text('Repeat'),
+              title: Text(loc.repeatLabel),
               value: _isRepeating,
               onChanged: (v) => setState(() => _isRepeating = v),
             ),
             if (_isRepeating)
               DropdownButtonFormField<int>(
                 value: _repeatInterval,
-                decoration: const InputDecoration(labelText: 'Interval'),
+                decoration: InputDecoration(labelText: loc.intervalLabel),
                 items: [
                   DropdownMenuItem(
-                      child: const Text('Daily'),
+                      child: Text(loc.daily),
                       value: Duration(days: 1).inMilliseconds),
                   DropdownMenuItem(
-                      child: const Text('Weekly'),
+                      child: Text(loc.weekly),
                       value: Duration(days: 7).inMilliseconds),
                 ],
                 onChanged: (v) => setState(() => _repeatInterval = v!),
@@ -397,7 +408,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                 Expanded(
                   child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel')),
+                      child: Text(loc.cancel)),
                 ),
                 Expanded(
                   child: ElevatedButton(
@@ -406,7 +417,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                       if (!form.validate()) return;
                       if (_dateTime == null) {
                         setState(() {
-                          _dateError = 'Please pick date & time';
+                          _dateError = loc.pickDateTimeError;
                         });
                         return;
                       }
@@ -420,7 +431,7 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
                       );
                       widget.onSave(r);
                     },
-                    child: const Text('Save'),
+                    child: Text(loc.save),
                   ),
                 ),
               ],

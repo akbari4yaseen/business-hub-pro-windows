@@ -228,5 +228,22 @@
   "totalCount": "تعداد: {count}",
   "printed": "چاپ شده: {date}",
   "pageOf": "صفحه {page} از {total}",
-  "no": "شماره"
+  "no": "شماره",
+  "remindersTitle": "یادآورها",
+  "deleteReminderTitle": "حذف یادآور",
+  "deleteReminderConfirmation": "آیا مطمئن هستید که می‌خواهید این یادآور را حذف کنید؟",
+  "noRemindersYet": "هنوز یادآوری وجود ندارد!",
+  "newReminderTitle": "یادآور جدید",
+  "editReminderTitle": "ویرایش یادآور",
+  "titleLabel": "عنوان",
+  "descriptionLabel": "توضیحات",
+  "dateTimeLabel": "تاریخ و زمان",
+  "repeatLabel": "تکرار",
+  "intervalLabel": "فاصله",
+  "daily": "روزانه",
+  "weekly": "هفتگی",
+  "defaultReminder": "زمان یادآوری شما فرا رسیده است!",
+  "repeats": "تکرار می‌شود",
+  "titleEmptyError": "لطفاً عنوان را وارد کنید",
+  "pickDateTimeError": "لطفاً تاریخ و زمان را انتخاب کنید"
 }
