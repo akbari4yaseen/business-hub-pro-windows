@@ -30,6 +30,8 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   local_auth: ^2.3.0
+  google_sign_in: ^6.3.0
+  googleapis: ^14.0.0
 
 dev_dependencies:
   flutter_test:

@@ -74,6 +74,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            <!-- Google Sign-In configuration -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+        <meta-data
+            android:name="com.google.android.gms.client_id"
+            android:value="@string/default_web_client_id"/>
              <!-- Flutter Local Notifications: schedule receiver -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
