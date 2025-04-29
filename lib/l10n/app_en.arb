@@ -253,5 +253,6 @@
   "notificationDeleted": "Notification deleted",
   "clearAllNotificationsContent": "Are you sure you want to clear all notifications?",
   "noNotifications": "No notifications",
-  "undo": "UNDO"
+  "undo": "UNDO",
+  "loading": "Loading..."
 }

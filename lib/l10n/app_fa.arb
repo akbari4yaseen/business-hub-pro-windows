@@ -253,5 +253,6 @@
   "notificationDeleted": "اعلان حذف شد",
   "clearAllNotificationsContent": "آیا مطمئن هستید که می‌خواهید همهٔ اعلانات را حذف کنید؟",
   "noNotifications": "هیچ اعلانی وجود ندارد",
-  "undo": "لغو عمل"
+  "undo": "لغو عمل",
+  "loading": "در حال بارگیری..."
 }

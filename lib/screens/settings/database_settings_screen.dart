@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../database/database_helper.dart';
+import '../../database/settings_db.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart';
@@ -17,26 +18,11 @@ Future<bool> ensureStoragePermission() async {
     if (status.isPermanentlyDenied) openAppSettings();
     return false;
   }
-  return true; // iOS and others don't need explicit storage perms
+  return true;
 }
 
 class DatabaseSettingsScreen extends StatefulWidget {
-  final int lastOnlineBackupDays;
-  final int lastOfflineBackupDays;
-  final Future<void> Function() onOnlineBackup;
-  final Future<void> Function() onOfflineBackup;
-  final Future<void> Function() onRestore;
-  final Future<void> Function()? onRefresh;
-
-  const DatabaseSettingsScreen({
-    Key? key,
-    required this.lastOnlineBackupDays,
-    required this.lastOfflineBackupDays,
-    required this.onOnlineBackup,
-    required this.onOfflineBackup,
-    required this.onRestore,
-    this.onRefresh,
-  }) : super(key: key);
+  const DatabaseSettingsScreen({Key? key}) : super(key: key);
 
   @override
   _DatabaseSettingsScreenState createState() => _DatabaseSettingsScreenState();
@@ -47,6 +33,42 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
   bool _isOfflineBackingUp = false;
   bool _isRestoring = false;
 
+  int? _lastOnlineBackupDays;
+  int? _lastOfflineBackupDays;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBackupInfo();
+  }
+
+  /// Reads last backup timestamps from settings and computes days ago.
+  Future<void> _fetchBackupInfo() async {
+    final onlineStr = await SettingsDBHelper().getSetting('lastOnlineBackup');
+    final offlineStr = await SettingsDBHelper().getSetting('lastOfflineBackup');
+
+    int? onlineDays;
+    int? offlineDays;
+
+    if (onlineStr != null) {
+      try {
+        final onlineDate = DateTime.parse(onlineStr);
+        onlineDays = DateTime.now().difference(onlineDate).inDays;
+      } catch (_) {}
+    }
+    if (offlineStr != null) {
+      try {
+        final offlineDate = DateTime.parse(offlineStr);
+        offlineDays = DateTime.now().difference(offlineDate).inDays;
+      } catch (_) {}
+    }
+
+    setState(() {
+      _lastOnlineBackupDays = onlineDays;
+      _lastOfflineBackupDays = offlineDays;
+    });
+  }
+
   String _formatDate(int daysAgo) {
     final date = DateTime.now().subtract(Duration(days: daysAgo));
     return DateFormat.yMMMd().add_jm().format(date);
@@ -54,17 +76,18 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
 
   Future<void> _handleOnlineBackup(BuildContext context) async {
     setState(() => _isOnlineBackingUp = true);
+    final loc = AppLocalizations.of(context)!;
     try {
-      await widget.onOnlineBackup();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(AppLocalizations.of(context)!.onlineBackupSuccess)),
+      // await DatabaseHelper().backupOnline();
+      // save timestamp
+      await SettingsDBHelper().saveSetting(
+        'lastOnlineBackup',
+        DateTime.now().toIso8601String(),
       );
+      _showSnackbar(context, loc.onlineBackupSuccess);
+      await _fetchBackupInfo();
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(AppLocalizations.of(context)!.onlineBackupFailed)),
-      );
+      _showSnackbar(context, loc.onlineBackupFailed);
     } finally {
       setState(() => _isOnlineBackingUp = false);
     }
@@ -72,19 +95,14 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
 
   Future<void> _handleOfflineBackup(BuildContext context) async {
     final loc = AppLocalizations.of(context)!;
-    // Ensure permission and selection before showing spinner
     if (!await ensureStoragePermission()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.storagePermissionRequired)),
-      );
+      _showSnackbar(context, loc.storagePermissionRequired);
       return;
     }
 
     final selectedDir = await FilePicker.platform.getDirectoryPath();
     if (selectedDir == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.exportCanceledNoDirectory)),
-      );
+      _showSnackbar(context, loc.exportCanceledNoDirectory);
       return;
     }
 
@@ -96,20 +114,21 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
 
     try {
       final success = await DatabaseHelper().exportTo(backupPath);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? loc.databaseExportedSuccessfully(backupPath)
-                : loc.databaseFileNotFoundOrExportFailed,
-          ),
-        ),
+      if (success) {
+        await SettingsDBHelper().saveSetting(
+          'lastOfflineBackup',
+          DateTime.now().toIso8601String(),
+        );
+      }
+      _showSnackbar(
+        context,
+        success
+            ? loc.databaseExportedSuccessfully(backupPath)
+            : loc.databaseFileNotFoundOrExportFailed,
       );
-      if (success) await widget.onOfflineBackup();
+      await _fetchBackupInfo();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.errorExportingDatabase(e.toString()))),
-      );
+      _showSnackbar(context, loc.errorExportingDatabase(e.toString()));
     } finally {
       setState(() => _isOfflineBackingUp = false);
     }
@@ -117,7 +136,6 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
 
   Future<void> _handleRestore(BuildContext context) async {
     final loc = AppLocalizations.of(context)!;
-    // Confirm overwrite
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -125,79 +143,84 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
         content: Text(loc.restoreOverwriteWarning),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(loc.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.cancel),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(loc.restore)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.restore),
+          ),
         ],
       ),
     );
     if (confirm != true) return;
 
     if (!await ensureStoragePermission()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.storagePermissionRequired)),
-      );
+      _showSnackbar(context, loc.storagePermissionRequired);
       return;
     }
 
     final result = await FilePicker.platform.pickFiles();
     final path = result?.files.single.path;
     if (path == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.restoreCanceledNoFile)),
-      );
+      _showSnackbar(context, loc.restoreCanceledNoFile);
       return;
     }
 
     setState(() => _isRestoring = true);
     try {
       final success = await DatabaseHelper().importFrom(path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? loc.databaseRestoredSuccessfully
-                : loc.restoreFailedFileNotFound,
-          ),
-        ),
+      _showSnackbar(
+        context,
+        success
+            ? loc.databaseRestoredSuccessfully
+            : loc.restoreFailedFileNotFound,
       );
-      if (success) await widget.onRestore();
+      await _fetchBackupInfo();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.errorRestoringDatabase(e.toString()))),
-      );
+      _showSnackbar(context, loc.errorRestoringDatabase(e.toString()));
     } finally {
       setState(() => _isRestoring = false);
     }
   }
 
+  void _showSnackbar(BuildContext context, String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.databaseSettings),
+        title: Text(loc.databaseSettings),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: widget.onRefresh ?? () async {},
+          onRefresh: _fetchBackupInfo,
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
               _buildStatusCard(
                 context,
                 icon: Icons.cloud_done_rounded,
-                title: AppLocalizations.of(context)!.lastOnlineBackup,
-                subtitle: _formatDate(widget.lastOnlineBackupDays),
+                title: loc.lastOnlineBackup,
+                subtitle: _lastOnlineBackupDays != null
+                    ? _formatDate(_lastOnlineBackupDays!)
+                    : loc.loading,
               ),
               const SizedBox(height: 12),
               _buildStatusCard(
                 context,
                 icon: Icons.save_alt_rounded,
-                title: AppLocalizations.of(context)!.lastOfflineBackup,
-                subtitle: _formatDate(widget.lastOfflineBackupDays),
+                title: loc.lastOfflineBackup,
+                subtitle: _lastOfflineBackupDays != null
+                    ? _formatDate(_lastOfflineBackupDays!)
+                    : loc.loading,
               ),
               const SizedBox(height: 24),
               Row(
@@ -223,7 +246,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                               children: [
                                 Icon(Icons.cloud_upload_rounded),
                                 SizedBox(width: 8),
-                                Text(AppLocalizations.of(context)!.backupOnline)
+                                Text(loc.backupOnline)
                               ],
                             ),
                     ),
@@ -251,7 +274,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                               children: [
                                 Icon(Icons.download_for_offline_rounded),
                                 SizedBox(width: 8),
-                                Text(AppLocalizations.of(context)!.backupLocal)
+                                Text(loc.backupLocal)
                               ],
                             ),
                     ),
@@ -281,7 +304,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                           children: [
                             Icon(Icons.restore_rounded),
                             SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!.restoreDatabase)
+                            Text(loc.restoreDatabase)
                           ],
                         ),
                 ),
