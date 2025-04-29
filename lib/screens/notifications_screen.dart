@@ -15,16 +15,17 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.notificationsTitle),
+        elevation: 1,
+        centerTitle: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.done_all),
             tooltip: loc.markAllReadTooltip,
-            onPressed: () async {
-              await context.read<NotificationProvider>().markAllAsRead();
-            },
+            onPressed: () =>
+                context.read<NotificationProvider>().markAllAsRead(),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_sweep),
+            icon: const Icon(Icons.delete_sweep_outlined),
             tooltip: loc.clearAllNotificationsTitle,
             onPressed: () => _showClearDialog(context, loc),
           ),
@@ -39,93 +40,15 @@ class NotificationsScreen extends StatelessWidget {
           return RefreshIndicator(
             onRefresh: provider.fetchNotifications,
             child: provider.notifications.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.notifications_off,
-                          size: 64,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          loc.noNotifications,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
+                ? _EmptyState(loc)
+                : ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     itemCount: provider.notifications.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, i) {
                       final n = provider.notifications[i];
-                      return Dismissible(
-                        key: ValueKey(n.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.redAccent,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: const Icon(
-                            Icons.delete,
-                            color: Colors.white,
-                          ),
-                        ),
-                        onDismissed: (_) async {
-                          await provider.deleteNotification(n.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(loc.notificationDeleted),
-                              action: SnackBarAction(
-                                label: loc.undo,
-                                onPressed: () async {
-                                  await provider.restoreNotification(n);
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                        child: ListTile(
-                          leading: Icon(
-                            _iconForType(n.type),
-                            color: n.read
-                                ? Colors.grey
-                                : Theme.of(context).colorScheme.primary,
-                          ),
-                          title: Text(
-                            n.title,
-                            style: TextStyle(
-                              fontWeight:
-                                  n.read ? FontWeight.normal : FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(n.message),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat('MMM dd, yyyy – hh:mm a')
-                                    .format(n.timestamp.toLocal()),
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                            ],
-                          ),
-                          isThreeLine: true,
-                          onTap: () async {
-                            await provider.markAsRead(n.id);
-                            if (n.routeName != null) {
-                              Navigator.pushNamed(
-                                context,
-                                n.routeName!,
-                                arguments: n.payload,
-                              );
-                            }
-                          },
-                        ),
-                      );
+                      return _NotificationCard(notification: n);
                     },
                   ),
           );
@@ -135,24 +58,165 @@ class NotificationsScreen extends StatelessWidget {
   }
 
   void _showClearDialog(BuildContext context, AppLocalizations loc) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.clearAllNotificationsTitle),
-        content: Text(loc.clearAllNotificationsContent),
-        actions: [
-          TextButton(
-            child: Text(loc.cancel),
-            onPressed: () => Navigator.of(ctx).pop(),
-          ),
-          TextButton(
-            child: Text(loc.clear),
-            onPressed: () async {
-              await context.read<NotificationProvider>().clearAll();
-              Navigator.of(ctx).pop();
-            },
-          ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(loc.clearAllNotificationsTitle,
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 12),
+            Text(loc.clearAllNotificationsContent, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  child: Text(loc.cancel),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ElevatedButton(
+                  child: Text(loc.clear),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () async {
+                    await context.read<NotificationProvider>().clearAll();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final AppLocalizations loc;
+  const _EmptyState(this.loc);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.notifications_off_outlined,
+              size: 80, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(loc.noNotifications,
+              style: Theme.of(context).textTheme.titleSmall),
         ],
+      ),
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final AppNotification notification;
+  const _NotificationCard({required this.notification});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<NotificationProvider>();
+    final theme = Theme.of(context);
+    final isUnread = !notification.read;
+    final timestamp = DateFormat('MMM dd, yyyy • hh:mm a')
+        .format(notification.timestamp.toLocal());
+
+    return Dismissible(
+      key: ValueKey(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.error,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerRight,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) async {
+        await provider.deleteNotification(notification.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.notificationDeleted),
+            action: SnackBarAction(
+              label: AppLocalizations.of(context)!.undo,
+              onPressed: () => provider.restoreNotification(notification),
+            ),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: isUnread ? 4 : 1,
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          leading: Stack(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: isUnread
+                    ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                    : Colors.grey.shade200,
+                child: Icon(
+                  _iconForType(notification.type),
+                  color: isUnread
+                      ? theme.colorScheme.primary
+                      : Colors.grey.shade600,
+                ),
+              ),
+              if (isUnread)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          title: Text(
+            notification.title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(notification.message, style: theme.textTheme.labelMedium),
+              const SizedBox(height: 6),
+              Text(timestamp, style: theme.textTheme.bodySmall),
+            ],
+          ),
+          onTap: () async {
+            await provider.markAsRead(notification.id);
+            if (notification.routeName != null) {
+              Navigator.pushNamed(context, notification.routeName!,
+                  arguments: notification.payload);
+            }
+          },
+        ),
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 String formatDateTime(String date) {
   DateTime parsedDate = DateTime.parse(date);
-  return DateFormat('yyyy-MM-dd | hh:mm a', 'en').format(parsedDate);
+  return DateFormat('yyyy-MM-dd • hh:mm a', 'en').format(parsedDate);
 }
 
 String formatDate(String date) {
@@ -28,7 +28,7 @@ String formatJalaliDateTime(String date) {
       '${jalaliDate.year}-${jalaliDate.month.toString().padLeft(2, '0')}-${jalaliDate.day.toString().padLeft(2, '0')}';
   String persianTime = '$hour:$minute $period';
 
-  return '${replaceEnglishNumbers(persianDate)} | ${replaceEnglishNumbers(persianTime)}';
+  return '${replaceEnglishNumbers(persianDate)} • ${replaceEnglishNumbers(persianTime)}';
 }
 
 String formatJalaliDate(String date) {

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -44,7 +43,6 @@ class DatabaseSettingsScreen extends StatefulWidget {
 }
 
 class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
-  bool _isOnlineBackingUp = false;
   bool _isOfflineBackingUp = false;
   bool _isRestoring = false;
 
@@ -126,7 +124,6 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
   }
 
   Future<void> _handleOnlineBackup(BuildContext context) async {
-    setState(() => _isOnlineBackingUp = true);
     final loc = AppLocalizations.of(context)!;
 
     // show a fullscreen, non-dismissible spinner
@@ -154,7 +151,6 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
       _showSnackbar(context, loc.onlineBackupFailed);
     } finally {
       Navigator.of(context, rootNavigator: true).pop(); // remove dialog
-      setState(() => _isOnlineBackingUp = false);
     }
   }
 

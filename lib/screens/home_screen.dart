@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import '../database/database_helper.dart';
@@ -25,6 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
+    // Check for backup notifications
+    Future.microtask(() {
+      final notificationProvider =
+          Provider.of<NotificationProvider>(context, listen: false);
+      notificationProvider.checkBackupNotifications();
+    });
   }
 
   Future<void> _handleLogout(BuildContext context) async {

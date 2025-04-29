@@ -85,7 +85,9 @@ class DbInit {
         title TEXT NOT NULL,
         message TEXT NOT NULL,
         timestamp INTEGER NOT NULL,
-        read INTEGER NOT NULL
+        read INTEGER NOT NULL,
+        routeName TEXT,      
+        payload TEXT
       )
     ''');
 

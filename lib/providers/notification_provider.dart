@@ -2,11 +2,58 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../database/settings_db.dart';
 import '../models/notification_model.dart';
 import '../database/notification_db.dart';
 
 /// A provider managing app notifications with persistence and undo support.
 class NotificationProvider extends ChangeNotifier {
+  /// Checks last backup times and adds a notification if either backup is overdue (>7 days).
+  Future<void> checkBackupNotifications() async {
+    final now = DateTime.parse('2025-04-29T17:09:29+04:30');
+    // Fetch last backup times
+    final lastOnlineStr =
+        await SettingsDBHelper().getSetting('lastOnlineBackup');
+    final lastOfflineStr =
+        await SettingsDBHelper().getSetting('lastOfflineBackup');
+    DateTime? lastOnline;
+    DateTime? lastOffline;
+    if (lastOnlineStr != null) {
+      try {
+        lastOnline = DateTime.parse(lastOnlineStr);
+      } catch (_) {}
+    }
+    if (lastOfflineStr != null) {
+      try {
+        lastOffline = DateTime.parse(lastOfflineStr);
+      } catch (_) {}
+    }
+    // Check if overdue
+    bool onlineOverdue =
+        lastOnline == null || now.difference(lastOnline).inDays > 7;
+    bool offlineOverdue =
+        lastOffline == null || now.difference(lastOffline).inDays > 7;
+    // Avoid duplicate notifications (by title)
+    bool alreadyNotified(String title) =>
+        _notifications.any((n) => n.title == title && !n.read);
+    if (onlineOverdue && !alreadyNotified('Online Backup Overdue')) {
+      await addNotification(
+        type: NotificationType.system,
+        title: 'Online Backup Overdue',
+        message:
+            'Your last online backup was more than 7 days ago. Please backup your data online.',
+      );
+    }
+    if (offlineOverdue && !alreadyNotified('Offline Backup Overdue')) {
+      await addNotification(
+        type: NotificationType.system,
+        title: 'Offline Backup Overdue',
+        message:
+            'Your last offline backup was more than 7 days ago. Please backup your data locally.',
+      );
+    }
+  }
+
   final List<AppNotification> _notifications = [];
   final Uuid _uuid = Uuid();
   final NotificationDB _db = NotificationDB();
@@ -30,7 +77,7 @@ class NotificationProvider extends ChangeNotifier {
         ..clear()
         ..addAll(items);
     } catch (e) {
-      debugPrint('Error fetching notifications: \$e');
+      debugPrint('Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
