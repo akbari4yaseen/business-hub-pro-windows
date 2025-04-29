@@ -1,13 +1,31 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../database/database_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+/// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
+Future<bool> ensureStoragePermission() async {
+  if (Platform.isAndroid) {
+    final perm = Permission.manageExternalStorage;
+    if (await perm.isGranted) return true;
+    final status = await perm.request();
+    if (status.isGranted) return true;
+    if (status.isPermanentlyDenied) openAppSettings();
+    return false;
+  }
+  return true; // iOS and others don't need explicit storage perms
+}
 
 class DatabaseSettingsScreen extends StatefulWidget {
   final int lastOnlineBackupDays;
   final int lastOfflineBackupDays;
-  final VoidCallback onOnlineBackup;
-  final VoidCallback onOfflineBackup;
-  final VoidCallback onRestore;
+  final Future<void> Function() onOnlineBackup;
+  final Future<void> Function() onOfflineBackup;
+  final Future<void> Function() onRestore;
   final Future<void> Function()? onRefresh;
 
   const DatabaseSettingsScreen({
@@ -31,68 +49,124 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
 
   String _formatDate(int daysAgo) {
     final date = DateTime.now().subtract(Duration(days: daysAgo));
-    return DateFormat('MMM d, y • h:mm a').format(date);
+    return DateFormat.yMMMd().add_jm().format(date);
   }
 
-  Future<void> _handleOnlineBackup() async {
+  Future<void> _handleOnlineBackup(BuildContext context) async {
     setState(() => _isOnlineBackingUp = true);
     try {
-      await Future<void>.delayed(Duration.zero, widget.onOnlineBackup);
+      await widget.onOnlineBackup();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.onlineBackupSuccess)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.onlineBackupSuccess)),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.onlineBackupFailed)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.onlineBackupFailed)),
       );
     } finally {
       setState(() => _isOnlineBackingUp = false);
     }
   }
 
-  Future<void> _handleOfflineBackup() async {
-    setState(() => _isOfflineBackingUp = true);
-    try {
-      await Future<void>.delayed(Duration.zero, widget.onOfflineBackup);
+  Future<void> _handleOfflineBackup(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
+    // Ensure permission and selection before showing spinner
+    if (!await ensureStoragePermission()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.localBackupSuccess)),
+        SnackBar(content: Text(loc.storagePermissionRequired)),
       );
-    } catch (_) {
+      return;
+    }
+
+    final selectedDir = await FilePicker.platform.getDirectoryPath();
+    if (selectedDir == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.localBackupFailed)),
+        SnackBar(content: Text(loc.exportCanceledNoDirectory)),
+      );
+      return;
+    }
+
+    setState(() => _isOfflineBackingUp = true);
+    final parentDir = dirname(selectedDir);
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final backupName = 'BusinessHub__backup_${timestamp}.db';
+    final backupPath = join(parentDir, backupName);
+
+    try {
+      final success = await DatabaseHelper().exportTo(backupPath);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? loc.databaseExportedSuccessfully(backupPath)
+                : loc.databaseFileNotFoundOrExportFailed,
+          ),
+        ),
+      );
+      if (success) await widget.onOfflineBackup();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.errorExportingDatabase(e.toString()))),
       );
     } finally {
       setState(() => _isOfflineBackingUp = false);
     }
   }
 
-  Future<void> _handleRestore() async {
+  Future<void> _handleRestore(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
+    // Confirm overwrite
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.confirmRestore),
-        content: Text(AppLocalizations.of(context)!.restoreOverwriteWarning),
+        title: Text(loc.confirmRestore),
+        content: Text(loc.restoreOverwriteWarning),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)!.cancel)),
+              child: Text(loc.cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)!.restore)),
+              child: Text(loc.restore)),
         ],
       ),
     );
     if (confirm != true) return;
 
+    if (!await ensureStoragePermission()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.storagePermissionRequired)),
+      );
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles();
+    final path = result?.files.single.path;
+    if (path == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.restoreCanceledNoFile)),
+      );
+      return;
+    }
+
     setState(() => _isRestoring = true);
     try {
-      await Future<void>.delayed(Duration.zero, widget.onRestore);
+      final success = await DatabaseHelper().importFrom(path);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.restoreSuccess)),
+        SnackBar(
+          content: Text(
+            success
+                ? loc.databaseRestoredSuccessfully
+                : loc.restoreFailedFileNotFound,
+          ),
+        ),
       );
-    } catch (_) {
+      if (success) await widget.onRestore();
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.restoreFailed)),
+        SnackBar(content: Text(loc.errorRestoringDatabase(e.toString()))),
       );
     } finally {
       setState(() => _isRestoring = false);
@@ -130,8 +204,9 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed:
-                          _isOnlineBackingUp ? null : _handleOnlineBackup,
+                      onPressed: _isOnlineBackingUp
+                          ? null
+                          : () => _handleOnlineBackup(context),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -141,7 +216,8 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                           ? SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -155,8 +231,9 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed:
-                          _isOfflineBackingUp ? null : _handleOfflineBackup,
+                      onPressed: _isOfflineBackingUp
+                          ? null
+                          : () => _handleOfflineBackup(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -167,7 +244,8 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                           ? SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -183,7 +261,8 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
               const SizedBox(height: 32),
               Center(
                 child: ElevatedButton(
-                  onPressed: _isRestoring ? null : _handleRestore,
+                  onPressed:
+                      _isRestoring ? null : () => _handleRestore(context),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 32, vertical: 14),
@@ -195,7 +274,8 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                       ? SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

@@ -124,17 +124,28 @@ class SettingsScreen extends StatelessWidget {
               context,
               icon: Icons.storage,
               text: AppLocalizations.of(context)!.databaseSettings,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => DatabaseSettingsScreen(
-                    lastOnlineBackupDays: 3, // TODO: fetch real value
-                    lastOfflineBackupDays: 5, // TODO: fetch real value
-                    onOnlineBackup: () {}, // TODO: implement
-                    onOfflineBackup: () {}, // TODO: implement
-                    onRestore: () {}, // TODO: implement
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DatabaseSettingsScreen(
+                      lastOnlineBackupDays: /* TODO: fetch real value */ 3,
+                      lastOfflineBackupDays: /* TODO: fetch real value */ 5,
+                      onOnlineBackup: () async {
+                        // TODO: implement your online‐backup logic here
+                      },
+                      onOfflineBackup: () async {
+                        // TODO: implement your local‐backup logic here
+                      },
+                      onRestore: () async {
+                        // TODO: implement your restore logic here
+                      },
+                      onRefresh: () async {
+                        // TODO: re-fetch lastOnlineBackupDays & lastOfflineBackupDays
+                      },
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
 
             _buildSettingsOption(
