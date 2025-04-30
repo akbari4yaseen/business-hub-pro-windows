@@ -2,14 +2,12 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:http/http.dart' as http;
-import '../../database/database_helper.dart';
-import '../../database/settings_db.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../database/database_helper.dart';
+import '../../database/settings_db.dart';
+import '../../utils/backup_google_drive.dart';
 
 /// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
 Future<bool> ensureStoragePermission() async {
@@ -24,17 +22,6 @@ Future<bool> ensureStoragePermission() async {
   return true;
 }
 
-/// HTTP client that injects Google Sign-In auth headers.
-class GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> _headers;
-  final http.Client _inner = http.Client();
-  GoogleAuthClient(this._headers);
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    return _inner.send(request..headers.addAll(_headers));
-  }
-}
-
 class DatabaseSettingsScreen extends StatefulWidget {
   const DatabaseSettingsScreen({Key? key}) : super(key: key);
 
@@ -44,6 +31,7 @@ class DatabaseSettingsScreen extends StatefulWidget {
 
 class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
   bool _isOfflineBackingUp = false;
+  bool _isOnlineBackingUp = false;
   bool _isRestoring = false;
 
   int? _lastOnlineBackupDays;
@@ -86,57 +74,13 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     return DateFormat.yMMMd().add_jm().format(date);
   }
 
-  /// Uploads the local DB file to the user's Google Drive.
-  Future<bool> _backupToGoogleDrive() async {
-    try {
-      final dbPath = await DatabaseHelper().getDatabasePath();
-      final file = File(dbPath);
-
-      if (!file.existsSync()) return false;
-
-      final googleSignIn = GoogleSignIn(
-        scopes: [drive.DriveApi.driveFileScope],
-        serverClientId:
-            '671765261723-1oaflrjjjd9m80deqnuv3uggl2qdrvo9.apps.googleusercontent.com',
-      );
-
-      final account = await googleSignIn.signIn();
-      if (account == null) {
-        return false;
-      }
-
-      final authHeaders = await account.authHeaders;
-      final authClient = GoogleAuthClient(authHeaders);
-      final driveApi = drive.DriveApi(authClient);
-
-      final media = drive.Media(file.openRead(), file.lengthSync());
-      final driveFile = drive.File()
-        ..name =
-            'BusinessHub_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db'
-        ..parents = []; // root
-
-      await driveApi.files.create(driveFile, uploadMedia: media);
-
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   Future<void> _handleOnlineBackup(BuildContext context) async {
     final loc = AppLocalizations.of(context)!;
 
-    // show a fullscreen, non-dismissible spinner
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    setState(() => _isOnlineBackingUp = true);
 
     try {
-      final success = await _backupToGoogleDrive();
+      final success = await backupToGoogleDrive();
       if (success) {
         await SettingsDBHelper().saveSetting(
           'lastOnlineBackup',
@@ -150,7 +94,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     } catch (_) {
       _showSnackbar(context, loc.onlineBackupFailed);
     } finally {
-      Navigator.of(context, rootNavigator: true).pop(); // remove dialog
+      setState(() => _isOnlineBackingUp = false);
     }
   }
 
@@ -288,20 +232,31 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _handleOnlineBackup(context),
+                      onPressed: _isOnlineBackingUp
+                          ? null
+                          : () => _handleOnlineBackup(context),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.cloud_upload_rounded),
-                          SizedBox(width: 8),
-                          Text(loc.backupOnline)
-                        ],
-                      ),
+                      child: _isOnlineBackingUp
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.cloud_upload_rounded),
+                                SizedBox(width: 8),
+                                Text(loc.backupOnline),
+                              ],
+                            ),
                     ),
                   ),
                   const SizedBox(width: 16),

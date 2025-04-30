@@ -7,7 +7,7 @@ import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import '../database/database_helper.dart';
 import '../database/user_dao.dart';
-import '../widgets/backup_restore_card.dart';
+import '../widgets/backup_card.dart';
 import '../widgets/recent_transaction_list.dart';
 import '../widgets/account_type_chart.dart';
 
@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             ActionButtonsSection(actions: actions),
             const SizedBox(height: 16),
-            const BackupRestoreCard(),
+            const BackupCard(),
             const SizedBox(height: 20),
             Text(
               loc.recentTransactions,
