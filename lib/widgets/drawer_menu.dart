@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../database/database_helper.dart';
-import '../database/user_dao.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/about_screen.dart';
@@ -78,14 +76,6 @@ class DrawerMenu extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Divider(),
-                _buildListTile(
-                  context,
-                  icon: Icons.logout,
-                  title: loc.logout,
-                  color: Colors.red,
-                  onTap: () => _handleLogout(context),
-                ),
               ],
             ),
           ),
@@ -114,12 +104,5 @@ class DrawerMenu extends StatelessWidget {
       },
       hoverColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
     );
-  }
-
-  Future<void> _handleLogout(BuildContext context) async {
-    // Fetch DB and logout via UserDao
-    final db = await DatabaseHelper().database;
-    await UserDao(db).logout();
-    Navigator.pushReplacementNamed(context, '/login');
   }
 }

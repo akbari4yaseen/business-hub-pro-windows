@@ -73,7 +73,8 @@ class _BackupCardState extends State<BackupCard> {
     setState(() => _isOnlineBackingUp = true);
 
     try {
-      final success = await backupToGoogleDrive();
+      final success = await DriveBackupService().backupDatabase();
+
       if (success) {
         await SettingsDBHelper().saveSetting(
           'lastOnlineBackup',

@@ -32,6 +32,7 @@ dependencies:
   local_auth: ^2.3.0
   google_sign_in: ^6.3.0
   googleapis: ^14.0.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

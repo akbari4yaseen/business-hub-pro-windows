@@ -150,7 +150,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
         type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
+            icon: const Icon(Icons.dashboard),
             label: localizations.home,
           ),
           BottomNavigationBarItem(

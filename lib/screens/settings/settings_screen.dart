@@ -61,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
             // Track Settings (values localized)
             _buildDropdownSetting(
               context: context,
-              icon: Icons.track_changes,
+              icon: Icons.wallet_membership,
               title: AppLocalizations.of(context)!.defaultTrack,
               value: settingsProvider.defaultTrackOption,
               items: SettingsProvider.availableTrackOptions,
