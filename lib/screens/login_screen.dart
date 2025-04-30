@@ -1,6 +1,7 @@
-// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:local_auth/local_auth.dart';
 import '../database/database_helper.dart';
 import '../database/user_dao.dart';
 
@@ -17,6 +18,11 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   String? _errorMessage;
   bool _isLoading = false;
+
+  // Biometric authentication
+  final LocalAuthentication _auth = LocalAuthentication();
+  bool _canCheckBiometrics = false;
+  List<BiometricType> _availableBiometrics = [];
 
   late final AnimationController _logoController;
   late final AnimationController _cardSlideController;
@@ -77,6 +83,24 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _shakeController,
       curve: Curves.easeInOut,
     ));
+
+    _initBiometrics();
+  }
+
+  Future<void> _initBiometrics() async {
+    bool canCheckBiometrics = false;
+    List<BiometricType> availableBiometrics = [];
+    try {
+      canCheckBiometrics = await _auth.canCheckBiometrics;
+      availableBiometrics = await _auth.getAvailableBiometrics();
+    } on PlatformException catch (_) {
+      // Handle error if needed
+    }
+    if (!mounted) return;
+    setState(() {
+      _canCheckBiometrics = canCheckBiometrics;
+      _availableBiometrics = availableBiometrics;
+    });
   }
 
   Future<void> _login() async {
@@ -109,6 +133,26 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     Navigator.pushReplacementNamed(context, '/home');
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    bool authenticated = false;
+    try {
+      authenticated = await _auth.authenticate(
+        localizedReason: 'Please authenticate to access your account',
+        options: const AuthenticationOptions(biometricOnly: true),
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Biometric authentication error: ${e.message}';
+      });
+      return;
+    }
+    if (!mounted) return;
+    if (authenticated) {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 
   @override
@@ -222,6 +266,24 @@ class _LoginScreenState extends State<LoginScreen>
                       )
                     : Text(loc.loginButton,
                         style: const TextStyle(fontSize: 16)),
+              ),
+            ),
+            if (_canCheckBiometrics) const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.fingerprint),
+                label: Text(loc.useFingerprint),
+                onPressed: _isLoading ? null : _authenticateWithBiometrics,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
           ],

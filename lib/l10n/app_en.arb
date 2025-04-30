@@ -254,5 +254,6 @@
   "clearAllNotificationsContent": "Are you sure you want to clear all notifications?",
   "noNotifications": "No notifications",
   "undo": "UNDO",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "useFingerprint": "Use fingerprint"
 }
