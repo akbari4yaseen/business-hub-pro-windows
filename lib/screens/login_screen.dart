@@ -137,15 +137,17 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _authenticateWithBiometrics() async {
     bool authenticated = false;
+    final loc = AppLocalizations.of(context)!;
+
     try {
       authenticated = await _auth.authenticate(
-        localizedReason: 'Please authenticate to access your account',
+        localizedReason: loc.biometricReason,
         options: const AuthenticationOptions(biometricOnly: true),
       );
     } on PlatformException catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Biometric authentication error: ${e.message}';
+        _errorMessage = loc.biometricError;
       });
       return;
     }

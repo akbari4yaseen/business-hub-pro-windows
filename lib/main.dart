@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'screens/reminders/reminders_screen.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+
 import 'providers/theme_provider.dart';
 import 'providers/bottom_navigation_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/info_provider.dart';
+import 'providers/notification_provider.dart';
 
 import 'widgets/drawer_menu.dart';
 
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
 import 'screens/journal/add_journal_screen.dart';
@@ -19,16 +21,28 @@ import 'screens/reports/reports_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/settings/user_settings.dart';
 import 'screens/settings/company_info.dart';
-import 'screens/login_screen.dart';
 import 'screens/notifications_screen.dart';
-import 'providers/notification_provider.dart';
+import 'screens/reminders/reminders_screen.dart';
+
+import 'database/user_dao.dart';
+import 'database/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1) Load user settings
   final settingsProvider = SettingsProvider();
   await settingsProvider.initializeSettings();
 
+  // 2) Open your app database
+  final db = await DatabaseHelper().database;
+  final userDao = UserDao(db);
+
+  // 3) Check login state
+  final loggedIn = await userDao.isLoggedIn();
+  final initialRoute = loggedIn ? '/home' : '/login';
+
+  // 4) Launch the app with a dynamic initialRoute
   runApp(
     MultiProvider(
       providers: [
@@ -38,13 +52,14 @@ void main() async {
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => InfoProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(initialRoute: initialRoute),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final String initialRoute;
+  const MyApp({Key? key, required this.initialRoute}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +74,7 @@ class MyApp extends StatelessWidget {
           ? ThemeMode.light
           : ThemeMode.dark,
       home: const BottomNavigationApp(),
+      initialRoute: initialRoute,
       routes: {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const BottomNavigationApp(),

@@ -255,5 +255,7 @@
   "noNotifications": "No notifications",
   "undo": "UNDO",
   "loading": "Loading...",
-  "useFingerprint": "Use fingerprint"
+  "useFingerprint": "Use fingerprint",
+  "biometricReason": "Please authenticate to access BusinessHub",
+  "biometricError": "Biometric authentication failed"
 }
