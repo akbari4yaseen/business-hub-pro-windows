@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
       ],
       locale: Locale(
         settingsProvider.appLanguage,
-        settingsProvider.appLanguage == 'fa' ? 'AF' : 'US',
+        settingsProvider.appLanguage == 'en' ? 'US' : 'AF',
       ),
     );
   }
