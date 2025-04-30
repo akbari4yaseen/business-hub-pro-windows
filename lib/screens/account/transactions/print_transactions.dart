@@ -168,7 +168,7 @@ class PrintTransactions {
               tx['description'] ?? '',
               isCredit ? '' : _amountFormatter.format(tx['amount']),
               isCredit ? _amountFormatter.format(tx['amount']) : '',
-              _amountFormatter.format(tx['balance']),
+              '${_amountFormatter.format(tx['balance'])} ${tx['currency']}',
             ];
           });
 

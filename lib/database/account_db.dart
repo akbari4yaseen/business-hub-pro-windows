@@ -510,7 +510,7 @@ class AccountDBHelper {
         'currency': curr,
       });
     }
-    return results;
+    return results.reversed.toList();
   }
 
   Future<List<Map<String, dynamic>>> getTransactionsForPrint(
@@ -552,7 +552,7 @@ class AccountDBHelper {
         'currency': curr,
       });
     }
-    return results.reversed.toList();
+    return results.toList();
   }
 
   Future<Map<String, int>> getAccountCounts() async {
