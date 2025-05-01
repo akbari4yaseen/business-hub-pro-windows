@@ -15,12 +15,11 @@ import '../../../providers/info_provider.dart';
 class PrintTransactions {
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
-  /// Generates a PDF of all transactions for the given [account] and
-  /// invokes the print/layout dialog.
   static Future<void> printTransactions(
     BuildContext context,
     Map<String, dynamic> account,
   ) async {
+    // Fetch app info and account data
     final info = Provider.of<InfoProvider>(context, listen: false).info;
     final accountId = account['id'];
     final accountName = account['name'] ?? '';
@@ -34,6 +33,12 @@ class PrintTransactions {
     final now = DateTime.now();
     final printTimestamp = formatLocalizedDateTime(context, now.toString());
 
+    // Determine text direction based on locale
+    final localeCode = Localizations.localeOf(context).languageCode;
+    final isRTL = localeCode != 'en';
+    final pdfDir = isRTL ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+
+    // Load custom fonts
     final fontDataRegular =
         await rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf');
     final fontDataBold =
@@ -41,6 +46,7 @@ class PrintTransactions {
     final vazirFontRegular = pw.Font.ttf(fontDataRegular);
     final vazirFontBold = pw.Font.ttf(fontDataBold);
 
+    // Create PDF document with theme
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(
         base: vazirFontRegular,
@@ -53,7 +59,7 @@ class PrintTransactions {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        textDirection: pw.TextDirection.rtl,
+        textDirection: pdfDir,
         header: (pdfContext) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
@@ -69,7 +75,6 @@ class PrintTransactions {
                   '${loc.printed(printTimestamp)}',
                   style: pw.TextStyle(fontSize: 9),
                 ),
-                // Add 'printed' key to your ARB: "printed": "Printed: {date}"
               ],
             ),
             pw.SizedBox(height: 2),
@@ -97,11 +102,11 @@ class PrintTransactions {
             loc.pageOf(pdfContext.pageNumber, pdfContext.pagesCount),
             style: pw.TextStyle(fontSize: 10),
           ),
-          // Add 'pageOf' key to your ARB: "pageOf": "Page {page} of {total}"
         ),
         build: (pdfContext) {
           final List<pw.Widget> content = [];
 
+          // --- BALANCES TABLE ---
           if (balances.isNotEmpty) {
             final balanceHeaders = [
               loc.currency,
@@ -109,7 +114,6 @@ class PrintTransactions {
               loc.debit,
               loc.balance,
             ];
-            // Add keys: currency, credit, debit, balance
             final balanceRows = balances.entries.map((e) {
               final data = e.value as Map<String, dynamic>;
               final summary = (data['summary'] as Map<String, dynamic>?) ?? {};
@@ -121,22 +125,26 @@ class PrintTransactions {
               ];
             }).toList();
 
-            final rtlHeaders = balanceHeaders.reversed.toList();
-            final rtlData =
-                balanceRows.map((r) => r.reversed.toList()).toList();
+            final headersToUse =
+                isRTL ? balanceHeaders.reversed.toList() : balanceHeaders;
+            final dataToUse = isRTL
+                ? balanceRows.map((r) => r.reversed.toList()).toList()
+                : balanceRows;
 
-            content.add(pw.Text(
-              loc.balance,
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-            ));
-            // Add key: accountBalances
+            content.add(
+              pw.Text(
+                loc.balance,
+                style:
+                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              ),
+            );
             content.add(pw.SizedBox(height: 4));
             content.add(
               pw.Directionality(
-                textDirection: pw.TextDirection.rtl,
+                textDirection: pdfDir,
                 child: pw.TableHelper.fromTextArray(
-                  headers: rtlHeaders,
-                  data: rtlData,
+                  headers: headersToUse,
+                  data: dataToUse,
                   headerStyle: pw.TextStyle(
                       fontSize: 11, fontWeight: pw.FontWeight.bold),
                   cellStyle: pw.TextStyle(fontSize: 10),
@@ -150,6 +158,7 @@ class PrintTransactions {
             content.add(pw.SizedBox(height: 12));
           }
 
+          // --- TRANSACTIONS TABLE ---
           final txHeaders = [
             loc.no,
             loc.date,
@@ -158,7 +167,6 @@ class PrintTransactions {
             loc.credit,
             loc.balance,
           ];
-          // Add keys: no, date, description, debit, credit, balance
           final txRows = List.generate(txs.length, (i) {
             final tx = txs[i];
             final isCredit = tx['transaction_type'] == 'credit';
@@ -172,36 +180,45 @@ class PrintTransactions {
             ];
           });
 
-          final rtlTxHeaders = txHeaders.reversed.toList();
-          final rtlTxRows = txRows.map((r) => r.reversed.toList()).toList();
+          final headersToUseTx =
+              isRTL ? txHeaders.reversed.toList() : txHeaders;
+          final dataToUseTx =
+              isRTL ? txRows.map((r) => r.reversed.toList()).toList() : txRows;
 
-          final descIndex = rtlTxHeaders.indexOf(loc.description);
+          final descIndex = headersToUseTx.indexOf(loc.description);
 
-          content.add(pw.Text(
-            loc.transactions,
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ));
-          // Add key: transactions
+          content.add(
+            pw.Text(
+              loc.transactions,
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+          );
           content.add(pw.SizedBox(height: 4));
           content.add(
             pw.Directionality(
-              textDirection: pw.TextDirection.rtl,
+              textDirection: pdfDir,
               child: pw.TableHelper.fromTextArray(
-                headers: rtlTxHeaders,
-                data: rtlTxRows,
+                headers: headersToUseTx,
+                data: dataToUseTx,
                 columnWidths: {
                   descIndex: pw.FlexColumnWidth(2),
-                  for (var i = 0; i < rtlTxHeaders.length; i++)
+                  for (var i = 0; i < headersToUseTx.length; i++)
                     if (i != descIndex) i: pw.IntrinsicColumnWidth(),
                 },
                 headerStyle:
                     pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                 cellStyle: pw.TextStyle(fontSize: 10),
-                cellAlignments: {
-                  rtlTxHeaders.indexOf(loc.no): pw.Alignment.center,
-                  rtlTxHeaders.indexOf(loc.description):
-                      pw.Alignment.centerRight,
-                },
+                cellAlignments: isRTL
+                    ? {
+                        headersToUseTx.indexOf(loc.no): pw.Alignment.center,
+                        headersToUseTx.indexOf(loc.description):
+                            pw.Alignment.centerRight,
+                      }
+                    : {
+                        headersToUseTx.indexOf(loc.no): pw.Alignment.center,
+                        headersToUseTx.indexOf(loc.description):
+                            pw.Alignment.centerLeft,
+                      },
                 headerDecoration:
                     pw.BoxDecoration(color: PdfColor.fromInt(0xFFE0E0E0)),
                 border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFBDBDBD)),
@@ -214,6 +231,7 @@ class PrintTransactions {
       ),
     );
 
+    // Render the PDF
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 }
