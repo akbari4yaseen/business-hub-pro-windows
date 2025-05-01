@@ -14,6 +14,7 @@ import '../../../widgets/search_bar.dart';
 import '../../../widgets/transaction_filter_bottom_sheet.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
+import '../../../widgets/auth_widget.dart';
 import 'print_transactions.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -466,36 +467,54 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _handleDelete(
       Map<String, dynamic> tx, AppLocalizations loc) async {
-    final context = this.context;
+    final ctx = context;
+
+    // Step 1: authenticate
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.confirmDelete),
-        content: Text(loc.confirmDeleteJournal),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                if (tx['transaction_group'] == 'journal') {
-                  await JournalDBHelper().deleteJournal(tx['transaction_id']);
-                  await _refreshTransactions();
-                } else {
-                  return;
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.transactionDeleteError)),
-                  );
-                }
-              }
-            },
-            child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
-          ),
-        ],
+      context: ctx,
+      builder: (_) => AuthWidget(
+        actionReason: loc.deleteJournalAuthMessage,
+        onAuthenticated: () {
+          // close the auth dialog
+          Navigator.of(ctx).pop();
+
+          // Step 2: ask “are you sure?”
+          showDialog(
+            context: ctx,
+            builder: (confirmCtx) => AlertDialog(
+              title: Text(loc.confirmDelete),
+              content: Text(loc.confirmDeleteTransaction),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(confirmCtx),
+                  child: Text(loc.cancel),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(confirmCtx);
+                    try {
+                      if (tx['transaction_group'] == 'journal') {
+                        await JournalDBHelper()
+                            .deleteJournal(tx['transaction_id']);
+                        await _refreshTransactions();
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(content: Text(loc.transactionDeleteError)),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(
+                    loc.delete,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

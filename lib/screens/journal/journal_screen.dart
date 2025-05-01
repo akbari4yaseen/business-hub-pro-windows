@@ -11,6 +11,7 @@ import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 import '../../widgets/journal_filter_bottom_sheet.dart';
 import '../../widgets/search_bar.dart';
+import '../../widgets/auth_widget.dart';
 import '../../widgets/journal_details_widget.dart';
 
 class JournalScreen extends StatefulWidget {
@@ -118,22 +119,42 @@ class _JournalScreenState extends State<JournalScreen> {
 
   void _confirmDelete(int id) {
     final loc = AppLocalizations.of(context)!;
+
+    // First, ask the user to authenticate
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.confirmDelete),
-        content: Text(loc.confirmDeleteJournal),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _deleteJournal(id);
-            },
-            child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (_) => AuthWidget(
+        actionReason: loc
+            .deleteJournalAuthMessage, // e.g. “Please authenticate to delete this journal.”
+        onAuthenticated: () {
+          // Close the AuthWidget dialog
+          Navigator.of(context).pop();
+
+          // Then show the regular delete confirmation
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(loc.confirmDelete),
+              content: Text(loc.confirmDeleteJournal),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(loc.cancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _deleteJournal(id);
+                  },
+                  child: Text(
+                    loc.delete,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

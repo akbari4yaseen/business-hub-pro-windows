@@ -256,7 +256,7 @@
   "undo": "لغو عمل",
   "loading": "در حال بارگیری...",
   "useFingerprint": "استفاده از اثر انگشت",
-  "biometricReason": "لطفاً برای دسترسی به بیزنیزهاب انگشت نگاری کنید",
+  "biometricReason": "لطفاً برای دسترسی به بیزنیزهاب احراز هویت کنید",
   "biometricError": "احراز هویت بیومتریک ناموفق بود",
   "backupCardFriendlyMessage": "اطلاعات خود را ایمن نگه دارید! فراموش نکنید که به‌طور منظم پشتیبان‌گیری کنید.",
   "daysAgo": "{count, plural, =0{امروز} one{یک روز پیش} other{{count} روز پیش}}",
@@ -272,6 +272,8 @@
   "offline": "آفلاین",
   "enterPasswordError": "رمز عبور را وارد کنید",
   "authTitle": "احراز هویت",
-  "biometricFailed": "احراز هویت بیومتریک ناموفق بود.",
-  "deleteAccountAuthMessage": "برای حذف حساب احراز هویت لازم است."
+  "biometricFailed": "احراز هویت بیومتریک ناموفق بود",
+  "deleteAccountAuthMessage": "برای حذف حساب احراز هویت لازم است",
+  "deleteJournalAuthMessage": "برای حذف این روزنامچه احراز هویت لازم است",
+  "confirmDeleteTransaction": "برای حذف این معامله احراز هویت لازم است"
 }

@@ -272,6 +272,8 @@
   "offline": "Offline",
   "enterPasswordError": "Enter password",
   "authTitle": "Authenticate",
-  "biometricFailed": "Biometric authentication failed.",
-  "deleteAccountAuthMessage": "Deleting an Account requires authentication."
+  "biometricFailed": "Biometric authentication failed",
+  "deleteAccountAuthMessage": "Deleting an Account requires authentication",
+  "deleteJournalAuthMessage": "Please authenticate to delete this Journal",
+  "confirmDeleteTransaction": "Please authenticate to delete this Transaction"
 }
