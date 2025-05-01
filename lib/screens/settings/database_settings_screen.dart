@@ -8,6 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../database/database_helper.dart';
 import '../../database/settings_db.dart';
 import '../../utils/backup_google_drive.dart';
+import '../../utils/date_formatters.dart';
 
 /// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
 Future<bool> ensureStoragePermission() async {
@@ -34,8 +35,8 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
   bool _isOnlineBackingUp = false;
   bool _isRestoring = false;
 
-  int? _lastOnlineBackupDays;
-  int? _lastOfflineBackupDays;
+  DateTime? _lastOnlineBackupDate;
+  DateTime? _lastOfflineBackupDate;
 
   @override
   void initState() {
@@ -47,31 +48,24 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     final onlineStr = await SettingsDBHelper().getSetting('lastOnlineBackup');
     final offlineStr = await SettingsDBHelper().getSetting('lastOfflineBackup');
 
-    int? onlineDays;
-    int? offlineDays;
-
+    DateTime? onlineDate;
     if (onlineStr != null) {
       try {
-        final onlineDate = DateTime.parse(onlineStr);
-        onlineDays = DateTime.now().difference(onlineDate).inDays;
-      } catch (_) {}
+        onlineDate = DateTime.parse(onlineStr);
+      } catch (_) {/* ignore parse errors */}
     }
+
+    DateTime? offlineDate;
     if (offlineStr != null) {
       try {
-        final offlineDate = DateTime.parse(offlineStr);
-        offlineDays = DateTime.now().difference(offlineDate).inDays;
-      } catch (_) {}
+        offlineDate = DateTime.parse(offlineStr);
+      } catch (_) {/* ignore */}
     }
 
     setState(() {
-      _lastOnlineBackupDays = onlineDays;
-      _lastOfflineBackupDays = offlineDays;
+      _lastOnlineBackupDate = onlineDate;
+      _lastOfflineBackupDate = offlineDate;
     });
-  }
-
-  String _formatDate(int daysAgo) {
-    final date = DateTime.now().subtract(Duration(days: daysAgo));
-    return DateFormat.yMMMd().add_jm().format(date);
   }
 
   Future<void> _handleOnlineBackup(BuildContext context) async {
@@ -200,6 +194,13 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
+    final onlineStatus = _lastOnlineBackupDate != null
+        ? formatLocalizedDateTime(context, _lastOnlineBackupDate.toString())
+        : '';
+
+    final offlineStatus = _lastOfflineBackupDate != null
+        ? formatLocalizedDateTime(context, _lastOfflineBackupDate.toString())
+        : '';
 
     return Scaffold(
       appBar: AppBar(
@@ -215,18 +216,14 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
                 context,
                 icon: Icons.cloud_done_rounded,
                 title: loc.lastOnlineBackup,
-                subtitle: _lastOnlineBackupDays != null
-                    ? _formatDate(_lastOnlineBackupDays!)
-                    : loc.loading,
+                subtitle: onlineStatus,
               ),
               const SizedBox(height: 12),
               _buildStatusCard(
                 context,
                 icon: Icons.save_alt_rounded,
                 title: loc.lastOfflineBackup,
-                subtitle: _lastOfflineBackupDays != null
-                    ? _formatDate(_lastOfflineBackupDays!)
-                    : loc.loading,
+                subtitle: offlineStatus,
               ),
               const SizedBox(height: 24),
               Row(

@@ -259,7 +259,15 @@
   "biometricReason": "لطفاً برای دسترسی به بیزنیزهاب انگشت نگاری کنید",
   "biometricError": "احراز هویت بیومتریک ناموفق بود",
   "backupCardFriendlyMessage": "اطلاعات خود را ایمن نگه دارید! فراموش نکنید که به‌طور منظم پشتیبان‌گیری کنید.",
-  "daysAgo": "{count, plural, =0{امروز} one{# روز پیش} other{# روز پیش}}",
+  "daysAgo": "{count, plural, =0{امروز} one{یک روز پیش} other{{count} روز پیش}}",
+  "@daysAgo": {
+    "description": "Label برای اعلام چند روز پیش",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "online": "آنلاین",
   "offline": "آفلاین",
   "enterPasswordError": "رمز عبور را وارد کنید",
