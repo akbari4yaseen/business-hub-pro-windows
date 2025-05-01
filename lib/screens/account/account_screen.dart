@@ -14,6 +14,7 @@ import '../../widgets/account_filter_bottom_sheet.dart';
 import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
 import '../../widgets/search_bar.dart';
+import '../../widgets/auth_widget.dart';
 
 class AccountScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -315,17 +316,26 @@ class _AccountScreenState extends State<AccountScreen>
   void _confirmDelete(Map<String, dynamic> account, bool isActive) {
     showDialog(
       context: context,
-      builder: (_) => ConfirmDeleteDialog(
-        accountName: account['name'],
-        onConfirm: () {
-          setState(() {
-            if (isActive) {
-              _activeAccounts.remove(account);
-            } else {
-              _deactivatedAccounts.remove(account);
-            }
-            AccountDBHelper().deleteAccount(account['id']);
-          });
+      builder: (_) => AuthWidget(
+        actionReason: AppLocalizations.of(context)!.deleteAccountAuthMessage,
+        onAuthenticated: () {
+          Navigator.of(context).pop(); // Close the AuthWidget dialog
+          showDialog(
+            context: context,
+            builder: (_) => ConfirmDeleteDialog(
+              accountName: account['name'],
+              onConfirm: () {
+                setState(() {
+                  if (isActive) {
+                    _activeAccounts.remove(account);
+                  } else {
+                    _deactivatedAccounts.remove(account);
+                  }
+                  AccountDBHelper().deleteAccount(account['id']);
+                });
+              },
+            ),
+          );
         },
       ),
     );

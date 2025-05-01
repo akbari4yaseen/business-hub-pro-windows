@@ -255,11 +255,15 @@
   "noNotifications": "هیچ اعلانی وجود ندارد",
   "undo": "لغو عمل",
   "loading": "در حال بارگیری...",
-  "useFingerprint": "استفاده انگشت نگاری",
-  "biometricReason": "لطفاً برای دسترسی به بیزنیزهاب احراز هویت کنید",
+  "useFingerprint": "استفاده از اثر انگشت",
+  "biometricReason": "لطفاً برای دسترسی به بیزنیزهاب انگشت نگاری کنید",
   "biometricError": "احراز هویت بیومتریک ناموفق بود",
   "backupCardFriendlyMessage": "اطلاعات خود را ایمن نگه دارید! فراموش نکنید که به‌طور منظم پشتیبان‌گیری کنید.",
   "daysAgo": "{count, plural, =0{امروز} one{# روز پیش} other{# روز پیش}}",
   "online": "آنلاین",
-  "offline": "آفلاین"
+  "offline": "آفلاین",
+  "enterPasswordError": "رمز عبور را وارد کنید",
+  "authTitle": "احراز هویت",
+  "biometricFailed": "احراز هویت بیومتریک ناموفق بود.",
+  "deleteAccountAuthMessage": "برای حذف حساب احراز هویت لازم است."
 }

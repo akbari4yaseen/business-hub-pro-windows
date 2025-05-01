@@ -261,5 +261,9 @@
   "backupCardFriendlyMessage": "Keep your data safe! Remember to back up regularly.",
   "daysAgo": "{count, plural, =0{Today} one{# day ago} other{# days ago}}",
   "online": "Online",
-  "offline": "Offline"
+  "offline": "Offline",
+  "enterPasswordError": "Enter password",
+  "authTitle": "Authenticate",
+  "biometricFailed": "Biometric authentication failed.",
+  "deleteAccountAuthMessage": "Deleting an Account requires authentication."
 }
