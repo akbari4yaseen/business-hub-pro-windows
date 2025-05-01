@@ -3,106 +3,138 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/about_screen.dart';
+import '../database/database_helper.dart';
+import '../database/user_dao.dart';
 
 class DrawerMenu extends StatelessWidget {
-  const DrawerMenu({super.key});
+  const DrawerMenu({Key? key}) : super(key: key);
+
+  static const _iconSize = 24.0;
+  static const _headerHeight = 180.0;
+  static const _padding = EdgeInsets.symmetric(horizontal: 16);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
+    final textColor = scheme.onSurface;
+    final iconColor = scheme.onSurfaceVariant;
+
+    final menuItems = <_MenuItem>[
+      _MenuItem(
+        icon: Icons.settings_outlined,
+        title: loc.settings,
+        onTap: () => _goTo(context, const SettingsScreen()),
+      ),
+      _MenuItem(
+        icon: Icons.help_outline,
+        title: loc.help,
+        onTap: () => _goTo(context, const HelpScreen()),
+      ),
+      _MenuItem(
+        icon: Icons.info_outline,
+        title: loc.about,
+        onTap: () => _goTo(context, const AboutScreen()),
+      ),
+    ];
 
     return Drawer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: colorScheme.primary),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    "assets/images/app_logo_white.png",
-                    height: 72,
+      child: SafeArea(
+        // allow content to bleed into the status‐bar/notch area
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- HEADER in “unsafe” area now ---
+            Container(
+              height: _headerHeight,
+              color: scheme.primary,
+              padding: _padding,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/images/app_logo_white.png',
+                      height: 64,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  loc.appName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontFamily: "IRANSans",
-                      ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    loc.appName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildListTile(
-                  context,
-                  icon: Icons.settings_outlined,
-                  title: loc.settings,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SettingsScreen(),
-                    ),
-                  ),
-                ),
-                _buildListTile(
-                  context,
-                  icon: Icons.help_outline,
-                  title: loc.help,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HelpScreen(),
-                    ),
-                  ),
-                ),
-                _buildListTile(
-                  context,
-                  icon: Icons.info_outline,
-                  title: loc.about,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AboutScreen(),
-                    ),
-                  ),
-                ),
-              ],
+
+            // --- REST OF MENU (still respects bottom safe area) ---
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: menuItems.length,
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: scheme.surfaceContainerHigh),
+                itemBuilder: (context, index) {
+                  final item = menuItems[index];
+                  return ListTile(
+                    leading: Icon(item.icon, size: _iconSize, color: iconColor),
+                    title: Text(item.title, style: TextStyle(color: textColor)),
+                    contentPadding: _padding,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    hoverColor: scheme.primary.withValues(alpha: 0.1),
+                    onTap: () {
+                      Navigator.pop(context);
+                      item.onTap();
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            Divider(height: 1, color: scheme.surfaceContainerHigh),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading:
+                    Icon(Icons.logout, size: _iconSize, color: scheme.error),
+                title: Text(loc.logout, style: TextStyle(color: scheme.error)),
+                contentPadding: _padding,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                hoverColor: scheme.error.withValues(alpha: 0.1),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleLogout(context);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildListTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    final defaultColor = Theme.of(context).textTheme.bodyLarge?.color;
-    return ListTile(
-      leading: Icon(icon, color: color ?? defaultColor),
-      title: Text(
-        title,
-        style: TextStyle(color: color ?? defaultColor),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-      hoverColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-    );
+  void _goTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
+}
+
+class _MenuItem {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  const _MenuItem(
+      {required this.icon, required this.title, required this.onTap});
+}
+
+Future<void> _handleLogout(BuildContext context) async {
+  final db = await DatabaseHelper().database;
+  await UserDao(db).logout();
+  Navigator.pushReplacementNamed(context, '/login');
 }

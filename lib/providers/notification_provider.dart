@@ -10,46 +10,60 @@ import '../database/notification_db.dart';
 class NotificationProvider extends ChangeNotifier {
   /// Checks last backup times and adds a notification if either backup is overdue (>7 days).
   Future<void> checkBackupNotifications() async {
-    final now = DateTime.parse('2025-04-29T17:09:29+04:30');
-    // Fetch last backup times
+    // Use the actual current time in the device's local timezone:
+    final now = DateTime.now();
+
+    // Fetch last backup timestamps (stored as ISO-8601 strings)
     final lastOnlineStr =
         await SettingsDBHelper().getSetting('lastOnlineBackup');
     final lastOfflineStr =
         await SettingsDBHelper().getSetting('lastOfflineBackup');
+
     DateTime? lastOnline;
     DateTime? lastOffline;
+
     if (lastOnlineStr != null) {
       try {
-        lastOnline = DateTime.parse(lastOnlineStr);
-      } catch (_) {}
+        // Parse and convert to local time
+        lastOnline = DateTime.parse(lastOnlineStr).toLocal();
+      } catch (e) {
+        // ignore parse errors
+      }
     }
+
     if (lastOfflineStr != null) {
       try {
-        lastOffline = DateTime.parse(lastOfflineStr);
-      } catch (_) {}
+        lastOffline = DateTime.parse(lastOfflineStr).toLocal();
+      } catch (e) {
+        // ignore parse errors
+      }
     }
-    // Check if overdue
+
+    // Check if more than 7 days have passed since last backup
     bool onlineOverdue =
-        lastOnline == null || now.difference(lastOnline).inDays > 7;
+        lastOnline == null || now.difference(lastOnline) > Duration(days: 7);
     bool offlineOverdue =
-        lastOffline == null || now.difference(lastOffline).inDays > 7;
-    // Avoid duplicate notifications (by title)
+        lastOffline == null || now.difference(lastOffline) > Duration(days: 7);
+
+    // Helper to avoid duplicate unread notifications by title
     bool alreadyNotified(String title) =>
         _notifications.any((n) => n.title == title && !n.read);
+
     if (onlineOverdue && !alreadyNotified('Online Backup Overdue')) {
       await addNotification(
         type: NotificationType.system,
         title: 'Online Backup Overdue',
         message:
-            'Your last online backup was more than 7 days ago. Please backup your data online.',
+            'Your last online backup was more than 7 days ago. Please back up your data online.',
       );
     }
+
     if (offlineOverdue && !alreadyNotified('Offline Backup Overdue')) {
       await addNotification(
         type: NotificationType.system,
         title: 'Offline Backup Overdue',
         message:
-            'Your last offline backup was more than 7 days ago. Please backup your data locally.',
+            'Your last offline backup was more than 7 days ago. Please back up your data locally.',
       );
     }
   }
@@ -134,6 +148,17 @@ class NotificationProvider extends ChangeNotifier {
       _lastRemovedIndex = index;
       await _db.delete(id);
       notifyListeners();
+    }
+  }
+
+  /// Count unread notifications directly from the database.
+  Future<int> countUnread() async {
+    try {
+      return await _db.countUnread();
+    } catch (e) {
+      debugPrint('Error counting unread notifications: $e');
+      // Fallback to in-memory count if DB query fails
+      return unreadCount;
     }
   }
 

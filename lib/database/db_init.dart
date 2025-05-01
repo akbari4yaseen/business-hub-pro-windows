@@ -82,7 +82,7 @@ class DbInit {
       CREATE TABLE notifications(
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
-        title TEXT NOT NULL,
+        title TEXT UNIQUE NOT NULL,
         message TEXT NOT NULL,
         timestamp INTEGER NOT NULL,
         read INTEGER NOT NULL,

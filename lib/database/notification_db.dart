@@ -19,7 +19,6 @@ class NotificationDB {
     );
 
     return rows.map((m) {
-      // Convert from Map<String, Object?> to Map<String, dynamic>
       final casted = Map<String, dynamic>.from(m);
       return AppNotification.fromMap(casted);
     }).toList();
@@ -44,6 +43,17 @@ class NotificationDB {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  /// Count how many notifications are still unread.
+  Future<int> countUnread() async {
+    final db = await _db;
+    // Use Sqflite helper to retrieve the count efficiently
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) FROM notifications WHERE "read" = ?',
+      [0],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 
   /// Delete a notification by id.

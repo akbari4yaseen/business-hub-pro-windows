@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:badges/badges.dart' as badges;
 
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
-import '../database/database_helper.dart';
-import '../database/user_dao.dart';
 import '../widgets/backup_card.dart';
 import '../widgets/recent_transaction_list.dart';
 import '../widgets/account_type_chart.dart';
@@ -32,12 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Provider.of<NotificationProvider>(context, listen: false);
       notificationProvider.checkBackupNotifications();
     });
-  }
-
-  Future<void> _handleLogout(BuildContext context) async {
-    final db = await DatabaseHelper().database;
-    await UserDao(db).logout();
-    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -82,7 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: const Icon(Icons.menu),
           onPressed: widget.openDrawer,
         ),
-        actions: [_buildPopupMenu(context, loc)],
+        actions: [
+          _buildNotificationIcon(context),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -109,51 +104,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPopupMenu(BuildContext context, AppLocalizations loc) {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        switch (value) {
-          case 'profile':
-            Navigator.pushNamed(context, '/profile');
-            break;
-          case 'notifications':
-            Navigator.pushNamed(context, '/notifications');
-            break;
-          case 'logout':
-            _handleLogout(context);
-            break;
-        }
-      },
-      itemBuilder: (_) => [
-        PopupMenuItem<String>(
-          value: 'profile',
-          child: ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(loc.profile),
-            contentPadding: EdgeInsets.zero,
-            dense: true,
+  /// Bell icon with badge for unread notifications
+  Widget _buildNotificationIcon(BuildContext context) {
+    return Consumer<NotificationProvider>(
+      builder: (_, notifier, __) => IconButton(
+        icon: badges.Badge(
+          badgeContent: Text(
+            notifier.unreadCount.toString(),
+            style: const TextStyle(color: Colors.white, fontSize: 10),
           ),
+          showBadge: notifier.unreadCount > 0,
+          child: const Icon(Icons.notifications),
         ),
-        PopupMenuItem<String>(
-          value: 'notifications',
-          child: ListTile(
-            leading: const Icon(Icons.notifications),
-            title: Text(loc.notifications),
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'logout',
-          child: ListTile(
-            leading: const Icon(Icons.logout),
-            title: Text(loc.logout),
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-          ),
-        ),
-      ],
+        onPressed: () => Navigator.pushNamed(context, '/notifications'),
+      ),
     );
   }
 }
@@ -220,7 +184,6 @@ class _ActionButton extends StatelessWidget {
           child: Icon(icon, color: Colors.white),
         ),
         const SizedBox(height: 8),
-        // Constrain the width so that long labels get ellipsized
         SizedBox(
           width: 70, // pick a width that fits your layout
           child: Text(
