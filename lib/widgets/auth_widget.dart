@@ -53,7 +53,7 @@ class _AuthWidgetState extends State<AuthWidget> {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _isAuthenticating = true);
-    final success = await _authHelper.authenticateWithFallback(
+    final success = await _authHelper.authenticateWithPassword(
       widget.actionReason,
       _passwordController.text.trim(),
     );

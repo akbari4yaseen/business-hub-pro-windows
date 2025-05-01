@@ -27,6 +27,11 @@ class AuthHelper {
     }
 
     // Fallback to password validation
+    return authenticateWithPassword(reason, fallbackPassword);
+  }
+
+  Future<bool> authenticateWithPassword(
+      String reason, String fallbackPassword) async {
     final db = await DatabaseHelper().database;
     final userDao = UserDao(db);
     final isPasswordValid = await userDao.validate(fallbackPassword);
