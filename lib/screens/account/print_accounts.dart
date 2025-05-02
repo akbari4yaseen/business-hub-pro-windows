@@ -140,21 +140,62 @@ class PrintAccounts {
                   ),
                 ),
                 pw.SizedBox(height: 6),
-                // Balances sub table
-                pw.TableHelper.fromTextArray(
-                  headers: subTableHeaders,
-                  data: subTableData,
-                  headerStyle: tableHeader,
-                  cellStyle: tableCell,
-                  headerDecoration: pw.BoxDecoration(color: PdfColors.grey200),
+                // Balances sub table with color-coded balances and left alignment
+                pw.Table(
                   border: pw.TableBorder.all(
                       color: borderSide.color, width: borderSide.width),
-                  cellAlignments: {
-                    0: pw.Alignment.centerLeft,
-                    1: pw.Alignment.centerLeft,
-                    2: pw.Alignment.centerLeft,
-                    3: pw.Alignment.centerRight,
+                  defaultVerticalAlignment:
+                      pw.TableCellVerticalAlignment.middle,
+                  columnWidths: {
+                    0: pw.FlexColumnWidth(),
+                    1: pw.FlexColumnWidth(),
+                    2: pw.FlexColumnWidth(),
+                    3: pw.FlexColumnWidth(),
                   },
+                  children: [
+                    // Header row
+                    pw.TableRow(
+                      decoration: pw.BoxDecoration(color: PdfColors.grey200),
+                      children: subTableHeaders
+                          .map((header) => pw.Padding(
+                                padding: pw.EdgeInsets.all(4),
+                                child: pw.Align(
+                                  alignment: pw.Alignment.centerLeft,
+                                  child: pw.Text(header, style: tableHeader),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    // Data rows
+                    ...subTableData.map((row) {
+                      return pw.TableRow(
+                        children: row.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final text = entry.value;
+                          final isBalance =
+                              (!isRTL && idx == 3) || (isRTL && idx == 0);
+                          double? numeric;
+                          if (isBalance) {
+                            numeric =
+                                double.tryParse(text.replaceAll(',', '')) ?? 0;
+                          }
+                          final textColor = isBalance
+                              ? (numeric! < 0 ? PdfColors.red : PdfColors.green)
+                              : PdfColors.black;
+                          return pw.Padding(
+                            padding: pw.EdgeInsets.all(4),
+                            child: pw.Align(
+                              alignment: pw.Alignment.centerLeft,
+                              child: pw.Text(
+                                text,
+                                style: tableCell.copyWith(color: textColor),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }).toList(),
+                  ],
                 ),
               ],
             ),

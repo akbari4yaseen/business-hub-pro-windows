@@ -276,5 +276,7 @@
   "biometricFailed": "Biometric authentication failed",
   "deleteAccountAuthMessage": "Deleting an Account requires authentication",
   "deleteJournalAuthMessage": "Please authenticate to delete this Journal",
-  "confirmDeleteTransaction": "Please authenticate to delete this Transaction"
+  "confirmDeleteTransaction": "Please authenticate to delete this Transaction",
+  "journalSaved": "Journal saved",
+  "errorSavingJournal": "Error saving Journal"
 }

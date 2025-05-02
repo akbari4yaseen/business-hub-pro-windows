@@ -582,4 +582,66 @@ class AccountDBHelper {
       };
     }
   }
+
+  /// Fetch accounts for printing, grouped with details per currency and transaction type
+  /// Pass accountType = 'all' to include every active account.
+  Future<List<Map<String, dynamic>>> getAccountsForPrint({
+    required String accountType,
+  }) async {
+    final db = await database;
+
+    // Build WHERE clause: always require active = 1,
+    // and only filter by account_type if not 'all'.
+    var where = 'a.active = 1';
+    final args = <dynamic>[];
+    if (accountType != 'all') {
+      where += ' AND a.account_type = ?';
+      args.add(accountType);
+    }
+
+    final sql = '''
+    SELECT 
+      a.id,
+      a.name,
+      a.phone,
+      a.account_type,
+      SUM(ad.amount) AS amount,
+      ad.currency,
+      ad.transaction_type
+    FROM accounts AS a
+    LEFT JOIN account_details AS ad
+      ON a.id = ad.account_id
+    WHERE $where
+    GROUP BY a.id, ad.currency, ad.transaction_type
+    ORDER BY a.id DESC;
+  ''';
+
+    final rows = await db.rawQuery(sql, args);
+
+    // Re-assemble into one entry per account with its list of details
+    final Map<int, Map<String, dynamic>> accountDataMap = {};
+    for (final row in rows) {
+      final id = row['id'] as int;
+      accountDataMap.putIfAbsent(id, () {
+        return {
+          'id': id,
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'account_details': <Map<String, dynamic>>[],
+        };
+      });
+      if (row['amount'] != null &&
+          row['currency'] != null &&
+          row['transaction_type'] != null) {
+        accountDataMap[id]!['account_details'].add({
+          'amount': row['amount'],
+          'currency': row['currency'],
+          'transaction_type': row['transaction_type'],
+        });
+      }
+    }
+
+    return accountDataMap.values.toList();
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:BusinessHub/utils/utilities.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -221,6 +222,54 @@ class _AccountScreenState extends State<AccountScreen>
     }).toList();
   }
 
+  /// Show a modal dialog to pick an account_type (or "all") before printing.
+  Future<void> _showPrintModal() async {
+    final loc = AppLocalizations.of(context)!;
+    // Load distinct account types
+    final opts = await AccountDBHelper().getOptionAccounts();
+    final types = opts.map((e) => e['account_type'] as String).toSet().toList()
+      ..sort();
+    types.insert(0, 'all');
+
+    String selectedType = 'all';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.accountType),
+        content: StatefulBuilder(
+          builder: (context, setState) => DropdownButton<String>(
+            value: selectedType,
+            isExpanded: true,
+            items: types.map((t) {
+              final label = t == 'all' ? loc.all : t;
+              return DropdownMenuItem(
+                  value: t,
+                  child: Text(getLocalizedAccountType(context, label)));
+            }).toList(),
+            onChanged: (val) => setState(() => selectedType = val!),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(loc.cancel),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.print),
+            label: Text(loc.print),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final accountsToPrint = await AccountDBHelper()
+                  .getAccountsForPrint(accountType: selectedType);
+              PrintAccounts.printAccounts(context, accountsToPrint);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showFilterModal() {
     var tmpType = _selectedAccountType;
     var tmpCurr = _selectedCurrency;
@@ -428,11 +477,7 @@ class _AccountScreenState extends State<AccountScreen>
                   _showFilterModal();
                   break;
                 case 'print':
-                  final toPrint = _tabController.index == 0
-                      ? filteredActive
-                      : filteredDeactivated;
-                  PrintAccounts.printAccounts(context, toPrint);
-
+                  _showPrintModal();
                   break;
               }
             },

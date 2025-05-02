@@ -276,5 +276,7 @@
   "biometricFailed": "احراز هویت بیومتریک ناموفق بود",
   "deleteAccountAuthMessage": "برای حذف حساب احراز هویت لازم است",
   "deleteJournalAuthMessage": "برای حذف این روزنامچه احراز هویت لازم است",
-  "confirmDeleteTransaction": "برای حذف این معامله احراز هویت لازم است"
+  "confirmDeleteTransaction": "برای حذف این معامله احراز هویت لازم است",
+  "journalSaved": "روزنامچه ثبت شد",
+  "errorSavingJournal": "خطا در ثبت روزنامچه"
 }

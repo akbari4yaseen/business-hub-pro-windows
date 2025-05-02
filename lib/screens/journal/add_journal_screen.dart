@@ -85,7 +85,9 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
   }
 
   Future<void> _saveJournal() async {
+    final loc = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
+
     final amount = double.parse(_amountCtrl.text.replaceAll(',', ''));
 
     try {
@@ -98,10 +100,22 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
         transactionType: _transactionType.toLowerCase(),
         description: _descCtrl.text,
       );
-      if (mounted) Navigator.pop(context, true);
+
+      if (!mounted) return;
+
+      // Show a confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.journalSaved)),
+      );
+
+      // Reset form fields—but leave _selectedAccount untouched
+      _descCtrl.clear();
+      _amountCtrl.clear();
+      _setDate(DateTime.now());
+      _formKey.currentState!.reset();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving journal: $e')),
+        SnackBar(content: Text('${loc.errorSavingJournal}: $e')),
       );
     }
   }
