@@ -147,10 +147,10 @@ class _BackupCardState extends State<BackupCard> {
 
     final onlineStatus = _lastOnlineBackupDays != null
         ? loc.daysAgo(_lastOnlineBackupDays!)
-        : loc.loading;
+        : '';
     final offlineStatus = _lastOfflineBackupDays != null
         ? loc.daysAgo(_lastOfflineBackupDays!)
-        : loc.loading;
+        : '';
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

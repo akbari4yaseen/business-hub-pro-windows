@@ -10,6 +10,7 @@ import '../../utils/account_share_helper.dart';
 import 'transactions/transactions_screen.dart';
 import 'edit_account_screen.dart';
 import 'add_account_screen.dart';
+import 'print_accounts.dart';
 import '../../widgets/account_filter_bottom_sheet.dart';
 import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
@@ -418,10 +419,39 @@ class _AccountScreenState extends State<AccountScreen>
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _isSearching = true),
+              tooltip: loc.search,
             ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterModal,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'filter':
+                  _showFilterModal();
+                  break;
+                case 'print':
+                  final toPrint = _tabController.index == 0
+                      ? filteredActive
+                      : filteredDeactivated;
+                  PrintAccounts.printAccounts(context, toPrint);
+
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'filter',
+                child: ListTile(
+                  leading: const Icon(Icons.filter_list),
+                  title: Text(loc.filter),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'print',
+                child: ListTile(
+                  leading: const Icon(Icons.print),
+                  title: Text(loc.print),
+                ),
+              ),
+            ],
           ),
         ],
       ),
