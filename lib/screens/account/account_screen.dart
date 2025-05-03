@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:BusinessHub/utils/utilities.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -50,7 +52,7 @@ class _AccountScreenState extends State<AccountScreen>
   // Pagination state for active accounts
   List<Map<String, dynamic>> _activeAccounts = [];
   int _activeOffset = 0;
-  final int _limit = 10;
+  final int _limit = 20;
   bool _activeHasMore = true;
   bool _isLoadingMoreActive = false;
 
@@ -162,13 +164,21 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    if (maxScroll - currentScroll <= 200) {
+
+    final threshold = 200.0;
+    final max = _scrollController.position.maxScrollExtent;
+    final pos = _scrollController.position.pixels;
+
+    // only load if scrolled within threshold AND not already loading
+    if (max - pos <= threshold) {
       if (_tabController.index == 0) {
-        _loadMoreActiveAccounts();
+        if (!_isLoadingMoreActive && _activeHasMore) {
+          _loadMoreActiveAccounts();
+        }
       } else {
-        _loadMoreDeactivatedAccounts();
+        if (!_isLoadingMoreDeactivated && _deactivatedHasMore) {
+          _loadMoreDeactivatedAccounts();
+        }
       }
     }
   }
