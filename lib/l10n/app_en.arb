@@ -98,7 +98,7 @@
   "restore": "Restore",
   "aboutDescription": "BusinessHub is a modern business management app designed to help you track, analyze, and grow your business efficiently. Enjoy a seamless experience and powerful features!",
   "helpTitle": "Help & Support",
-  "helpDescription": "Need assistance? Explore FAQs or contact our support team for help with BusinessHub.",
+  "helpDescription": "Need assistance? Contact our support team for help with BusinessHub.",
   "exportCanceledNoDirectory": "Export canceled. No directory selected.",
   "databaseExportedSuccessfully": "Database exported successfully to:\n{path}",
   "databaseFileNotFoundOrExportFailed": "Database file not found or export failed!",
