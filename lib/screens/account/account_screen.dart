@@ -560,7 +560,7 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _addAccount() async {
     final result = await Navigator.push(
-        context, MaterialPageRoute(builder: (_) => AddAccountScreen()));
+        context, MaterialPageRoute(builder: (_) => const AddAccountScreen()));
     if (result != null) _loadAccounts();
   }
 }
