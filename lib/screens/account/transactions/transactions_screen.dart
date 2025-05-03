@@ -647,13 +647,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 title: Text(loc.delete),
               ),
             ),
-            PopupMenuItem(
-              value: 'print',
-              child: ListTile(
-                leading: const Icon(Icons.print, color: Colors.blue),
-                title: Text(loc.print),
-              ),
-            ),
           ],
         ),
       ),

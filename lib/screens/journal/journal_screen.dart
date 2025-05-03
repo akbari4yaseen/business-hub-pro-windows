@@ -420,13 +420,6 @@ class _JournalList extends StatelessWidget {
                         leading:
                             const Icon(Icons.delete, color: Colors.redAccent),
                         title: Text(loc.delete))),
-                const PopupMenuItem(
-                  value: 'print',
-                  enabled: false,
-                  child: ListTile(
-                      leading: Icon(Icons.print, color: Colors.grey),
-                      title: Text('')), // printDisabled
-                )
               ],
             ),
           ),
