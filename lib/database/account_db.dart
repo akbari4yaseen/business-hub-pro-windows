@@ -510,7 +510,7 @@ class AccountDBHelper {
         'currency': curr,
       });
     }
-    return results.reversed.toList();
+    return results.toList();
   }
 
   Future<List<Map<String, dynamic>>> getTransactionsForPrint(
@@ -520,7 +520,7 @@ class AccountDBHelper {
     final query = '''
       SELECT * FROM account_details
       WHERE account_id = ?
-      ORDER BY date DESC, id DESC
+      ORDER BY date, id
     ''';
 
     final rows = await db.rawQuery(query, [accountId]);

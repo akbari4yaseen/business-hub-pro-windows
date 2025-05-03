@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class Debouncer {
   final int milliseconds;
-  VoidCallback? _action;
+
   Timer? _timer;
 
   Debouncer({required this.milliseconds});

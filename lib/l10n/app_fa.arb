@@ -278,5 +278,8 @@
   "deleteJournalAuthMessage": "برای حذف این روزنامچه احراز هویت لازم است",
   "confirmDeleteTransaction": "برای حذف این معامله احراز هویت لازم است",
   "journalSaved": "روزنامچه ثبت شد",
-  "errorSavingJournal": "خطا در ثبت روزنامچه"
+  "errorSavingJournal": "خطا در ثبت روزنامچه",
+  "printSettings": "تنظیمات چاپ",
+  "startDate": "تاریخ شروع",
+  "endDate": "تاریخ ختم"
 }

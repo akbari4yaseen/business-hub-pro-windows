@@ -278,5 +278,8 @@
   "deleteJournalAuthMessage": "Please authenticate to delete this Journal",
   "confirmDeleteTransaction": "Please authenticate to delete this Transaction",
   "journalSaved": "Journal saved",
-  "errorSavingJournal": "Error saving Journal"
+  "errorSavingJournal": "Error saving Journal",
+  "printSettings": "Print Settings",
+  "startDate": "Start Date",
+  "endDate": "End Date"
 }

@@ -78,6 +78,21 @@ String getLocalizedSystemAccountName(BuildContext context, String name) {
   }
 }
 
+String getLocalizedTxType(BuildContext context, String type) {
+  final localizations = AppLocalizations.of(context)!;
+
+  switch (type) {
+    case 'all':
+      return localizations.all;
+    case 'credit':
+      return localizations.credit;
+    case 'debit':
+      return localizations.debit;
+    default:
+      return type; // Fallback in case of missing translation
+  }
+}
+
 String getLocalizedAccountName(
     BuildContext context, int accountId, String? fallbackName) {
   final localizations = AppLocalizations.of(context)!;

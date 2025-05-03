@@ -15,6 +15,7 @@ import '../../../widgets/transaction_filter_bottom_sheet.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
 import '../../../widgets/auth_widget.dart';
+import '../../../widgets/transaction_print_settings_dialog.dart';
 import 'print_transactions.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -179,6 +180,52 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  /// Fetches all transactions, applies print settings filters in-memory, then prints.
+  void _onPrintPressed() async {
+    if (currencyOptions.isEmpty) {
+      await _loadCurrencies();
+    }
+
+    final result = await showDialog<PrintSettings>(
+      context: context,
+      builder: (_) => PrintSettingsDialog(
+        typeOptions: ['all', 'credit', 'debit'],
+        currencyOptions: currencyOptions,
+        initialType: _selectedType ?? 'all',
+        initialCurrency: _selectedCurrency ?? 'all',
+        initialStart: null,
+        initialEnd: null,
+      ),
+    );
+    if (result == null) return;
+
+    // 1) Fetch all transactions
+    final allTxs = await AccountDBHelper().getTransactionsForPrint(
+      widget.account['id'] as int,
+    );
+
+    // 2) Filter in-memory
+    final filtered = allTxs.where((tx) {
+      final txDate = DateTime.parse(tx['date'] as String);
+
+      final dateOk =
+          (result.startDate == null || !txDate.isBefore(result.startDate!)) &&
+              (result.endDate == null || !txDate.isAfter(result.endDate!));
+      final typeOk = result.transactionType == 'all' ||
+          (tx['transaction_type'] as String) == result.transactionType;
+      final currencyOk = result.currency == 'all' ||
+          (tx['currency'] as String) == result.currency;
+      return dateOk && typeOk && currencyOk;
+    }).toList();
+
+    // 3) Print filtered list
+    await PrintTransactions.printTransactions(
+      context,
+      widget.account,
+      transactions: filtered,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final balances = widget.account['balances'] as Map<String, dynamic>? ?? {};
@@ -258,8 +305,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   _showFilterModal();
                   break;
                 case 'print':
-                  PrintTransactions.printTransactions(context, widget.account);
-
+                  _onPrintPressed();
                   break;
               }
             },

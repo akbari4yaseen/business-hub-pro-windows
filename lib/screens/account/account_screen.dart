@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:BusinessHub/utils/utilities.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../database/account_db.dart';
 import '../../database/database_helper.dart';
 import '../../utils/transaction_helper.dart';
+import '../../utils/account_types.dart';
 import '../../utils/account_share_helper.dart';
 
 import 'transactions/transactions_screen.dart';
@@ -246,18 +246,17 @@ class _AccountScreenState extends State<AccountScreen>
     }).toList();
   }
 
-  /// Show a modal dialog to pick an account_type (or "all") before printing.
   Future<void> _showPrintModal() async {
     final loc = AppLocalizations.of(context)!;
-    // Load distinct account types
-    final opts = await AccountDBHelper().getOptionAccounts();
-    final types = opts.map((e) => e['account_type'] as String).toSet().toList()
-      ..sort();
-    types.insert(0, 'all');
+    // getAccountTypes returns a Map<key,label>
+    final typesMap = getAccountTypes(loc);
+
+    // build a List<String> so we can prepend "all"
+    final types = ['all', ...typesMap.keys];
 
     String selectedType = 'all';
 
-    showDialog(
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(loc.accountType),
@@ -266,12 +265,16 @@ class _AccountScreenState extends State<AccountScreen>
             value: selectedType,
             isExpanded: true,
             items: types.map((t) {
-              final label = t == 'all' ? loc.all : t;
-              return DropdownMenuItem(
-                  value: t,
-                  child: Text(getLocalizedAccountType(context, label)));
+              final label = (t == 'all') ? loc.all : typesMap[t]!;
+              return DropdownMenuItem<String>(
+                value: t,
+                child: Text(label),
+              );
             }).toList(),
-            onChanged: (val) => setState(() => selectedType = val!),
+            onChanged: (val) {
+              if (val == null) return;
+              setState(() => selectedType = val);
+            },
           ),
         ),
         actions: [

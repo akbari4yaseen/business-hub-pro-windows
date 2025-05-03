@@ -17,14 +17,18 @@ class PrintTransactions {
 
   static Future<void> printTransactions(
     BuildContext context,
-    Map<String, dynamic> account,
-  ) async {
+    Map<String, dynamic> account, {
+    List<Map<String, dynamic>>? transactions,
+  }) async {
     // Fetch app info and account data
     final info = Provider.of<InfoProvider>(context, listen: false).info;
     final accountId = account['id'];
     final accountName = account['name'] ?? '';
     final balances = (account['balances'] as Map<String, dynamic>?) ?? {};
-    final txs = await AccountDBHelper().getTransactionsForPrint(accountId);
+
+    // Use passed-in transactions, or fetch all if null
+    final txs = transactions ??
+        await AccountDBHelper().getTransactionsForPrint(accountId);
 
     final String companyName = info.name ?? '';
     final String companyAddress = info.address ?? '';
