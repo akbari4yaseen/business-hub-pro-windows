@@ -479,11 +479,6 @@ class _AccountScreenState extends State<AccountScreen>
                   _searchQuery = '';
                   _loadAccounts();
                 }),
-                onClear: () => setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                  _loadAccounts();
-                }),
                 onSubmitted: (_) => _loadAccounts(),
               )
             : Text(loc.accounts, style: const TextStyle(fontSize: 20)),

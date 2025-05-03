@@ -233,9 +233,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 isLoading: isLoading,
                 onChanged: (_) => _refreshTransactions(),
                 onSubmitted: (_) => _refreshTransactions(),
-                onCancel: () => setState(() => _isSearching = false),
-                onClear: () {
+                onCancel: () {
                   _searchController.clear();
+                  _isSearching = false;
                   _refreshTransactions();
                 },
                 hintText: loc.search,

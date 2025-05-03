@@ -516,4 +516,18 @@ extension JournalPaging on JournalDBHelper {
 
     return await db.rawQuery(sql, args);
   }
+
+  Future<List<Map<String, dynamic>>> searchJournals({
+    required String query,
+    String? transactionType,
+    String? currency,
+    DateTime? exactDate,
+  }) async {
+    return getJournalsPage(
+      searchQuery: query,
+      transactionType: transactionType,
+      currency: currency,
+      exactDate: exactDate,
+    );
+  }
 }

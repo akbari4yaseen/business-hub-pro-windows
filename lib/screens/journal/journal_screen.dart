@@ -13,6 +13,7 @@ import '../../widgets/journal_filter_bottom_sheet.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
 import '../../widgets/journal_details_widget.dart';
+import '../../utils/search_manager.dart';
 
 class JournalScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -24,27 +25,42 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   static const _pageSize = 30;
-  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
-  final ScrollController _scrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  late final SearchManager _searchManager;
 
-  List<Map<String, dynamic>> _journals = [];
+  final List<Map<String, dynamic>> _journals = [];
+  final List<String> _currencyOptions = ['all'];
+
   bool _isLoading = false;
   bool _hasMore = true;
   bool _isSearching = false;
-  int _currentPage = 0;
   bool _isAtTop = true;
+
+  int _currentPage = 0;
 
   String? _selectedType;
   String? _selectedCurrency;
   DateTime? _selectedDate;
-  List<String> currencyOptions = [];
 
   @override
   void initState() {
     super.initState();
+    _searchManager = SearchManager();
     _scrollController.addListener(_onScroll);
+    _searchManager.searchStream.listen((searchState) {
+      setState(() {
+        _searchController.text = searchState.query;
+        _journals
+          ..clear()
+          ..addAll(searchState.results);
+        _hasMore = false;
+      });
+    });
+
+    _loadCurrencies();
     _refreshJournals();
   }
 
@@ -54,35 +70,28 @@ class _JournalScreenState extends State<JournalScreen> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
+    _searchManager.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    // Infinite‐scroll trigger
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoading &&
-        _hasMore) {
-      _fetchNextPage();
-    }
-
-    // FAB up/down
-    final atTop = _scrollController.position.pixels <= 0;
-    if (atTop != _isAtTop) setState(() => _isAtTop = atTop);
+  Future<void> _loadCurrencies() async {
+    final list = await DatabaseHelper().getDistinctCurrencies();
+    setState(() {
+      _currencyOptions
+        ..clear()
+        ..addAll(['all', ...list..sort()]);
+    });
   }
 
   Future<void> _refreshJournals() async {
-    setState(() {
-      _journals.clear();
-      _currentPage = 0;
-      _hasMore = true;
-    });
+    _currentPage = 0;
+    _journals.clear();
+    _hasMore = true;
     await _fetchNextPage();
   }
 
   Future<void> _fetchNextPage() async {
-    if (!_hasMore) return;
-
+    if (!_hasMore || _isLoading) return;
     setState(() => _isLoading = true);
 
     final newBatch = await JournalDBHelper().getJournalsPage(
@@ -102,6 +111,13 @@ class _JournalScreenState extends State<JournalScreen> {
     });
   }
 
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) _fetchNextPage();
+    final atTop = pos.pixels <= 0;
+    if (atTop != _isAtTop) setState(() => _isAtTop = atTop);
+  }
+
   Future<void> _deleteJournal(int id) async {
     try {
       await JournalDBHelper().deleteJournal(id);
@@ -111,26 +127,14 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-  Future<void> _loadCurrencies() async {
-    final list = await DatabaseHelper().getDistinctCurrencies();
-    list.sort();
-    currencyOptions = ['all', ...list];
-  }
-
   void _confirmDelete(int id) {
     final loc = AppLocalizations.of(context)!;
-
-    // First, ask the user to authenticate
     showDialog(
       context: context,
       builder: (_) => AuthWidget(
-        actionReason: loc
-            .deleteJournalAuthMessage, // e.g. “Please authenticate to delete this journal.”
+        actionReason: loc.deleteJournalAuthMessage,
         onAuthenticated: () {
-          // Close the AuthWidget dialog
           Navigator.of(context).pop();
-
-          // Then show the regular delete confirmation
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -138,18 +142,16 @@ class _JournalScreenState extends State<JournalScreen> {
               content: Text(loc.confirmDeleteJournal),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(ctx),
+                  onPressed: Navigator.of(context).pop,
                   child: Text(loc.cancel),
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(ctx);
+                    Navigator.of(context).pop();
                     _deleteJournal(id);
                   },
-                  child: Text(
-                    loc.delete,
-                    style: const TextStyle(color: Colors.red),
-                  ),
+                  child: Text(loc.delete,
+                      style: const TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -159,12 +161,12 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  void _showDetails(Map<String, dynamic> j) {
+  void _showDetails(Map<String, dynamic> journal) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => JournalDetailsWidget(journal: j),
+      builder: (_) => JournalDetailsWidget(journal: journal),
     );
   }
 
@@ -172,45 +174,38 @@ class _JournalScreenState extends State<JournalScreen> {
     String? tmpType = _selectedType;
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
-    _loadCurrencies();
-
-    final typeList = ['all', 'credit', 'debit'];
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (c) => StatefulBuilder(
-        builder: (c2, setModal) => Material(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setModal) => Material(
           color: Theme.of(context).canvasColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           child: JournalFilterBottomSheet(
             selectedType: tmpType,
             selectedCurrency: tmpCurrency,
             selectedDate: tmpDate,
-            typeOptions: typeList,
-            currencyOptions: currencyOptions,
-            onChanged: ({type, currency, date}) {
-              setModal(() {
-                tmpType = type;
-                tmpCurrency = currency;
-                tmpDate = date;
-              });
-            },
-            onReset: () {
-              setModal(() {
-                tmpType = null;
-                tmpCurrency = null;
-                tmpDate = null;
-              });
-            },
+            typeOptions: const ['all', 'credit', 'debit'],
+            currencyOptions: _currencyOptions,
+            onChanged: ({type, currency, date}) => setModal(() {
+              tmpType = type;
+              tmpCurrency = currency;
+              tmpDate = date;
+            }),
+            onReset: () => setModal(() {
+              tmpType = null;
+              tmpCurrency = null;
+              tmpDate = null;
+            }),
             onApply: ({type, currency, date}) {
               setState(() {
                 _selectedType = tmpType;
                 _selectedCurrency = tmpCurrency;
                 _selectedDate = tmpDate;
               });
-              Navigator.pop(context);
+              Navigator.of(context).pop();
               _refreshJournals();
             },
           ),
@@ -219,150 +214,37 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
+  void _onSearchChanged(String query) async {
+    if (query.isEmpty) {
+      _refreshJournals();
+    } else {
+      final results = await JournalDBHelper().searchJournals(
+        query: query,
+        transactionType: _selectedType,
+        currency: _selectedCurrency,
+        exactDate: _selectedDate,
+      );
+      _searchManager.updateSearch(query, results);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    Widget bodyContent;
-    if (_journals.isEmpty && _isLoading) {
-      bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (_journals.isEmpty) {
-      bodyContent = ListView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 100),
-        children: [Center(child: Text(loc.noJournalEntries))],
-      );
-    } else {
-      bodyContent = ListView.builder(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 60),
-        itemCount: _journals.length + (_hasMore ? 1 : 0),
-        itemBuilder: (ctx, i) {
-          if (i >= _journals.length) {
-            // bottom loader
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final j = _journals[i];
-          final icon = j['transaction_type'] == 'credit'
-              ? FontAwesomeIcons.plus
-              : FontAwesomeIcons.minus;
-          final color =
-              j['transaction_type'] == 'credit' ? Colors.green : Colors.red;
-
-          return Card(
-            elevation: 0,
-            shape:
-                const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
-            margin: const EdgeInsets.symmetric(vertical: 2),
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              leading: CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.1),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              title: Text(
-                '${getLocalizedSystemAccountName(context, j['account_name'])} — '
-                '${getLocalizedSystemAccountName(context, j['track_name'])}',
-                style: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '\u200E${_amountFormatter.format(j['amount'])} ${j['currency']}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text('${formatLocalizedDateTime(context, j['date'])}',
-                      style: const TextStyle(fontSize: 13)),
-                  Text(
-                    j['description'],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'details':
-                      _showDetails(j);
-                      break;
-                    case 'edit':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EditJournalScreen(journal: j),
-                        ),
-                      ).then((_) => _refreshJournals());
-                      break;
-                    case 'delete':
-                      _confirmDelete(j['id']);
-                      break;
-                    default:
-                      break;
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                      value: 'details',
-                      child: ListTile(
-                          leading: const Icon(Icons.info),
-                          title: Text(loc.details))),
-                  PopupMenuItem(
-                      value: 'share',
-                      child: ListTile(
-                          leading: const Icon(Icons.share),
-                          title: Text(loc.share))),
-                  PopupMenuItem(
-                      value: 'edit',
-                      child: ListTile(
-                          leading: const Icon(Icons.edit, color: Colors.blue),
-                          title: Text(loc.edit))),
-                  PopupMenuItem(
-                      value: 'delete',
-                      child: ListTile(
-                          leading:
-                              const Icon(Icons.delete, color: Colors.redAccent),
-                          title: Text(loc.delete))),
-                  PopupMenuItem(
-                      value: 'print',
-                      enabled: false,
-                      child: ListTile(
-                          leading: const Icon(Icons.print, color: Colors.grey),
-                          title: Text(loc.printDisabled))),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.openDrawer,
-        ),
+            icon: const Icon(Icons.menu), onPressed: widget.openDrawer),
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,
                 debounceDuration: const Duration(milliseconds: 500),
                 isLoading: _isLoading,
-                onChanged: (_) => _refreshJournals(),
-                onSubmitted: (_) => _refreshJournals(),
-                onCancel: () => setState(() => _isSearching = false),
-                onClear: () {
+                onChanged: _onSearchChanged,
+                onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                onCancel: () {
+                  setState(() => _isSearching = false);
                   _searchController.clear();
                   _refreshJournals();
                 },
@@ -370,36 +252,44 @@ class _JournalScreenState extends State<JournalScreen> {
               )
             : Text(loc.journal, style: const TextStyle(fontSize: 18)),
         actions: [
-          if (!_isSearching)
+          if (!_isSearching) ...[
             IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => setState(() => _isSearching = true),
-              tooltip: loc.search,
-            ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterModal,
-            tooltip: loc.filter,
-          ),
+                icon: const Icon(Icons.search),
+                onPressed: () => setState(() => _isSearching = true)),
+            IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: _showFilterModal),
+          ],
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshJournals,
-        child: bodyContent,
+        child: _JournalList(
+          journals: _journals,
+          isLoading: _isLoading,
+          hasMore: _hasMore,
+          scrollController: _scrollController,
+          onDetails: _showDetails,
+          onEdit: (j) => Navigator.of(context)
+              .push(MaterialPageRoute(
+                  builder: (_) => EditJournalScreen(journal: j)))
+              .then((_) => _refreshJournals()),
+          onDelete: (id) => _confirmDelete(id),
+          amountFormatter: _amountFormatter,
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'journal_add_fab',
         mini: !_isAtTop,
         child: FaIcon(
-          _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
-          size: 18,
-        ),
+            _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+            size: 18),
         onPressed: () {
           if (_isAtTop) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddJournalScreen()),
-            ).then((_) => _refreshJournals());
+            Navigator.of(context)
+                .push(
+                    MaterialPageRoute(builder: (_) => const AddJournalScreen()))
+                .then((_) => _refreshJournals());
           } else {
             _scrollController.animateTo(0,
                 duration: const Duration(milliseconds: 200),
@@ -407,6 +297,141 @@ class _JournalScreenState extends State<JournalScreen> {
           }
         },
       ),
+    );
+  }
+}
+
+class _JournalList extends StatelessWidget {
+  final List<Map<String, dynamic>> journals;
+  final bool isLoading;
+  final bool hasMore;
+  final ScrollController scrollController;
+  final void Function(Map<String, dynamic>) onDetails;
+  final void Function(Map<String, dynamic>) onEdit;
+  final void Function(int) onDelete;
+  final NumberFormat amountFormatter;
+
+  const _JournalList({
+    Key? key,
+    required this.journals,
+    required this.isLoading,
+    required this.hasMore,
+    required this.scrollController,
+    required this.onDetails,
+    required this.onEdit,
+    required this.onDelete,
+    required this.amountFormatter,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    if (journals.isEmpty) {
+      return ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 100),
+        children: [Center(child: Text(loc.noJournalEntries))],
+      );
+    }
+
+    return ListView.builder(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 60),
+      itemCount: journals.length + (hasMore ? 1 : 0),
+      itemBuilder: (ctx, i) {
+        if (i >= journals.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final j = journals[i];
+        final isCredit = j['transaction_type'] == 'credit';
+        final icon = isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus;
+        final color = isCredit ? Colors.green : Colors.red;
+
+        return Card(
+          elevation: 0,
+          shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            leading: CircleAvatar(
+              backgroundColor: color.withAlpha(25),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            title: Text(
+              '${getLocalizedSystemAccountName(context, j['account_name'])} — ${getLocalizedSystemAccountName(context, j['track_name'])}',
+              style: const TextStyle(fontSize: 14, fontFamily: 'IRANSans'),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    '\u200E${amountFormatter.format(j['amount'])} ${j['currency']}',
+                    style: const TextStyle(fontSize: 14)),
+                Text(formatLocalizedDateTime(context, j['date']),
+                    style: const TextStyle(fontSize: 13)),
+                Text(j['description'],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'details':
+                    onDetails(j);
+                    break;
+                  case 'edit':
+                    onEdit(j);
+                    break;
+                  case 'delete':
+                    onDelete(j['id']);
+                    break;
+                  default:
+                    break;
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                    value: 'details',
+                    child: ListTile(
+                        leading: const Icon(Icons.info),
+                        title: Text(loc.details))),
+                PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                        leading: const Icon(Icons.share),
+                        title: Text(loc.share))),
+                PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                        leading: const Icon(Icons.edit, color: Colors.blue),
+                        title: Text(loc.edit))),
+                PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                        leading:
+                            const Icon(Icons.delete, color: Colors.redAccent),
+                        title: Text(loc.delete))),
+                const PopupMenuItem(
+                  value: 'print',
+                  enabled: false,
+                  child: ListTile(
+                      leading: Icon(Icons.print, color: Colors.grey),
+                      title: Text('')), // printDisabled
+                )
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

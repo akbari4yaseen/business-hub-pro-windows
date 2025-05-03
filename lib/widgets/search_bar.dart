@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utils/debouncer.dart';
 
-/// A reusable, customizable search bar for accounts, with debounce, loading indicator, and clear/cancel actions.
+/// A reusable, customizable search bar with debounce, loading indicator,
+/// and clear/cancel actions optimized with proper focus handling.
 class CommonSearchBar extends StatefulWidget {
   /// Text controller for the search input.
   final TextEditingController controller;
@@ -10,11 +11,8 @@ class CommonSearchBar extends StatefulWidget {
   /// Called (debounced) whenever the text changes.
   final ValueChanged<String> onChanged;
 
-  /// Called when the user taps the cancel (search_off) icon.
+  /// Called when the user taps the cancel icon.
   final VoidCallback onCancel;
-
-  /// Called when the user taps the clear icon. If null, defaults to clearing input and re-focusing.
-  final VoidCallback? onClear;
 
   /// Called when the user submits via keyboard.
   final ValueChanged<String>? onSubmitted;
@@ -33,7 +31,6 @@ class CommonSearchBar extends StatefulWidget {
     required this.controller,
     required this.onChanged,
     required this.onCancel,
-    this.onClear,
     this.onSubmitted,
     this.debounceDuration = const Duration(milliseconds: 500),
     this.isLoading = false,
@@ -98,11 +95,6 @@ class _CommonSearchBarState extends State<CommonSearchBar> {
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             border: InputBorder.none,
-            prefixIcon: IconButton(
-              icon: const Icon(Icons.search_off),
-              onPressed: widget.onCancel,
-              tooltip: loc.cancel,
-            ),
             suffixIcon: widget.isLoading
                 ? const Padding(
                     padding: EdgeInsets.all(8.0),
@@ -115,18 +107,17 @@ class _CommonSearchBarState extends State<CommonSearchBar> {
                 : ValueListenableBuilder<TextEditingValue>(
                     valueListenable: widget.controller,
                     builder: (context, value, child) {
-                      if (value.text.isEmpty) {
-                        return const SizedBox(width: 48);
-                      }
                       return IconButton(
                         icon: const Icon(Icons.clear),
-                        onPressed: widget.onClear ??
-                            () {
-                              widget.controller.clear();
-                              widget.onChanged('');
-                              _focusNode.requestFocus();
-                            },
-                        tooltip: loc.clear,
+                        onPressed: () {
+                          // Default clear logic
+                          widget.controller.clear();
+                          widget.onChanged('');
+                          _focusNode.unfocus();
+                          // Custom onClear callback
+                          widget.onCancel.call();
+                        },
+                        tooltip: loc.cancel,
                       );
                     },
                   ),

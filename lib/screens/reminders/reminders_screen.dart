@@ -124,10 +124,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
       return;
     }
     setState(() {
-      _filteredReminders = _reminders.where((r) =>
-        r.title.toLowerCase().contains(query.toLowerCase()) ||
-        r.description.toLowerCase().contains(query.toLowerCase())
-      ).toList();
+      _filteredReminders = _reminders
+          .where((r) =>
+              r.title.toLowerCase().contains(query.toLowerCase()) ||
+              r.description.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -213,8 +214,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
                 isLoading: _isLoading,
                 onChanged: (query) => _applySearch(query),
                 onSubmitted: (query) => _applySearch(query),
-                onCancel: () => setState(() => _isSearching = false),
-                onClear: () {
+                onCancel: () {
+                  _isSearching = false;
                   _searchController.clear();
                   _applySearch('');
                 },
