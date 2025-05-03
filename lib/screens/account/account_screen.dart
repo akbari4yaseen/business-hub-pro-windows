@@ -19,6 +19,7 @@ import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
+import '../../utils/search_manager.dart';
 
 class AccountScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -34,6 +35,7 @@ class _AccountScreenState extends State<AccountScreen>
   late final TabController _tabController;
   final _scrollController = ScrollController();
   late final TextEditingController _searchController;
+  late final SearchManager _searchManager;
 
   bool _isAtTop = true;
   bool _isLoading = true;
@@ -65,16 +67,28 @@ class _AccountScreenState extends State<AccountScreen>
   @override
   void initState() {
     super.initState();
+    _searchManager = SearchManager();
     _searchController = TextEditingController();
     _tabController = TabController(length: 2, vsync: this);
     _scrollController.addListener(_updateScrollPosition);
     _scrollController.addListener(_onScroll);
+    _searchManager.searchStream.listen((searchState) {
+      setState(() {
+        _searchQuery = searchState.query;
+        if (_tabController.index == 0) {
+          _activeAccounts = searchState.results;
+        } else {
+          _deactivatedAccounts = searchState.results;
+        }
+      });
+    });
     _loadAccounts();
     _loadCurrencies();
   }
 
   @override
   void dispose() {
+    _searchManager.dispose();
     _searchController.dispose();
     _tabController.dispose();
     _scrollController.dispose();
