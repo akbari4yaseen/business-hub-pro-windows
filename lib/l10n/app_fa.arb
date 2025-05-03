@@ -55,6 +55,8 @@
   "selectTrack": "انتخاب درک",
   "credit": "آوردگی",
   "debit": "بردگی",
+  "credited": "افزوده",
+  "debited": "کسر",
   "track": "درک",
   "typeToSearchTrack": "برای جستجوی درک تایپ کنید",
   "pleaseSelectTrack": "لطفا یک درک را انتخاب کنید",
@@ -281,5 +283,6 @@
   "errorSavingJournal": "خطا در ثبت روزنامچه",
   "printSettings": "تنظیمات چاپ",
   "startDate": "تاریخ شروع",
-  "endDate": "تاریخ ختم"
+  "endDate": "تاریخ ختم",
+  "shareMessage": "محترم {accountName}،\n\nحساب شما در تاریخ {date} به مبلغ {amount} {currency} {action} شده است.\n\nتوضیحات بیشتر: {description}\n\n{footer}"
 }

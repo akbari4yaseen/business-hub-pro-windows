@@ -56,6 +56,8 @@
   "selectTrack": "Select Track",
   "credit": "Credit",
   "debit": "Debit",
+  "credited": "Credited",
+  "debited": "Debited",
   "track": "Track",
   "typeToSearchTrack": "Type to search track",
   "pleaseSelectTrack": "Please select a track",
@@ -281,5 +283,6 @@
   "errorSavingJournal": "Error saving Journal",
   "printSettings": "Print Settings",
   "startDate": "Start Date",
-  "endDate": "End Date"
+  "endDate": "End Date",
+  "shareMessage": "Dear {accountName},\n\nYour account has been {action} with {amount} {currency} on {date}.\n\nExtra Description: {description}\n\n{footer}"
 }

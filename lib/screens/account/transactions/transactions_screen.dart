@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'print_transactions.dart';
 
 import '../../../database/account_db.dart';
 import '../../../database/journal_db.dart';
@@ -16,7 +17,7 @@ import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction_print_settings_dialog.dart';
-import 'print_transactions.dart';
+import '../../../utils/transaction_share_helper.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -178,6 +179,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         ),
       ),
     );
+  }
+
+  void _shareTransaction(Map<String, dynamic> transaction) {
+    // Add the account_name field
+    transaction['account_name'] = widget.account['name'];
+
+    // Now pass the updated map along
+    shareJournalEntry(context, transaction);
   }
 
   /// Fetches all transactions, applies print settings filters in-memory, then prints.
@@ -612,6 +621,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 break;
               case 'delete':
                 _handleDelete(tx, loc);
+              case 'share':
+                _shareTransaction(tx);
                 break;
               case 'print':
                 // print later

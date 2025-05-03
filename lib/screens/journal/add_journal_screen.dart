@@ -103,16 +103,16 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
       if (!mounted) return;
 
-      // Show a confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.journalSaved)),
-      );
-
       // Reset form fields—but leave _selectedAccount untouched
       _descCtrl.clear();
       _amountCtrl.clear();
       _setDate(DateTime.now());
       _formKey.currentState!.reset();
+      
+      // Show a confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.journalSaved)),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${loc.errorSavingJournal}: $e')),

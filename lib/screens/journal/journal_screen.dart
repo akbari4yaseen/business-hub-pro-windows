@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import '../../utils/date_formatters.dart';
 
+import 'add_journal_screen.dart';
+import 'edit_journal_screen.dart';
+import '../../utils/date_formatters.dart';
 import '../../database/journal_db.dart';
 import '../../database/database_helper.dart';
 import '../../utils/utilities.dart';
-import 'add_journal_screen.dart';
-import 'edit_journal_screen.dart';
 import '../../widgets/journal_filter_bottom_sheet.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
 import '../../widgets/journal_details_widget.dart';
 import '../../utils/search_manager.dart';
+import '../../utils/transaction_share_helper.dart';
 
 class JournalScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -123,7 +124,7 @@ class _JournalScreenState extends State<JournalScreen> {
       await JournalDBHelper().deleteJournal(id);
       await _refreshJournals();
     } catch (e) {
-      debugPrint('Error deleting journal: $e');
+      // debugPrint('Error deleting journal: $e');
     }
   }
 
@@ -228,6 +229,10 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
+  void _shareJournal(Map<String, dynamic> journal) {
+    shareJournalEntry(context, journal);
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -268,6 +273,7 @@ class _JournalScreenState extends State<JournalScreen> {
           journals: _journals,
           isLoading: _isLoading,
           hasMore: _hasMore,
+          onShare: _shareJournal,
           scrollController: _scrollController,
           onDetails: _showDetails,
           onEdit: (j) => Navigator.of(context)
@@ -309,6 +315,7 @@ class _JournalList extends StatelessWidget {
   final void Function(Map<String, dynamic>) onDetails;
   final void Function(Map<String, dynamic>) onEdit;
   final void Function(int) onDelete;
+  final void Function(Map<String, dynamic>) onShare;
   final NumberFormat amountFormatter;
 
   const _JournalList({
@@ -321,6 +328,7 @@ class _JournalList extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.amountFormatter,
+    required this.onShare,
   }) : super(key: key);
 
   @override
@@ -390,6 +398,8 @@ class _JournalList extends StatelessWidget {
                     break;
                   case 'edit':
                     onEdit(j);
+                  case 'share':
+                    onShare(j);
                     break;
                   case 'delete':
                     onDelete(j['id']);
