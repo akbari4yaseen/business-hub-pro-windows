@@ -9,7 +9,8 @@ class AddReminderSheet extends StatefulWidget {
   final Reminder? reminder;
   final ValueChanged<Reminder> onSave;
 
-  const AddReminderSheet({Key? key, this.reminder, required this.onSave}) : super(key: key);
+  const AddReminderSheet({Key? key, this.reminder, required this.onSave})
+      : super(key: key);
 
   @override
   _AddReminderSheetState createState() => _AddReminderSheetState();
@@ -56,13 +57,17 @@ class _AddReminderSheetState extends State<AddReminderSheet> {
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
+    final initialDate =
+        (_dateTime != null && _dateTime!.isAfter(now)) ? _dateTime! : now;
+
     final date = await showDatePicker(
       context: context,
-      initialDate: _dateTime ?? now,
+      initialDate: initialDate,
       firstDate: now,
       lastDate: DateTime(now.year + 5),
       locale: Localizations.localeOf(context),
     );
+
     if (date == null) return;
     final time = await showTimePicker(
       context: context,
