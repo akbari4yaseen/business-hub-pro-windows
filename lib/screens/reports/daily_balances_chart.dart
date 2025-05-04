@@ -69,7 +69,8 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
     for (var i = 0; i < rows.length; i++) {
       final row = rows[i] as Map<String, dynamic>;
       final date = DateTime.parse(row['date'] as String);
-      cum += (row['net'] as num).toDouble();
+      // Use absolute value so "net" is never negative
+      cum += (row['net'] as num).toDouble().abs();
       dates.add(date);
       spots.add(FlSpot(i.toDouble(), cum));
     }
