@@ -42,11 +42,11 @@ Future<DateTime?> pickLocalizedDateTime({
 String formatLocalizedDateTime(BuildContext context, DateTime dateTime) {
   final locale = Localizations.localeOf(context);
 
-  if (locale.languageCode == 'fa') {
+  if (locale.languageCode == 'en') {
+    return DateFormat.yMd().add_jm().format(dateTime);
+  } else {
     final j = Jalali.fromDateTime(dateTime);
     final time = TimeOfDay.fromDateTime(dateTime);
     return '${j.formatCompactDate()} ${time.format(context)}';
-  } else {
-    return DateFormat.yMd().add_jm().format(dateTime);
   }
 }

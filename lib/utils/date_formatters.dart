@@ -55,18 +55,18 @@ String replaceEnglishNumbers(String input) {
 
 String formatLocalizedDateTime(BuildContext context, String date) {
   final localeCode = Localizations.localeOf(context).languageCode;
-  if (localeCode.startsWith('fa')) {
-    return formatJalaliDateTime(date);
+  if (localeCode.startsWith('en')) {
+    return formatDateTime(date);
   }
-  return formatDateTime(date);
+  return formatJalaliDateTime(date);
 }
 
 String formatLocalizedDate(BuildContext context, String date) {
   final localeCode = Localizations.localeOf(context).languageCode;
-  if (localeCode.startsWith('fa')) {
-    return formatJalaliDate(date);
+  if (localeCode.startsWith('en')) {
+    return formatDate(date);
   }
-  return formatDate(date);
+  return formatJalaliDate(date);
 }
 
 /// Extension on DateTime to simplify localized formatting directly on the object.
