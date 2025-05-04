@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../utils/auth_helper.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../utils/auth_helper.dart';
+import '../../providers/settings_provider.dart';
 
 class AuthWidget extends StatefulWidget {
   final String actionReason;
@@ -32,13 +34,20 @@ class _AuthWidgetState extends State<AuthWidget> {
         setState(() => _errorMessage = null);
       }
     });
+
+    // Delay the biometric auth trigger to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
+      if (settingsProvider.useFingerprint) {
+        _authenticateBiometric();
+      }
+    });
   }
 
   Future<void> _authenticateBiometric() async {
     if (_isAuthenticating) return;
-    setState(() => _isAuthenticating = true);
     final success = await _authHelper.authenticate(widget.actionReason);
-    setState(() => _isAuthenticating = false);
 
     if (success) {
       widget.onAuthenticated();
@@ -46,6 +55,8 @@ class _AuthWidgetState extends State<AuthWidget> {
       setState(
           () => _errorMessage = AppLocalizations.of(context)!.biometricFailed);
     }
+
+    setState(() => _isAuthenticating = false);
   }
 
   Future<void> _authenticateWithPassword() async {
@@ -71,6 +82,8 @@ class _AuthWidgetState extends State<AuthWidget> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -155,14 +168,28 @@ class _AuthWidgetState extends State<AuthWidget> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton.icon(
-                  onPressed: _isAuthenticating ? null : _authenticateBiometric,
-                  icon: const Icon(Icons.fingerprint),
-                  label: Text(loc.useFingerprint),
+              if (settingsProvider.useFingerprint) const SizedBox(height: 16),
+              if (settingsProvider.useFingerprint)
+                Center(
+                  child: TextButton.icon(
+                    onPressed:
+                        _isAuthenticating ? null : _authenticateBiometric,
+                    icon: Icon(
+                      Icons.fingerprint,
+                      color: _isAuthenticating
+                          ? colors.onSurface.withValues(alpha: 0.4)
+                          : colors.primary,
+                    ),
+                    label: Text(
+                      loc.useFingerprint,
+                      style: TextStyle(
+                        color: _isAuthenticating
+                            ? colors.onSurface.withValues(alpha: 0.4)
+                            : colors.primary,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

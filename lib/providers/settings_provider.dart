@@ -13,6 +13,7 @@ class SettingsProvider with ChangeNotifier {
   String _defaultTrackOption = 'noTreasure';
   int _defaultTrack = 2;
   int _defaultInactivityDays = 30;
+  bool _defaultUseFingerprint = false;
 
   // Getters
   String get defaultCurrency => _defaultCurrency;
@@ -22,6 +23,7 @@ class SettingsProvider with ChangeNotifier {
   String get defaultTrackOption => _defaultTrackOption;
   int get defaultTrack => _defaultTrack;
   int get inactivityDays => _defaultInactivityDays;
+  bool get useFingerprint => _defaultUseFingerprint;
 
   // Available options
   static const List<String> availableCurrencies = currencies;
@@ -46,6 +48,8 @@ class SettingsProvider with ChangeNotifier {
         _parseIntOrDefault(settings['default_track'], _defaultTrack);
     _defaultInactivityDays = int.parse(
         settings['inactivity_days'] ?? _defaultInactivityDays.toString());
+    _defaultUseFingerprint = bool.parse(
+        (settings['use_fingerprint'] ?? _defaultUseFingerprint).toString());
 
     notifyListeners();
   }

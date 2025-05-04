@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:provider/provider.dart';
+import '../../providers/settings_provider.dart';
 import '../database/database_helper.dart';
 import '../database/user_dao.dart';
 
@@ -85,6 +87,15 @@ class _LoginScreenState extends State<LoginScreen>
     ));
 
     _initBiometrics();
+
+    // Delay the biometric auth trigger to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
+      if (settingsProvider.useFingerprint) {
+        _authenticateWithBiometrics();
+      }
+    });
   }
 
   Future<void> _initBiometrics() async {
@@ -216,6 +227,8 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard(AppLocalizations loc, ThemeData theme) {
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -270,24 +283,26 @@ class _LoginScreenState extends State<LoginScreen>
                         style: const TextStyle(fontSize: 16)),
               ),
             ),
-            if (_canCheckBiometrics) const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.fingerprint),
-                label: Text(loc.useFingerprint),
-                onPressed: _isLoading ? null : _authenticateWithBiometrics,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            if (_canCheckBiometrics && settingsProvider.useFingerprint)
+              const SizedBox(height: 16),
+            if (_canCheckBiometrics && settingsProvider.useFingerprint)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.fingerprint),
+                  label: Text(loc.useFingerprint),
+                  onPressed: _isLoading ? null : _authenticateWithBiometrics,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

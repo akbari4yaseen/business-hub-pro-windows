@@ -116,6 +116,15 @@ class SettingsScreen extends StatelessWidget {
                   settingsProvider.setSetting('inactivity_days', value!),
             ),
 
+            // Fingerprint Authentication Setting
+            _buildSwitchSetting(
+                context: context,
+                icon: Icons.fingerprint,
+                title: AppLocalizations.of(context)!.useFingerprint,
+                value: settingsProvider.useFingerprint,
+                onChanged: (value) => settingsProvider.setSetting(
+                    'use_fingerprint', value ? 'true' : 'false')),
+
             _buildSettingsOption(
               context,
               icon: Icons.lock,
@@ -246,6 +255,29 @@ class SettingsScreen extends StatelessWidget {
             themeProvider.toggleTheme();
             settingsProvider.setSetting('theme_mode', value ? 'dark' : 'light');
           },
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ),
+    );
+  }
+
+  Widget _buildSwitchSetting({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: Icon(icon, size: 28),
+        title: Text(title),
+        trailing: Switch.adaptive(
+          value: value,
+          onChanged: onChanged,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),

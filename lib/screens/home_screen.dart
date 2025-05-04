@@ -10,6 +10,8 @@ import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
 import '../widgets/recent_transaction_list.dart';
 import '../widgets/account_type_chart.dart';
+import '../database/user_dao.dart';
+import '../database/database_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -27,14 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
 
+    // Check login status and redirect if not logged in
     Future.microtask(() async {
+      final db = await DatabaseHelper().database;
+      final userDao = UserDao(db);
+
+      final loggedIn = await userDao.isLoggedIn();
+      if (!loggedIn) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/login');
+        return;
+      }
+
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
       notificationProvider.checkBackupNotifications(context);
 
-      // 1) Await the Future<String?>
       final intervalStr = await SettingsDBHelper().getSetting('inactivityDays');
-      // 2) Provide a default if it's null, then parse safely
       final days = int.tryParse(intervalStr ?? '30') ?? 30;
 
       context.read<NotificationProvider>().checkInactiveAccountNotifications(
