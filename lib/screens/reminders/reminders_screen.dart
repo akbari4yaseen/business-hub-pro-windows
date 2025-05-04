@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import 'add_reminder_sheet.dart';
 import '../../models/reminder.dart';
 import '../../database/reminder_db.dart';
-import 'add_reminder_sheet.dart';
 import '../../widgets/search_bar.dart';
+import '../../utils/date_formatters.dart';
 
 enum _MenuOption { edit, delete }
 
@@ -252,8 +252,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     itemCount: _filteredReminders.length,
                     itemBuilder: (ctx, i) {
                       final r = _filteredReminders[i];
-                      final timeStr = DateFormat('MMM dd, yyyy – hh:mm a')
-                          .format(r.scheduledTime.toLocal());
+                      final timeStr = formatLocalizedDateTime(
+                          context, r.scheduledTime.toString());
                       return Card(
                         margin: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 4),
