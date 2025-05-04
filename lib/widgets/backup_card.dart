@@ -166,7 +166,7 @@ class _BackupCardState extends State<BackupCard> {
                 const SizedBox(width: 12),
                 Text(
                   loc.backupTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),

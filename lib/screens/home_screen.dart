@@ -100,12 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ActionButtonsSection(actions: actions),
             const SizedBox(height: 16),
             const BackupCard(),
-            const SizedBox(height: 20),
-            Text(
-              loc.recentTransactions,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             RecentTransactionList(
               transactionsFuture: _transactionsFuture,
             ),
