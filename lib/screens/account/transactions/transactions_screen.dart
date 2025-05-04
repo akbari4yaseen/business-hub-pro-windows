@@ -213,13 +213,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       widget.account['id'] as int,
     );
 
+    final start = result.startDate; // nullable DateTime
+    final end = result.endDate; // nullable DateTime
+
+// compute an exclusive upper bound
+    final endExclusive = end?.add(Duration(days: 1));
+    final startExclusive = start?.add(Duration(days: 1));
+
     // 2) Filter in-memory
     final filtered = allTxs.where((tx) {
       final txDate = DateTime.parse(tx['date'] as String);
 
       final dateOk =
-          (result.startDate == null || !txDate.isBefore(result.startDate!)) &&
-              (result.endDate == null || !txDate.isAfter(result.endDate!));
+          (startExclusive == null || !txDate.isBefore(startExclusive)) &&
+              (endExclusive == null || txDate.isBefore(endExclusive));
+
       final typeOk = result.transactionType == 'all' ||
           (tx['transaction_type'] as String) == result.transactionType;
       final currencyOk = result.currency == 'all' ||

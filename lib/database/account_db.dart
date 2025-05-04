@@ -644,4 +644,38 @@ class AccountDBHelper {
 
     return accountDataMap.values.toList();
   }
+
+  /// Returns all active accounts (id > 10) that have had **no** transactions
+  /// in the past [days] days.
+  Future<List<Map<String, dynamic>>> getAccountsNoTransactionsSince({
+    int days = 30,
+  }) async {
+    final db = await database;
+    // build the modifier for SQLite’s DATE function, e.g. "-30 days"
+    final modifier = '-$days days';
+
+    final sql = '''
+    SELECT 
+      a.id,
+      a.name,
+      a.account_type,
+      a.active
+    FROM accounts AS a
+    WHERE 
+      a.id > 10 
+      AND a.active = 1
+      AND NOT EXISTS (
+        SELECT 1 
+        FROM account_details AS ad
+        WHERE 
+          ad.account_id = a.id
+          AND DATE(ad.date) >= DATE('now', ?)
+      )
+    ORDER BY a.id DESC;
+  ''';
+
+    // pass the modifier as the only argument
+    final rows = await db.rawQuery(sql, [modifier]);
+    return rows;
+  }
 }

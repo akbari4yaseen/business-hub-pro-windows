@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../utils/date_formatters.dart';
 
 class JournalFilterBottomSheet extends StatelessWidget {
   final String? selectedType;
@@ -106,7 +107,8 @@ class JournalFilterBottomSheet extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(selectedDate != null
-                                ? '${selectedDate!.year}/${selectedDate!.month.toString().padLeft(2, '0')}/${selectedDate!.day.toString().padLeft(2, '0')}'
+                                ? formatLocalizedDate(
+                                    context, selectedDate.toString())
                                 : loc.selectDate),
                             const Icon(Icons.calendar_today, size: 20),
                           ],
@@ -130,7 +132,7 @@ class JournalFilterBottomSheet extends StatelessWidget {
                               currency: selectedCurrency,
                               date: selectedDate,
                             ),
-                            child: Text(loc.apply),
+                            child: Text(loc.applyFilters),
                           ),
                         ),
                       ],

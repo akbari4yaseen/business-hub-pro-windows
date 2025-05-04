@@ -7,6 +7,7 @@ import '../../database/journal_db.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/utilities.dart';
 import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../widgets/journal_form_widgets.dart';
 import '../../constants/currencies.dart';
 import '../../utils/number_input_formatter.dart';
@@ -68,7 +69,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
   void _setDate(DateTime dt) {
     _selectedDate = dt;
-    _dateCtrl.text = formatLocalizedDateTime(context, dt);
+    _dateCtrl.text = dFormatter.formatLocalizedDateTime(context, dt.toString());
   }
 
   Future<void> _loadAccounts() async {
@@ -108,7 +109,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
       _amountCtrl.clear();
       _setDate(DateTime.now());
       _formKey.currentState!.reset();
-      
+
       // Show a confirmation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.journalSaved)),

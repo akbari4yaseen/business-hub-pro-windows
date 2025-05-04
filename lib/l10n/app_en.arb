@@ -284,5 +284,12 @@
   "printSettings": "Print Settings",
   "startDate": "Start Date",
   "endDate": "End Date",
-  "shareMessage": "Dear {accountName},\n\nYour account has been {action} with {amount} {currency} on {date}.\n\nExtra Description: {description}\n\n{footer}"
+  "shareMessage": "Dear {accountName},\n\nYour account has been {action} with {amount} {currency} on {date}.\n\nExtra Description: {description}\n\n{footer}",
+  "onlineBackupOverdueTitle": "Online Backup Overdue",
+  "onlineBackupOverdueMessage": "Your last online backup was more than 7 days ago. Please back up your data online.",
+  "offlineBackupOverdueTitle": "Offline Backup Overdue",
+  "offlineBackupOverdueMessage": "Your last offline backup was more than 7 days ago. Please back up your data locally.",
+  "accountInactiveTitle": "The account “{name}” is inactive",
+  "accountInactiveMessage": "The account “{name}” has had no transactions in the last {days} days.",
+  "inactivityDays": "The number of days an account has no transaction"
 }

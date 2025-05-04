@@ -29,7 +29,6 @@ class RecentTransactionList extends StatelessWidget {
           return Center(child: Text(loc.noRecentTransactions));
         }
         return Card(
-          margin: EdgeInsets.zero,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListView.separated(

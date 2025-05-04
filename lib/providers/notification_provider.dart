@@ -1,15 +1,18 @@
 import 'dart:collection';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../database/settings_db.dart';
 import '../models/notification_model.dart';
 import '../database/notification_db.dart';
+import '../database/account_db.dart';
 
 /// A provider managing app notifications with persistence and undo support.
 class NotificationProvider extends ChangeNotifier {
   /// Checks last backup times and adds a notification if either backup is overdue (>7 days).
-  Future<void> checkBackupNotifications() async {
+  /// Requires a BuildContext to access localized strings.
+  Future<void> checkBackupNotifications(BuildContext context) async {
     // Use the actual current time in the device's local timezone:
     final now = DateTime.now();
 
@@ -45,25 +48,60 @@ class NotificationProvider extends ChangeNotifier {
     bool offlineOverdue =
         lastOffline == null || now.difference(lastOffline) > Duration(days: 7);
 
+    final loc = AppLocalizations.of(context)!;
+
     // Helper to avoid duplicate unread notifications by title
     bool alreadyNotified(String title) =>
         _notifications.any((n) => n.title == title && !n.read);
 
-    if (onlineOverdue && !alreadyNotified('Online Backup Overdue')) {
+    if (onlineOverdue && !alreadyNotified(loc.onlineBackupOverdueTitle)) {
       await addNotification(
         type: NotificationType.system,
-        title: 'Online Backup Overdue',
-        message:
-            'Your last online backup was more than 7 days ago. Please back up your data online.',
+        title: loc.onlineBackupOverdueTitle,
+        message: loc.onlineBackupOverdueMessage,
       );
     }
 
-    if (offlineOverdue && !alreadyNotified('Offline Backup Overdue')) {
+    if (offlineOverdue && !alreadyNotified(loc.offlineBackupOverdueTitle)) {
       await addNotification(
         type: NotificationType.system,
-        title: 'Offline Backup Overdue',
-        message:
-            'Your last offline backup was more than 7 days ago. Please back up your data locally.',
+        title: loc.offlineBackupOverdueTitle,
+        message: loc.offlineBackupOverdueMessage,
+      );
+    }
+  }
+
+  /// Check for accounts with no transactions in the past [days] days,
+  /// and push a notification for each one you haven’t already alerted on.
+  Future<void> checkInactiveAccountNotifications(
+    BuildContext context, {
+    int days = 30,
+  }) async {
+    final loc = AppLocalizations.of(context)!;
+
+    // 1) Find all accounts inactive since [days] ago:
+    final inactiveAccounts =
+        await AccountDBHelper().getAccountsNoTransactionsSince(days: days);
+
+    // 2) Helper to avoid duplicate alerts per account:
+    bool alreadyNotified(String accountId) => _notifications
+        .any((n) => n.payload?['accountId'] == accountId && !n.read);
+
+    // 3) For each stale account, add a notification if we haven’t yet:
+    for (final acct in inactiveAccounts) {
+      final accountId = acct['id'].toString();
+      if (alreadyNotified(accountId)) continue;
+
+      final accountName = acct['name'] as String? ?? 'Account #$accountId';
+      final title = loc.accountInactiveTitle(accountName);
+      final message = loc.accountInactiveMessage(days, accountName);
+
+      await addNotification(
+        type: NotificationType.system,
+        title: title,
+        message: message,
+        routeName: "/accounts",
+        payload: {'accountId': accountId},
       );
     }
   }
@@ -91,7 +129,7 @@ class NotificationProvider extends ChangeNotifier {
         ..clear()
         ..addAll(items);
     } catch (e) {
-      debugPrint('Error fetching notifications: $e');
+      // debugPrint('Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -113,7 +151,7 @@ class NotificationProvider extends ChangeNotifier {
       message: message,
       timestamp: DateTime.now(),
       routeName: routeName,
-      payload: payload, // <-- now correct type
+      payload: payload,
     );
     await _db.insert(notification);
     _notifications.insert(0, notification);
@@ -156,7 +194,7 @@ class NotificationProvider extends ChangeNotifier {
     try {
       return await _db.countUnread();
     } catch (e) {
-      debugPrint('Error counting unread notifications: $e');
+      // debugPrint('Error counting unread notifications: $e');
       // Fallback to in-memory count if DB query fails
       return unreadCount;
     }

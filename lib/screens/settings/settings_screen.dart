@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: ListView(
           children: [
-            // Currency Settings (no localization for values)
+            // Currency Settings
             _buildDropdownSetting(
               context: context,
               icon: Icons.currency_exchange,
@@ -37,7 +37,7 @@ class SettingsScreen extends StatelessWidget {
                   settingsProvider.setSetting('default_currency', value!),
             ),
 
-            // Transaction Type Settings (values localized)
+            // Transaction Type Settings
             _buildDropdownSetting(
               context: context,
               icon: Icons.compare_arrows,
@@ -58,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
 
-            // Track Settings (values localized)
+            // Track Settings
             _buildDropdownSetting(
               context: context,
               icon: Icons.wallet_membership,
@@ -79,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
 
-            // Language Settings (values localized)
+            // Language Settings
             _buildDropdownSetting(
               context: context,
               icon: Icons.language,
@@ -105,7 +105,17 @@ class SettingsScreen extends StatelessWidget {
             // Theme Settings
             _buildThemeSwitch(context, themeProvider, settingsProvider),
 
-            // Other settings...
+            // Inactivity Days Setting
+            _buildDropdownSetting(
+              context: context,
+              icon: Icons.notifications_on,
+              title: AppLocalizations.of(context)!.inactivityDays,
+              value: settingsProvider.inactivityDays.toString(),
+              items: SettingsProvider.availableInactivityDays,
+              onChanged: (value) =>
+                  settingsProvider.setSetting('inactivity_days', value!),
+            ),
+
             _buildSettingsOption(
               context,
               icon: Icons.lock,

@@ -6,6 +6,7 @@ import 'package:badges/badges.dart' as badges;
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
+import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
 import '../widgets/recent_transaction_list.dart';
 import '../widgets/account_type_chart.dart';
@@ -25,11 +26,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
-    // Check for backup notifications
-    Future.microtask(() {
+
+    Future.microtask(() async {
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
-      notificationProvider.checkBackupNotifications();
+      notificationProvider.checkBackupNotifications(context);
+
+      // 1) Await the Future<String?>
+      final intervalStr = await SettingsDBHelper().getSetting('inactivityDays');
+      // 2) Provide a default if it's null, then parse safely
+      final days = int.tryParse(intervalStr ?? '30') ?? 30;
+
+      context.read<NotificationProvider>().checkInactiveAccountNotifications(
+            context,
+            days: days,
+          );
     });
   }
 

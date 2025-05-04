@@ -284,5 +284,12 @@
   "printSettings": "تنظیمات چاپ",
   "startDate": "تاریخ شروع",
   "endDate": "تاریخ ختم",
-  "shareMessage": "محترم {accountName}،\n\nحساب شما در تاریخ {date} به مبلغ {amount} {currency} {action} شده است.\n\nتوضیحات بیشتر: {description}\n\n{footer}"
+  "shareMessage": "محترم {accountName}،\n\nحساب شما در تاریخ {date} به مبلغ {amount} {currency} {action} شده است.\n\nتوضیحات بیشتر: {description}\n\n{footer}",
+  "onlineBackupOverdueTitle": "پشتیبان‌گیری آنلاین دیر شده",
+  "onlineBackupOverdueMessage": "آخرین پشتیبان‌گیری آنلاین شما بیش از ۷ روز پیش بوده است. لطفاً اطلاعات خود را به صورت آنلاین پشتیبان‌گیری کنید.",
+  "offlineBackupOverdueTitle": "پشتیبان‌گیری آفلاین دیر شده",
+  "offlineBackupOverdueMessage": "آخرین پشتیبان‌گیری آفلاین شما بیش از ۷ روز پیش بوده است. لطفاً اطلاعات خود را محلی/آفلاین پشتیبان‌گیری کنید.",
+  "accountInactiveTitle": "حساب «{name}» بدون فعالیت است",
+  "accountInactiveMessage": "حساب «{name}» در {days} روز گذشته هیچ معامله‌ای نداشته است.",
+  "inactivityDays": "تعداد روزهای بدون معامله بودن حساب"
 }

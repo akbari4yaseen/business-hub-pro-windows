@@ -12,6 +12,7 @@ class SettingsProvider with ChangeNotifier {
   String _defaultTransaction = 'debit';
   String _defaultTrackOption = 'noTreasure';
   int _defaultTrack = 2;
+  int _defaultInactivityDays = 30;
 
   // Getters
   String get defaultCurrency => _defaultCurrency;
@@ -20,6 +21,7 @@ class SettingsProvider with ChangeNotifier {
   String get defaultTransaction => _defaultTransaction;
   String get defaultTrackOption => _defaultTrackOption;
   int get defaultTrack => _defaultTrack;
+  int get inactivityDays => _defaultInactivityDays;
 
   // Available options
   static const List<String> availableCurrencies = currencies;
@@ -27,6 +29,7 @@ class SettingsProvider with ChangeNotifier {
   static const List<String> availableTransactionTypes = ['credit', 'debit'];
   static const List<String> availableTrackOptions = ['treasure', 'noTreasure'];
   static const List<int> availableTracks = [1, 2];
+  static const availableInactivityDays = ['7', '15', '30', '60', '90'];
 
   // Load all settings at once
   Future<void> _loadSettings() async {
@@ -41,6 +44,8 @@ class SettingsProvider with ChangeNotifier {
         settings['default_track_option'] ?? _defaultTrackOption;
     _defaultTrack =
         _parseIntOrDefault(settings['default_track'], _defaultTrack);
+    _defaultInactivityDays = int.parse(
+        settings['inactivity_days'] ?? _defaultInactivityDays.toString());
 
     notifyListeners();
   }

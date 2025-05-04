@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../providers/notification_provider.dart';
 import '../models/notification_model.dart';
+import '../utils/date_formatters.dart';
 
 class NotificationsScreen extends StatelessWidget {
   static const routeName = '/notifications';
@@ -15,7 +15,6 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.notificationsTitle),
-        elevation: 1,
         centerTitle: false,
         actions: [
           IconButton(
@@ -130,8 +129,8 @@ class _NotificationCard extends StatelessWidget {
     final provider = context.read<NotificationProvider>();
     final theme = Theme.of(context);
     final isUnread = !notification.read;
-    final timestamp = DateFormat('MMM dd, yyyy • hh:mm a')
-        .format(notification.timestamp.toLocal());
+    final timestamp =
+        formatLocalizedDateTime(context, notification.timestamp.toString());
 
     return Dismissible(
       key: ValueKey(notification.id),
@@ -161,7 +160,7 @@ class _NotificationCard extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: isUnread ? 4 : 1,
+        elevation: isUnread ? 3 : 1,
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(vertical: 8, horizontal: 16),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../utils/date_formatters.dart';
 
 class TransactionFilterBottomSheet extends StatelessWidget {
   final String? selectedType;
@@ -106,7 +107,8 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(selectedDate != null
-                                ? '${selectedDate!.year}/${selectedDate!.month.toString().padLeft(2, '0')}/${selectedDate!.day.toString().padLeft(2, '0')}'
+                                ? formatLocalizedDate(
+                                    context, selectedDate.toString())
                                 : loc.selectDate),
                             const Icon(Icons.calendar_today, size: 20),
                           ],
@@ -135,7 +137,7 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                         ),
                       ],
                     ),
-                     const SizedBox(height: 8),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
