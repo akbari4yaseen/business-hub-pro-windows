@@ -267,23 +267,25 @@ class _JournalScreenState extends State<JournalScreen> {
           ],
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshJournals,
-        child: _JournalList(
-          journals: _journals,
-          isLoading: _isLoading,
-          hasMore: _hasMore,
-          onShare: _shareJournal,
-          scrollController: _scrollController,
-          onDetails: _showDetails,
-          onEdit: (j) => Navigator.of(context)
-              .push(MaterialPageRoute(
-                  builder: (_) => EditJournalScreen(journal: j)))
-              .then((_) => _refreshJournals()),
-          onDelete: (id) => _confirmDelete(id),
-          amountFormatter: _amountFormatter,
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _refreshJournals,
+              child: _JournalList(
+                journals: _journals,
+                isLoading: _isLoading,
+                hasMore: _hasMore,
+                onShare: _shareJournal,
+                scrollController: _scrollController,
+                onDetails: _showDetails,
+                onEdit: (j) => Navigator.of(context)
+                    .push(MaterialPageRoute(
+                        builder: (_) => EditJournalScreen(journal: j)))
+                    .then((_) => _refreshJournals()),
+                onDelete: (id) => _confirmDelete(id),
+                amountFormatter: _amountFormatter,
+              ),
+            ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'journal_add_fab',
         mini: !_isAtTop,
