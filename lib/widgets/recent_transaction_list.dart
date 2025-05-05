@@ -108,7 +108,7 @@ class RecentTransactionList extends StatelessWidget {
                         title: Text(
                           getLocalizedSystemAccountName(
                               context, tx['account_name']),
-                          style: const TextStyle(fontFamily: 'IRANsans'),
+                          style: const TextStyle(fontFamily: 'VazirBold'),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

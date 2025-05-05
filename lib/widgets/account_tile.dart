@@ -38,7 +38,7 @@ class AccountTile extends StatelessWidget {
               ? getLocalizedSystemAccountName(
                   context, account['name'] as String? ?? '')
               : (account['name'] as String? ?? ''),
-          style: const TextStyle(fontSize: 14, fontFamily: "IRANSans"),
+          style: const TextStyle(fontSize: 14, fontFamily: "VazirBold"),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

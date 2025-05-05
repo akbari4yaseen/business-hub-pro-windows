@@ -91,7 +91,7 @@ class TransactionDetailsSheet extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontFamily: 'IRANSans',
+              fontFamily: 'VazirBold',
               color: Colors.grey,
             ),
           ),

@@ -38,7 +38,7 @@ class AppTheme {
       iconTheme: IconThemeData(color: Colors.grey[900]),
       titleTextStyle: TextStyle(
         color: Colors.grey[900],
-        fontFamily: "IRANSans",
+        fontFamily: "VazirBold",
         fontSize: 20,
       ),
     ),
@@ -90,7 +90,7 @@ class AppTheme {
       iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
         color: Colors.white,
-        fontFamily: "IRANSans",
+        fontFamily: "VazirBold",
         fontSize: 20,
       ),
     ),

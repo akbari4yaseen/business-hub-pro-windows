@@ -23,7 +23,7 @@ class HelpScreen extends StatelessWidget {
     final titleStyle = Theme.of(context)
         .textTheme
         .titleLarge
-        ?.copyWith(color: colors.primary, fontFamily: 'IRANSans');
+        ?.copyWith(color: colors.primary, fontFamily: 'VazirBold');
     final descStyle = Theme.of(context)
         .textTheme
         .bodyLarge

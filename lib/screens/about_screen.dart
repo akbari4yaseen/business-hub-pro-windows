@@ -41,7 +41,7 @@ class AboutScreen extends StatelessWidget {
                     loc.appName,
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: cs.primary,
-                      fontFamily: "IRANSans",
+                      fontFamily: "VazirBold",
                     ),
                   ),
 

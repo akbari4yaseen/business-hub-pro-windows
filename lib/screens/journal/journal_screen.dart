@@ -376,7 +376,7 @@ class _JournalList extends StatelessWidget {
             ),
             title: Text(
               '${getLocalizedSystemAccountName(context, j['account_name'])} — ${getLocalizedSystemAccountName(context, j['track_name'])}',
-              style: const TextStyle(fontSize: 14, fontFamily: 'IRANSans'),
+              style: const TextStyle(fontSize: 14, fontFamily: 'VazirBold'),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

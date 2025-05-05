@@ -95,7 +95,7 @@ class JournalDetailsWidget extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontFamily: 'IRANSans', color: Colors.grey),
+            style: const TextStyle(fontFamily: 'VazirBold', color: Colors.grey),
           ),
           const SizedBox(height: 2),
           Text(

@@ -54,9 +54,6 @@ flutter:
     - family: VazirBold
       fonts:
         - asset: assets/fonts/Vazirmatn-Bold.ttf
-    - family: IRANSans
-      fonts:
-        - asset: assets/fonts/IRANSans.ttf
 
   # Enable generation of localized Strings from arb files.
   generate: true

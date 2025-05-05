@@ -75,7 +75,6 @@ class MyApp extends StatelessWidget {
       themeMode: settingsProvider.themeMode == 'light'
           ? ThemeMode.light
           : ThemeMode.dark,
-      home: const BottomNavigationApp(),
       initialRoute: initialRoute,
       routes: {
         '/login': (_) => const LoginScreen(),
