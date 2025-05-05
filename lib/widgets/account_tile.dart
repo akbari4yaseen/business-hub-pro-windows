@@ -11,6 +11,17 @@ class AccountTile extends StatelessWidget {
   final void Function(String) onActionSelected;
 
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  // Predefined mapping of account types to colors
+  static const Map<String, Color> _typeColors = {
+    'system': Colors.pink,
+    'customer': Colors.blue,
+    'supplier': Colors.orange,
+    'exchanger': Colors.teal,
+    'bank': Colors.indigo,
+    'income': Colors.green,
+    'expense': Colors.red,
+    'company': Colors.brown,
+  };
 
   const AccountTile({
     Key? key,
@@ -19,9 +30,17 @@ class AccountTile extends StatelessWidget {
     required this.onActionSelected,
   }) : super(key: key);
 
+  // Returns the appropriate icon color based on type and active state
+  static Color _iconColor(String? type, bool isActive) {
+    if (!isActive) return Colors.grey;
+    return _typeColors[type] ?? Colors.blue;
+  }
+
   @override
   Widget build(BuildContext context) {
     final balances = (account['balances'] as Map<String, dynamic>?) ?? {};
+    final accountType = account['account_type'] as String?;
+    final iconColor = _iconColor(accountType, isActive);
 
     return Card(
       elevation: 0,
@@ -31,7 +50,7 @@ class AccountTile extends StatelessWidget {
         leading: Icon(
           isActive ? Icons.account_circle : Icons.no_accounts_outlined,
           size: 40,
-          color: isActive ? Colors.blue : Colors.grey,
+          color: iconColor,
         ),
         title: Text(
           (account['id'] as int? ?? 0) <= 10
