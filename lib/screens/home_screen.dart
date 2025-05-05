@@ -10,8 +10,6 @@ import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
 import '../widgets/recent_transaction_list.dart';
 import '../widgets/account_type_chart.dart';
-import '../database/user_dao.dart';
-import '../database/database_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback openDrawer;
@@ -31,16 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Check login status and redirect if not logged in
     Future.microtask(() async {
-      final db = await DatabaseHelper().database;
-      final userDao = UserDao(db);
-
-      final loggedIn = await userDao.isLoggedIn();
-      if (!loggedIn) {
-        if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed('/login');
-        return;
-      }
-
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
       notificationProvider.checkBackupNotifications(context);
@@ -169,6 +157,7 @@ class ActionButtonsSection extends StatelessWidget {
         itemBuilder: (context, index) {
           final action = actions[index];
           return _ActionButton(
+            id: index.toString(),
             label: action.label,
             icon: action.icon,
             onPressed: action.onPressed,
@@ -180,11 +169,13 @@ class ActionButtonsSection extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
+  final String id;
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
 
   const _ActionButton({
+    required this.id,
     Key? key,
     required this.label,
     required this.icon,
@@ -199,6 +190,7 @@ class _ActionButton extends StatelessWidget {
           onPressed: onPressed,
           backgroundColor: Colors.blueAccent,
           child: Icon(icon, color: Colors.white),
+          heroTag: 'actionButton_$id',
         ),
         const SizedBox(height: 8),
         SizedBox(
