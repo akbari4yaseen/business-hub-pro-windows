@@ -21,6 +21,7 @@ class AccountTile extends StatelessWidget {
     'income': Colors.green,
     'expense': Colors.red,
     'company': Colors.brown,
+    'owner': Colors.lime,
   };
 
   const AccountTile({
