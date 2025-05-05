@@ -94,7 +94,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     try {
       await JournalDBHelper().insertJournal(
         date: _selectedDate,
-        accountId: _selectedAccount!,
+        accountId: _selectedAccount!, // ← stays the same
         trackId: _selectedTrack!,
         amount: amount,
         currency: _currency,
@@ -104,13 +104,22 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
       if (!mounted) return;
 
-      // Reset form fields—but leave _selectedAccount untouched
-      _descCtrl.clear();
-      _amountCtrl.clear();
-      _setDate(DateTime.now());
-      _formKey.currentState!.reset();
+      setState(() {
+        // clear the two text fields
+        _descCtrl.clear();
+        _amountCtrl.clear();
+        // reset date to “now”
+        _setDate(DateTime.now());
 
-      // Show a confirmation
+        //  reset your toggles/dropdowns/tracks:
+        final settings = context.read<SettingsProvider>();
+        _transactionType = settings.defaultTransaction;
+        _currency = settings.defaultCurrency;
+        _trackOption = settings.defaultTrackOption;
+        _selectedTrack = settings.defaultTrack;
+        _customTrackName = AppLocalizations.of(context)!.track;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.journalSaved)),
       );
