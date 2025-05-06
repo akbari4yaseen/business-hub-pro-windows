@@ -29,10 +29,9 @@ class AccountDBHelper {
 
     // Optional search
     if (searchQuery?.isNotEmpty ?? false) {
-      where.add(
-          '(LOWER(name) LIKE ? OR LOWER(address) LIKE ? OR LOWER(phone) LIKE ?)');
+      where.add('(LOWER(name) LIKE ? OR LOWER(address) LIKE ?)');
       final q = '%${searchQuery!.toLowerCase()}%';
-      args.addAll([q, q, q]);
+      args.addAll([q, q]);
     }
 
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
@@ -108,68 +107,69 @@ class AccountDBHelper {
     final where = <String>[];
     final args = <dynamic>[];
 
-    // Deactivated accounts only
-    where.add('accounts.active = 0');
+    // only deactivated
+    where.add('active = 0');
 
-    // Optional search filter
+    // Optional search
     if (searchQuery?.isNotEmpty ?? false) {
-      where.add('('
-          'LOWER(accounts.name) LIKE ? OR '
-          'LOWER(accounts.address) LIKE ? OR '
-          'LOWER(accounts.phone) LIKE ?'
-          ')');
+      where.add('(LOWER(name) LIKE ? OR LOWER(address) LIKE ?)');
       final q = '%${searchQuery!.toLowerCase()}%';
-      args.addAll([q, q, q]);
+      args.addAll([q, q]);
     }
 
-    final whereClause = where.isEmpty ? '' : 'WHERE ${where.join(' AND ')}';
+    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
 
     final sql = '''
     SELECT 
-      accounts.id, 
-      accounts.name, 
-      accounts.phone, 
-      accounts.account_type, 
-      accounts.address, 
-      accounts.active, 
-      accounts.created_at,
-      SUM(account_details.amount) AS amount, 
-      account_details.currency, 
-      account_details.transaction_type 
-    FROM accounts 
-    LEFT JOIN account_details 
-      ON accounts.id = account_details.account_id 
-    $whereClause
-    GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
-    ORDER BY accounts.id DESC
-    LIMIT ? OFFSET ?;
+      a.id,
+      a.name,
+      a.phone,
+      a.account_type,
+      a.address,
+      a.active,
+      a.created_at,
+      SUM(ad.amount) AS amount,
+      ad.currency,
+      ad.transaction_type
+    FROM (
+      SELECT 
+        id, name, phone, account_type, address, active, created_at
+      FROM accounts
+      $whereClause
+      ORDER BY id DESC
+      LIMIT ? OFFSET ?
+    ) AS a
+    LEFT JOIN account_details AS ad
+      ON a.id = ad.account_id
+    GROUP BY a.id, ad.currency, ad.transaction_type
+    ORDER BY a.id DESC;
   ''';
 
+    // Append the limit/offset for the subquery
     args.addAll([limit, offset]);
 
     final rows = await db.rawQuery(sql, args);
+
+    // Re-assemble into one entry per account
     final Map<int, Map<String, dynamic>> accountDataMap = {};
-
-    for (final row in rows) {
-      final int accountId = row['id'] as int;
-
-      accountDataMap.putIfAbsent(
-          accountId,
-          () => {
-                'id': accountId,
-                'name': row['name'],
-                'phone': row['phone'],
-                'account_type': row['account_type'],
-                'address': row['address'],
-                'active': row['active'],
-                'created_at': row['created_at'],
-                'account_details': [],
-              });
-
+    for (var row in rows) {
+      final id = row['id'] as int;
+      accountDataMap.putIfAbsent(id, () {
+        return {
+          'id': id,
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'address': row['address'],
+          'active': row['active'],
+          'created_at': row['created_at'],
+          'account_details': <Map<String, dynamic>>[],
+        };
+      });
       if (row['amount'] != null &&
           row['currency'] != null &&
           row['transaction_type'] != null) {
-        (accountDataMap[accountId]!['account_details'] as List).add({
+        accountDataMap[id]!['account_details'].add({
           'amount': row['amount'],
           'currency': row['currency'],
           'transaction_type': row['transaction_type'],
