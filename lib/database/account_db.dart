@@ -437,17 +437,20 @@ class AccountDBHelper {
     );
   }
 
-  /// Fetch transactions with filters and running balance (descending order)
+  /// Fetch transactions with filters and running balance
   Future<List<Map<String, dynamic>>> _fetchTransactions(
     int? accountId, {
-    int offset = 0,
-    int limit = 30,
+    int offset =
+        0, // number of rows to skip (pageOffset = pageIndex * pageSize)
+    int limit = 30, // pageSize
     String? searchQuery,
     String? transactionType,
     String? currency,
     DateTime? exactDate,
   }) async {
     final db = await database;
+
+    // 1) Build your WHERE clause & base args exactly as before :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
     final List<String> where = [];
     final List<dynamic> args = [];
     if (accountId != null) {
@@ -455,7 +458,7 @@ class AccountDBHelper {
       args.add(accountId);
     }
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      where.add('(LOWER(description) LIKE ?)');
+      where.add('LOWER(description) LIKE ?');
       args.add('%${searchQuery.toLowerCase()}%');
     }
     if (transactionType != null && transactionType.isNotEmpty) {
@@ -467,37 +470,75 @@ class AccountDBHelper {
       args.add(currency);
     }
     if (exactDate != null) {
-      // Accept both 'YYYY-MM-DD' and full ISO string
       where.add("DATE(date) = DATE(?)");
       args.add(exactDate.toIso8601String().substring(0, 10));
     }
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
 
-    final query = '''
-      SELECT * FROM account_details
-      $whereClause
-      ORDER BY date DESC, id DESC
-      LIMIT ? OFFSET ?
-    ''';
-    args.addAll([limit, offset]);
+    // 2) Figure out how many total rows match (for reverse-offset pagination)
+    final countQ = 'SELECT COUNT(*) AS cnt FROM account_details $whereClause';
+    final countRow = await db.rawQuery(countQ, List.from(args));
+    final totalCount = (countRow.first['cnt'] as num).toInt();
 
-    final rows = await db.rawQuery(query, args);
+    // 3) Compute the **ascending** OFFSET & LIMIT that give you the correct slice
+    //    when you want newest-first pages of size `limit`, skipping `offset` rows.
+    int pageSize = limit;
+    int pageOffset = offset; // e.g. pageIndex * pageSize
+    int ascOffset = totalCount - pageOffset - pageSize;
+    int ascLimit = pageSize;
+    if (ascOffset < 0) {
+      // last page may be smaller
+      ascLimit = pageSize + ascOffset;
+      ascOffset = 0;
+    }
 
-    // Calculate running balance for each currency (descending order)
+    // 4) Seed your runningBalance from *all* rows before this slice
     final Map<String, double> runningBalance = {};
+    if (ascOffset > 0) {
+      final seedQ = '''
+      SELECT currency,
+             SUM(
+               CASE WHEN transaction_type = 'credit' THEN amount
+                    ELSE -amount
+               END
+             ) AS balance
+      FROM (
+        SELECT currency, transaction_type, amount
+        FROM account_details
+        $whereClause
+        ORDER BY date, id
+        LIMIT ?
+        OFFSET 0
+      )
+      GROUP BY currency
+    ''';
+      final seedArgs = [...args, ascOffset];
+      final seedRows = await db.rawQuery(seedQ, seedArgs);
+      for (final row in seedRows) {
+        runningBalance[row['currency'] as String] =
+            (row['balance'] as num).toDouble();
+      }
+    }
+
+    // 5) Grab the actual page slice (ascending), then apply deltas
+    final pageQ = '''
+    SELECT * FROM account_details
+    $whereClause
+    ORDER BY date, id
+    LIMIT ? OFFSET ?
+  ''';
+    final pageArgs = [...args, ascLimit, ascOffset];
+    final rows = await db.rawQuery(pageQ, pageArgs);
+
     final List<Map<String, dynamic>> results = [];
     for (final row in rows) {
-      final String curr = row['currency'] as String;
-      final String type = row['transaction_type'] as String;
-      final double amount = (row['amount'] as num).toDouble();
-      double prevBalance = runningBalance[curr] ?? 0.0;
-      double balance = prevBalance;
-      if (type == 'credit') {
-        balance += amount;
-      } else if (type == 'debit') {
-        balance -= amount;
-      }
-      runningBalance[curr] = balance;
+      final curr = row['currency'] as String;
+      final type = row['transaction_type'] as String;
+      final amount = (row['amount'] as num).toDouble();
+      final prev = runningBalance[curr] ?? 0.0;
+      final newBal = prev + (type == 'credit' ? amount : -amount);
+      runningBalance[curr] = newBal;
+
       results.add({
         'id': row['id'],
         'date': row['date'],
@@ -506,11 +547,13 @@ class AccountDBHelper {
         'transaction_id': row['transaction_id'],
         'amount': amount,
         'transaction_type': type,
-        'balance': balance,
+        'balance': newBal,
         'currency': curr,
       });
     }
-    return results.toList();
+
+    // 6) Reverse *this page* so it’s newest-first within the slice
+    return results.reversed.toList();
   }
 
   Future<List<Map<String, dynamic>>> getTransactionsForPrint(
@@ -525,7 +568,7 @@ class AccountDBHelper {
 
     final rows = await db.rawQuery(query, [accountId]);
 
-    // Calculate running balance for each currency (descending order)
+    // Calculate running balance for each currency
     final Map<String, double> runningBalance = {};
     final List<Map<String, dynamic>> results = [];
     for (final row in rows) {

@@ -348,9 +348,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : transactions.isEmpty
-              ? Center(
-                  child: Text(loc
-                      .noTransactionsFound)) // Add 'noTransactionsFound' to localization if missing
+              ? Center(child: Text(loc.noTransactionsFound))
               : CustomScrollView(
                   controller: _scrollController,
                   slivers: [

@@ -17,8 +17,8 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
 
   // Pastel-ish accent colors for up to 8 slices
   static const List<Color> _pieColors = [
-    Colors.redAccent,
     Colors.blueAccent,
+    Colors.redAccent,
     Colors.greenAccent,
     Colors.orangeAccent,
     Colors.purpleAccent,
