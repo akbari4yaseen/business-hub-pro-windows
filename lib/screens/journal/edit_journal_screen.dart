@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../constants/currencies.dart';
 import '../../database/account_db.dart';
 import '../../database/journal_db.dart';
@@ -54,7 +55,8 @@ class _EditJournalScreenState extends State<EditJournalScreen> {
     _trackOption = 'track';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _dateCtrl.text = formatLocalizedDateTime(context, _selectedDate);
+      _dateCtrl.text =
+          dFormatter.formatLocalizedDateTime(context, _selectedDate.toString());
       final incomingTrackName = j['track_name'] as String;
       if (incomingTrackName == 'treasure') {
         _trackOption = 'treasure';
