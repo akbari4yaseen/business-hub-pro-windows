@@ -127,10 +127,16 @@ class _AccountScreenState extends State<AccountScreen>
     setState(() => _isLoadingMoreActive = true);
     try {
       final offset = reset ? 0 : _activeOffset;
-      final accounts = await AccountDBHelper().getActiveAccountsPage(
+      final accounts = await AccountDBHelper().getAccountsPage(
         offset: offset,
         limit: _limit,
+        isActive: true,
         searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+        accountType: _selectedAccountType,
+        currency: _selectedCurrency,
+        minBalance: _minBalance,
+        maxBalance: _maxBalance,
+        isPositiveBalance: _isPositiveBalance,
       );
       if (!mounted) return;
       setState(() {
@@ -154,10 +160,16 @@ class _AccountScreenState extends State<AccountScreen>
     setState(() => _isLoadingMoreDeactivated = true);
     try {
       final offset = reset ? 0 : _deactivatedOffset;
-      final accounts = await AccountDBHelper().getDeactivatedAccountsPage(
+      final accounts = await AccountDBHelper().getAccountsPage(
         offset: offset,
         limit: _limit,
+        isActive: false,
         searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+        accountType: _selectedAccountType,
+        currency: _selectedCurrency,
+        minBalance: _minBalance,
+        maxBalance: _maxBalance,
+        isPositiveBalance: _isPositiveBalance,
       );
       if (!mounted) return;
       setState(() {
@@ -214,36 +226,6 @@ class _AccountScreenState extends State<AccountScreen>
               'balances': aggregateTransactions(acct['account_details'])
             })
         .toList();
-  }
-
-  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> list) {
-    final q = _searchQuery.toLowerCase();
-    return list.where((acct) {
-      // Text search
-      if (q.isNotEmpty) {
-        final name = acct['name']?.toString().toLowerCase() ?? '';
-        final addr = acct['address']?.toString().toLowerCase() ?? '';
-        if (!name.contains(q) && !addr.contains(q)) return false;
-      }
-      // Type filter
-      if (_selectedAccountType != null &&
-          _selectedAccountType != 'all' &&
-          acct['account_type'] != _selectedAccountType) return false;
-      // Currency filter
-      final balances = acct['balances'] as Map<String, dynamic>;
-      if (_selectedCurrency != null &&
-          _selectedCurrency != 'all' &&
-          !balances.containsKey(_selectedCurrency)) return false;
-      // Aggregate balance once
-      final total = balances.values.fold<double>(
-          0.0, (sum, e) => sum + (e['summary']['balance'] as double? ?? 0.0));
-      // Range & sign filters
-      if (_minBalance != null && total < _minBalance!) return false;
-      if (_maxBalance != null && total > _maxBalance!) return false;
-      if (_isPositiveBalance != null && (total > 0) != _isPositiveBalance!)
-        return false;
-      return true;
-    }).toList();
   }
 
   Future<void> _showPrintModal() async {
@@ -345,6 +327,7 @@ class _AccountScreenState extends State<AccountScreen>
                 _isPositiveBalance = tmpPos;
               });
               Navigator.pop(context);
+              _loadAccounts();
             },
           ),
         ),
@@ -454,8 +437,6 @@ class _AccountScreenState extends State<AccountScreen>
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
-    final filteredActive = _applyFilters(_activeAccounts);
-    final filteredDeactivated = _applyFilters(_deactivatedAccounts);
 
     return Scaffold(
       appBar: AppBar(
@@ -539,7 +520,7 @@ class _AccountScreenState extends State<AccountScreen>
                     controller: _tabController,
                     children: [
                       AccountListView(
-                        accounts: filteredActive,
+                        accounts: _activeAccounts,
                         isActive: true,
                         isLoadingMore: _isLoadingMoreActive,
                         hasMore: _activeHasMore,
@@ -549,7 +530,7 @@ class _AccountScreenState extends State<AccountScreen>
                         scrollController: _scrollController,
                       ),
                       AccountListView(
-                        accounts: filteredDeactivated,
+                        accounts: _deactivatedAccounts,
                         isActive: false,
                         isLoadingMore: _isLoadingMoreDeactivated,
                         hasMore: _deactivatedHasMore,

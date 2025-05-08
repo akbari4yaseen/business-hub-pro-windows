@@ -27,37 +27,52 @@ class AccountListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show empty state if there are no accounts and not loading more
+    if (accounts.isEmpty && !isLoadingMore) {
+      return RefreshIndicator(
+        onRefresh: () async => onRefresh(),
+        child: Center(
+          child: Text(AppLocalizations.of(context)!.noAccountsAvailable),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
-      child: accounts.isEmpty && !isLoadingMore
-          ? Center(
-              child: Text(AppLocalizations.of(context)!.noAccountsAvailable),
-            )
-          : ListView.builder(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
-              itemCount: accounts.length + (hasMore || isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < accounts.length) {
-                  final account = accounts[index];
-                  return AccountTile(
-                    account: account,
-                    isActive: isActive,
-                    onActionSelected: (action) =>
-                        onActionSelected(action, account, isActive),
-                  );
-                } else {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: isLoadingMore
-                          ? const CircularProgressIndicator()
-                          : Text(AppLocalizations.of(context)!.noMoreAccounts),
-                    ),
-                  );
-                }
-              },
-            ),
+      child: ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
+        itemCount: accounts.length + (hasMore || isLoadingMore ? 1 : 0),
+        // Use a prototype item to lock in a fixed height without manual measurement
+        prototypeItem: accounts.isNotEmpty
+            ? AccountTile(
+                account: accounts.first,
+                isActive: isActive,
+                onActionSelected: (_) {},
+              )
+            : null,
+        itemBuilder: (context, index) {
+          if (index < accounts.length) {
+            final account = accounts[index];
+            return AccountTile(
+              account: account,
+              isActive: isActive,
+              onActionSelected: (action) =>
+                  onActionSelected(action, account, isActive),
+            );
+          } else {
+            // Load more indicator or end-of-list message
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : Text(AppLocalizations.of(context)!.noMoreAccounts),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 }

@@ -14,177 +14,6 @@ class AccountDBHelper {
     return await DatabaseHelper().database;
   }
 
-  // Pagination for active accounts
-  Future<List<Map<String, dynamic>>> getActiveAccountsPage({
-    int offset = 0,
-    int limit = 30,
-    String? searchQuery,
-  }) async {
-    final db = await database;
-    final where = <String>[];
-    final args = <dynamic>[];
-
-    // Base filter
-    where.add('id <> 2 AND active = 1');
-
-    // Optional search
-    if (searchQuery?.isNotEmpty ?? false) {
-      where.add('(LOWER(name) LIKE ? OR LOWER(address) LIKE ?)');
-      final q = '%${searchQuery!.toLowerCase()}%';
-      args.addAll([q, q]);
-    }
-
-    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
-
-    final sql = '''
-    SELECT 
-      a.id,
-      a.name,
-      a.phone,
-      a.account_type,
-      a.address,
-      a.active,
-      a.created_at,
-      SUM(ad.amount) AS amount,
-      ad.currency,
-      ad.transaction_type
-    FROM (
-      SELECT 
-        id, name, phone, account_type, address, active, created_at
-      FROM accounts
-      $whereClause
-      ORDER BY id DESC
-      LIMIT ? OFFSET ?
-    ) AS a
-    LEFT JOIN account_details AS ad
-      ON a.id = ad.account_id
-    GROUP BY a.id, ad.currency, ad.transaction_type
-    ORDER BY a.id DESC;
-  ''';
-
-    // Append the limit/offset for the subquery
-    args.addAll([limit, offset]);
-
-    final rows = await db.rawQuery(sql, args);
-
-    // Re-assemble into one entry per account
-    final Map<int, Map<String, dynamic>> accountDataMap = {};
-    for (var row in rows) {
-      final id = row['id'] as int;
-      accountDataMap.putIfAbsent(id, () {
-        return {
-          'id': id,
-          'name': row['name'],
-          'phone': row['phone'],
-          'account_type': row['account_type'],
-          'address': row['address'],
-          'active': row['active'],
-          'created_at': row['created_at'],
-          'account_details': <Map<String, dynamic>>[],
-        };
-      });
-      if (row['amount'] != null &&
-          row['currency'] != null &&
-          row['transaction_type'] != null) {
-        accountDataMap[id]!['account_details'].add({
-          'amount': row['amount'],
-          'currency': row['currency'],
-          'transaction_type': row['transaction_type'],
-        });
-      }
-    }
-
-    return accountDataMap.values.toList();
-  }
-
-  // Pagination for deactivated accounts
-  Future<List<Map<String, dynamic>>> getDeactivatedAccountsPage({
-    int offset = 0,
-    int limit = 30,
-    String? searchQuery,
-  }) async {
-    final db = await database;
-    final where = <String>[];
-    final args = <dynamic>[];
-
-    // only deactivated
-    where.add('active = 0');
-
-    // Optional search
-    if (searchQuery?.isNotEmpty ?? false) {
-      where.add('(LOWER(name) LIKE ? OR LOWER(address) LIKE ?)');
-      final q = '%${searchQuery!.toLowerCase()}%';
-      args.addAll([q, q]);
-    }
-
-    final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
-
-    final sql = '''
-    SELECT 
-      a.id,
-      a.name,
-      a.phone,
-      a.account_type,
-      a.address,
-      a.active,
-      a.created_at,
-      SUM(ad.amount) AS amount,
-      ad.currency,
-      ad.transaction_type
-    FROM (
-      SELECT 
-        id, name, phone, account_type, address, active, created_at
-      FROM accounts
-      $whereClause
-      ORDER BY id DESC
-      LIMIT ? OFFSET ?
-    ) AS a
-    LEFT JOIN account_details AS ad
-      ON a.id = ad.account_id
-    GROUP BY a.id, ad.currency, ad.transaction_type
-    ORDER BY a.id DESC;
-  ''';
-
-    // Append the limit/offset for the subquery
-    args.addAll([limit, offset]);
-
-    final rows = await db.rawQuery(sql, args);
-
-    // Re-assemble into one entry per account
-    final Map<int, Map<String, dynamic>> accountDataMap = {};
-    for (var row in rows) {
-      final id = row['id'] as int;
-      accountDataMap.putIfAbsent(id, () {
-        return {
-          'id': id,
-          'name': row['name'],
-          'phone': row['phone'],
-          'account_type': row['account_type'],
-          'address': row['address'],
-          'active': row['active'],
-          'created_at': row['created_at'],
-          'account_details': <Map<String, dynamic>>[],
-        };
-      });
-      if (row['amount'] != null &&
-          row['currency'] != null &&
-          row['transaction_type'] != null) {
-        accountDataMap[id]!['account_details'].add({
-          'amount': row['amount'],
-          'currency': row['currency'],
-          'transaction_type': row['transaction_type'],
-        });
-      }
-    }
-
-    return accountDataMap.values.toList();
-  }
-
-  Future<List<Map<String, dynamic>>> getAllAccounts() async {
-    Database db = await database;
-    return await db.query('accounts', orderBy: 'created_at DESC');
-  }
-
   Future<List<Map<String, dynamic>>> getOptionAccounts() async {
     Database db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
@@ -200,48 +29,120 @@ class AccountDBHelper {
     return result;
   }
 
-  Future<List<Map<String, dynamic>>> getActiveAccounts() async {
+  /// If `isActive` is null, returns both active and deactivated.
+  /// Otherwise filters by a.active = isActive?1:0.
+  Future<List<Map<String, dynamic>>> getAccountsPage({
+    int offset = 0,
+    int limit = 30,
+    bool? isActive,
+    String? searchQuery,
+    String? accountType,
+    String? currency,
+    double? minBalance,
+    double? maxBalance,
+    bool? isPositiveBalance,
+  }) async {
     final db = await database;
-    final List<Map<String, dynamic>> rows = await db.rawQuery('''
-      SELECT 
-        accounts.id, 
-        accounts.name, 
-        accounts.phone, 
-        accounts.account_type, 
-        accounts.address, 
-        accounts.active, 
-        accounts.created_at,
-        SUM(account_details.amount) AS amount, 
-        account_details.currency, 
-        account_details.transaction_type 
-      FROM accounts 
-      LEFT JOIN account_details ON accounts.id = account_details.account_id 
-      WHERE accounts.id <> 2 AND accounts.active = 1 
-      GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
-      ORDER BY accounts.id DESC;
-    ''');
 
-    Map<int, Map<String, dynamic>> accountDataMap = {};
+    // build WHERE clauses
+    final where = <String>[];
+    final args = <dynamic>[];
 
-    for (var row in rows) {
-      int accountId = row['id'] as int;
-      accountDataMap.putIfAbsent(accountId, () {
-        return {
-          'id': row['id'],
-          'name': row['name'],
-          'phone': row['phone'],
-          'account_type': row['account_type'],
-          'address': row['address'],
-          'active': row['active'],
-          'created_at': row['created_at'],
-          'account_details': [],
-        };
-      });
+    if (isActive != null) {
+      where.add('a.active = ?');
+      args.add(isActive ? 1 : 0);
+    }
 
-      if (row['amount'] != null &&
-          row['currency'] != null &&
-          row['transaction_type'] != null) {
-        accountDataMap[accountId]!['account_details'].add({
+    // still exclude system account
+    where.add('a.id <> 2');
+
+    if (searchQuery?.isNotEmpty ?? false) {
+      where.add('(LOWER(a.name) LIKE ? OR LOWER(a.address) LIKE ?)');
+      final q = '%${searchQuery!.toLowerCase()}%';
+      args.addAll([q, q]);
+    }
+    if (accountType != null && accountType != 'all') {
+      where.add('a.account_type = ?');
+      args.add(accountType);
+    }
+    if (currency != null && currency != 'all') {
+      where.add('EXISTS ('
+          ' SELECT 1 FROM account_details ad2 '
+          ' WHERE ad2.account_id = a.id AND ad2.currency = ?'
+          ')');
+      args.add(currency);
+    }
+
+    // balance filters via HAVING on the aggregated sub-query
+    final having = <String>[];
+    if (minBalance != null) {
+      having.add('COALESCE(b.total_balance,0) >= ?');
+      args.add(minBalance);
+    }
+    if (maxBalance != null) {
+      having.add('COALESCE(b.total_balance,0) <= ?');
+      args.add(maxBalance);
+    }
+    if (isPositiveBalance != null) {
+      having.add(isPositiveBalance
+          ? 'COALESCE(b.total_balance,0) > 0'
+          : 'COALESCE(b.total_balance,0) <= 0');
+    }
+
+    // 1) page the filtered IDs
+    final idQuery = '''
+    SELECT a.id
+    FROM accounts AS a
+    LEFT JOIN (
+      SELECT account_id,
+             SUM(CASE WHEN transaction_type='credit' THEN amount ELSE -amount END)
+               AS total_balance
+      FROM account_details
+      GROUP BY account_id
+    ) AS b ON a.id = b.account_id
+    ${where.isNotEmpty ? 'WHERE ' + where.join(' AND ') : ''}
+    ${having.isNotEmpty ? 'HAVING ' + having.join(' AND ') : ''}
+    ORDER BY a.id DESC
+    LIMIT ? OFFSET ?;
+  ''';
+    final idArgs = List.of(args)..addAll([limit, offset]);
+    final idRows = await db.rawQuery(idQuery, idArgs);
+    final ids = idRows.map((r) => r['id'] as int).toList();
+    if (ids.isEmpty) return [];
+
+    // 2) fetch all details for those IDs
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final detailQuery = '''
+    SELECT 
+      a.id, a.name, a.phone, a.account_type, a.address,
+      a.active, a.created_at,
+      ad.amount, ad.currency, ad.transaction_type
+    FROM accounts AS a
+    LEFT JOIN account_details AS ad
+      ON a.id = ad.account_id
+    WHERE a.id IN ($placeholders)
+    ORDER BY a.id DESC;
+  ''';
+    final detailRows = await db.rawQuery(detailQuery, ids);
+
+    // 3) reassemble
+    final Map<int, Map<String, dynamic>> map = {};
+    for (var row in detailRows) {
+      final id = row['id'] as int;
+      map.putIfAbsent(
+          id,
+          () => {
+                'id': id,
+                'name': row['name'],
+                'phone': row['phone'],
+                'account_type': row['account_type'],
+                'address': row['address'],
+                'active': row['active'],
+                'created_at': row['created_at'],
+                'account_details': <Map<String, dynamic>>[],
+              });
+      if (row['amount'] != null) {
+        map[id]!['account_details'].add({
           'amount': row['amount'],
           'currency': row['currency'],
           'transaction_type': row['transaction_type'],
@@ -249,59 +150,7 @@ class AccountDBHelper {
       }
     }
 
-    return accountDataMap.values.toList();
-  }
-
-  Future<List<Map<String, dynamic>>> getDeactivatedAccounts() async {
-    final db = await database;
-    final List<Map<String, dynamic>> rows = await db.rawQuery('''
-      SELECT 
-        accounts.id, 
-        accounts.name, 
-        accounts.phone, 
-        accounts.account_type, 
-        accounts.address, 
-        accounts.active, 
-        accounts.created_at,
-        SUM(account_details.amount) AS amount, 
-        account_details.currency, 
-        account_details.transaction_type 
-      FROM accounts 
-      LEFT JOIN account_details ON accounts.id = account_details.account_id 
-      WHERE accounts.active = 0 
-      GROUP BY accounts.id, account_details.currency, account_details.transaction_type 
-      ORDER BY accounts.id DESC;
-    ''');
-
-    Map<int, Map<String, dynamic>> accountDataMap = {};
-
-    for (var row in rows) {
-      int accountId = row['id'] as int;
-      accountDataMap.putIfAbsent(accountId, () {
-        return {
-          'id': row['id'],
-          'name': row['name'],
-          'phone': row['phone'],
-          'account_type': row['account_type'],
-          'address': row['address'],
-          'active': row['active'],
-          'created_at': row['created_at'],
-          'account_details': [],
-        };
-      });
-
-      if (row['amount'] != null &&
-          row['currency'] != null &&
-          row['transaction_type'] != null) {
-        accountDataMap[accountId]!['account_details'].add({
-          'amount': row['amount'],
-          'currency': row['currency'],
-          'transaction_type': row['transaction_type'],
-        });
-      }
-    }
-
-    return accountDataMap.values.toList();
+    return map.values.toList();
   }
 
   Future<void> insertAccount(Map<String, dynamic> account) async {

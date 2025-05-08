@@ -159,13 +159,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 tmpDate = date;
               });
             },
-            onReset: () {
-              setModal(() {
-                tmpType = null;
-                tmpCurrency = null;
-                tmpDate = null;
-              });
-            },
+            onReset: () => setModal(() {
+              tmpType = null;
+              tmpCurrency = null;
+              tmpDate = null;
+            }),
             onApply: ({type, currency, date}) {
               setState(() {
                 _selectedType = tmpType;

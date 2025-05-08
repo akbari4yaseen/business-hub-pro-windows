@@ -55,9 +55,10 @@ class AccountTile extends StatelessWidget {
         ),
         title: Text(
           (account['id'] as int? ?? 0) <= 10
-              ? getLocalizedSystemAccountName(
-                  context, account['name'] as String? ?? '')
-              : (account['name'] as String? ?? ''),
+              ? getLocalizedSystemAccountName(context, account['name'])
+              : (account['name']),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 14, fontFamily: "VazirBold"),
         ),
         subtitle: Column(
@@ -77,6 +78,8 @@ class AccountTile extends StatelessWidget {
             if (account['address'] != null)
               Text(
                 account['address'] as String,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 13),
               ),
           ],
