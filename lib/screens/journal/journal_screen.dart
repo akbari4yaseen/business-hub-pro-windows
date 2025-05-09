@@ -190,10 +190,11 @@ class _JournalScreenState extends State<JournalScreen> {
             selectedDate: tmpDate,
             typeOptions: const ['all', 'credit', 'debit'],
             currencyOptions: _currencyOptions,
-            onChanged: ({type, currency, date}) => setModal(() {
-              tmpType = type;
-              tmpCurrency = currency;
-              tmpDate = date;
+            onChanged: ({String? type, String? currency, DateTime? date}) =>
+                setModal(() {
+              if (type != null) tmpType = type;
+              if (currency != null) tmpCurrency = currency;
+              if (date != null) tmpDate = date;
             }),
             onReset: () => setModal(() {
               tmpType = null;
