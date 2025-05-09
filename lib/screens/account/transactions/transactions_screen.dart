@@ -8,6 +8,7 @@ import 'print_transactions.dart';
 import '../../../database/account_db.dart';
 import '../../../database/journal_db.dart';
 import '../../journal/edit_journal_screen.dart';
+import '../../journal/add_journal_screen.dart';
 import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction_details_widget.dart';
@@ -18,6 +19,7 @@ import '../../../utils/utilities.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction_print_settings_dialog.dart';
 import '../../../utils/transaction_share_helper.dart';
+import '../../../utils/transaction_helper.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -48,10 +50,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   bool _isLoadingMore = false;
   bool _isAtTop = true;
 
+  Map<String, dynamic> _balances = {};
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _balances = widget.account['balances'] as Map<String, dynamic>? ?? {};
     _refreshTransactions();
   }
 
@@ -89,6 +94,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       _hasMore = true;
     });
     await _fetchNextPage(reset: true);
+    await _loadBalances();
+  }
+
+  /// re‐load the raw details from the DB and re‐aggregate
+  Future<void> _loadBalances() async {
+    final allDetails =
+        await AccountDBHelper().getTransactionsForPrint(widget.account['id']);
+    final newBalances = aggregateTransactions(allDetails);
+    if (!mounted) return;
+    setState(() => _balances = newBalances);
   }
 
   Future<void> _fetchNextPage({bool reset = false}) async {
@@ -243,7 +258,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final balances = widget.account['balances'] as Map<String, dynamic>? ?? {};
+    final balances = _balances;
     final themeProvider = Provider.of<ThemeProvider>(context);
     final loc = AppLocalizations.of(context)!;
 
@@ -367,21 +382,29 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ),
                   ],
                 ),
-      // only show the FAB if we're NOT at the top
-      floatingActionButton: _isAtTop
-          ? null
-          : FloatingActionButton(
-              heroTag: 'scroll_to_top_transactions_fab',
-              mini: true,
-              child: const FaIcon(FontAwesomeIcons.angleUp, size: 18),
-              onPressed: () {
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                );
-              },
-            ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'transaction_add_fab',
+        mini: !_isAtTop,
+        child: FaIcon(
+            _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+            size: 18),
+        onPressed: () {
+          if (_isAtTop) {
+            Navigator.of(context)
+                .push(MaterialPageRoute(
+                  builder: (_) => AddJournalScreen(
+                    initialAccountId: widget.account['id'],
+                    initialAccountName: widget.account['name'],
+                  ),
+                ))
+                .then((_) => _refreshTransactions());
+          } else {
+            _scrollController.animateTo(0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut);
+          }
+        },
+      ),
     );
   }
 

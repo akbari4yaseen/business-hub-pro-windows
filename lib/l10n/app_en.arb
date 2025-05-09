@@ -21,6 +21,8 @@
   "exchanger": "Exchanger",
   "system": "System",
   "phone": "Phone",
+  "call": "Call",
+  "callError": "Unable to place call",
   "address": "Address",
   "save": "Save",
   "nameRequired": "Name is required!",

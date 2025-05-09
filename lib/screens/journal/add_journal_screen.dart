@@ -13,7 +13,15 @@ import '../../constants/currencies.dart';
 import '../../utils/number_input_formatter.dart';
 
 class AddJournalScreen extends StatefulWidget {
-  const AddJournalScreen({Key? key}) : super(key: key);
+  /// If non-null, pre-select this account in the dropdown.
+  final int? initialAccountId;
+  final String? initialAccountName;
+
+  const AddJournalScreen({
+    Key? key,
+    this.initialAccountId,
+    this.initialAccountName,
+  }) : super(key: key);
 
   @override
   State<AddJournalScreen> createState() => _AddJournalScreenState();
@@ -27,6 +35,8 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
   List<Map<String, dynamic>> _accounts = [];
   int? _selectedAccount;
+  late String _accountName;
+
   int? _selectedTrack;
   String _customTrackName = "Track";
 
@@ -42,6 +52,10 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
     _descCtrl = TextEditingController();
     _amountCtrl = TextEditingController();
     _dateCtrl = TextEditingController();
+
+    _selectedAccount = widget.initialAccountId;
+    _accountName = widget.initialAccountName ?? '';
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final settingsProvider =
           Provider.of<SettingsProvider>(context, listen: false);
@@ -74,7 +88,10 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
 
   Future<void> _loadAccounts() async {
     final accounts = await AccountDBHelper().getOptionAccounts();
-    if (mounted) setState(() => _accounts = accounts);
+    if (!mounted) return;
+    setState(() {
+      _accounts = accounts;
+    });
   }
 
   Future<void> _pickDateTime() async {
@@ -166,7 +183,14 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
               AccountField(
                 label: loc.selectAccount,
                 accounts: _accounts,
-                onSelected: (id) => setState(() => _selectedAccount = id),
+                initialValue: TextEditingValue(
+                  text: getLocalizedSystemAccountName(context, _accountName),
+                ),
+                onSelected: (id) => setState(() {
+                  _selectedAccount = id;
+                  final acc = _accounts.firstWhere((a) => a['id'] == id);
+                  _accountName = acc['name'] as String;
+                }),
               ),
               SizedBox(height: 16),
               TextFormField(

@@ -22,6 +22,8 @@
   "exchanger": "صراف",
   "system": "سیستم",
   "phone": "تلیفون",
+  "call": "زنګ",
+  "callError": "د تلیفون جوړولو توان نشته",
   "address": "پته",
   "save": "ساتل",
   "nameRequired": "نوم اړین دی!",

@@ -65,3 +65,24 @@ Future<void> shareAccountBalances(
     await Share.share(message);
   }
 }
+
+/// Launches the phone dialer for the given [phone] number.
+/// Shows a SnackBar with an error message if dialing fails.
+Future<void> launchAccountCall(BuildContext context, String? phone) async {
+  if (phone == null || phone.isEmpty) return;
+  final uri = Uri(scheme: 'tel', path: phone);
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw 'Could not launch $uri';
+    }
+  } catch (_) {
+    final loc = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loc!.callError),
+      ),
+    );
+  }
+}

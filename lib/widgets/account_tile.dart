@@ -48,6 +48,7 @@ class AccountTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 2),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        onTap: () => onActionSelected('transactions'),
         leading: Icon(
           isActive ? Icons.account_circle : Icons.no_accounts_outlined,
           size: 40,
@@ -131,9 +132,13 @@ class AccountTile extends StatelessWidget {
 
     items.add(_buildMenuItem(
         'share', FontAwesomeIcons.shareNodes, loc?.shareBalance ?? ''));
+
     items.add(_buildMenuItem(
         'whatsapp', FontAwesomeIcons.whatsapp, loc?.sendBalance ?? ''));
 
+    if (account['phone'] != null && (account['phone'] as String).isNotEmpty) {
+      items.add(_buildMenuItem('call', FontAwesomeIcons.phone, loc!.call));
+    }
     return items;
   }
 

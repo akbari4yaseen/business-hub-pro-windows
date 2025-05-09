@@ -9,7 +9,7 @@ class AccountListView extends StatelessWidget {
   final bool isLoadingMore;
   final bool hasMore;
   final VoidCallback onLoadMore;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
   final void Function(String, Map<String, dynamic>, bool) onActionSelected;
   final ScrollController scrollController;
 
@@ -27,30 +27,23 @@ class AccountListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Show empty state if there are no accounts and not loading more
+    final loc = AppLocalizations.of(context)!;
+    // total items = accounts + (loading/no-more) tile when needed
+    final totalItems = accounts.length + ((hasMore || isLoadingMore) ? 1 : 0);
+
+    // show empty state if nothing yet and not loading
     if (accounts.isEmpty && !isLoadingMore) {
-      return RefreshIndicator(
-        onRefresh: () async => onRefresh(),
-        child: Center(
-          child: Text(AppLocalizations.of(context)!.noAccountsAvailable),
-        ),
+      return Center(
+        child: Text(loc.noAccountsAvailable),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
+      onRefresh: onRefresh,
       child: ListView.builder(
         controller: scrollController,
         padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
-        itemCount: accounts.length + (hasMore || isLoadingMore ? 1 : 0),
-        // Use a prototype item to lock in a fixed height without manual measurement
-        prototypeItem: accounts.isNotEmpty
-            ? AccountTile(
-                account: accounts.first,
-                isActive: isActive,
-                onActionSelected: (_) {},
-              )
-            : null,
+        itemCount: totalItems,
         itemBuilder: (context, index) {
           if (index < accounts.length) {
             final account = accounts[index];
@@ -60,19 +53,60 @@ class AccountListView extends StatelessWidget {
               onActionSelected: (action) =>
                   onActionSelected(action, account, isActive),
             );
-          } else {
-            // Load more indicator or end-of-list message
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: isLoadingMore
-                    ? const CircularProgressIndicator()
-                    : Text(AppLocalizations.of(context)!.noMoreAccounts),
-              ),
-            );
           }
+          // Load more / No more tile
+          return _LoadingTile(
+            isLoading: isLoadingMore,
+            hasMore: hasMore,
+            onLoadMore: onLoadMore,
+            noMoreText: loc.noMoreAccounts,
+          );
         },
       ),
     );
+  }
+}
+
+class _LoadingTile extends StatelessWidget {
+  final bool isLoading;
+  final bool hasMore;
+  final VoidCallback onLoadMore;
+  final String noMoreText;
+
+  const _LoadingTile({
+    Key? key,
+    required this.isLoading,
+    required this.hasMore,
+    required this.onLoadMore,
+    required this.noMoreText,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // If there's more to load but not currently loading, trigger automatically
+    if (hasMore && !isLoading) {
+      // schedule loadMore at end of frame to avoid modifying list during build
+      WidgetsBinding.instance.addPostFrameCallback((_) => onLoadMore());
+    }
+
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _LoadingIndicator(),
+      ),
+    );
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorWidgetOfExactType<_LoadingTile>()!;
+    if (state.isLoading) {
+      return const CircularProgressIndicator();
+    } else {
+      return Text(state.noMoreText);
+    }
   }
 }

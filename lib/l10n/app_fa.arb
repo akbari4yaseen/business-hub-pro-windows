@@ -124,6 +124,8 @@
   "businessName": "نام شرکت",
   "whatsApp": "واتساپ",
   "phone": "شماره تماس",
+  "call": "تماس",
+  "callError": "امکان برقراری تماس وجود ندارد",
   "email": "ایمیل",
   "saveChanges": "ثبت تغییرات",
   "companyInfoUpdated": "معلومات شرکت بروز رسانی شد",

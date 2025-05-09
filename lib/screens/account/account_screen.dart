@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import 'transactions/transactions_screen.dart';
+import 'edit_account_screen.dart';
+import 'add_account_screen.dart';
+import 'print_accounts.dart';
+
 import '../../database/account_db.dart';
 import '../../database/database_helper.dart';
 import '../../utils/transaction_helper.dart';
 import '../../utils/account_types.dart';
 import '../../utils/account_share_helper.dart';
-
-import 'transactions/transactions_screen.dart';
-import 'edit_account_screen.dart';
-import 'add_account_screen.dart';
-import 'print_accounts.dart';
 import '../../widgets/account_filter_bottom_sheet.dart';
 import '../../widgets/account_action_dialogs.dart';
 import '../../widgets/account_list_view.dart';
@@ -369,6 +369,9 @@ class _AccountScreenState extends State<AccountScreen>
         break;
       case 'whatsapp':
         await shareAccountBalances(context, account, viaWhatsApp: true);
+        break;
+      case 'call':
+        await launchAccountCall(context, account['phone'] as String?);
         break;
     }
   }
