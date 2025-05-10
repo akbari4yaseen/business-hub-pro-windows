@@ -6,31 +6,15 @@ class FilterBottomSheet extends StatelessWidget {
   final String? selectedAccountType;
   final String? selectedCurrency;
   final List<String> currencyOptions;
-  final double? minBalance;
-  final double? maxBalance;
-  final bool? isPositiveBalance;
-  final void Function(
-      {String? accountType,
-      String? currency,
-      double? min,
-      double? max,
-      bool? isPositive}) onApply;
+  final void Function({String? accountType, String? currency}) onApply;
   final VoidCallback onReset;
-  final void Function(
-      {String? accountType,
-      String? currency,
-      double? min,
-      double? max,
-      bool? isPositive}) onChanged;
+  final void Function({String? accountType, String? currency}) onChanged;
 
   const FilterBottomSheet({
     Key? key,
     required this.selectedAccountType,
     required this.selectedCurrency,
     required this.currencyOptions,
-    required this.minBalance,
-    required this.maxBalance,
-    required this.isPositiveBalance,
     required this.onApply,
     required this.onReset,
     required this.onChanged,
@@ -122,58 +106,6 @@ class FilterBottomSheet extends StatelessWidget {
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Balance Range
-                    Text(
-                      loc.balanceRange,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(labelText: loc.min),
-                            initialValue: minBalance?.toString() ?? '',
-                            onChanged: (val) =>
-                                onChanged(min: double.tryParse(val)),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(labelText: loc.max),
-                            initialValue: maxBalance?.toString() ?? '',
-                            onChanged: (val) =>
-                                onChanged(max: double.tryParse(val)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Balance Type
-                    Text(
-                      loc.balanceType,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    Wrap(
-                      spacing: 10,
-                      children: [
-                        FilterChip(
-                          label: Text(loc.positive),
-                          selected: isPositiveBalance == true,
-                          onSelected: (_) => onChanged(isPositive: true),
-                        ),
-                        FilterChip(
-                          label: Text(loc.negative),
-                          selected: isPositiveBalance == false,
-                          onSelected: (_) => onChanged(isPositive: false),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 24),
 
                     // Buttons
@@ -191,9 +123,6 @@ class FilterBottomSheet extends StatelessWidget {
                             onPressed: () => onApply(
                               accountType: selectedAccountType,
                               currency: selectedCurrency,
-                              min: minBalance,
-                              max: maxBalance,
-                              isPositive: isPositiveBalance,
                             ),
                             child: Text(loc.applyFilters),
                           ),

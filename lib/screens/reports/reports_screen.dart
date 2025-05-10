@@ -24,20 +24,6 @@ class ReportsScreen extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(Icons.attach_money),
-              title: Text(loc.accountReports),
-              subtitle: Text(loc.accountReportsDesc),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AccountReportsScreen(),
-                  ),
-                );
-              },
-            ),
-          ),
-          Card(
-            child: ListTile(
               leading: const Icon(Icons.show_chart),
               title: Text(loc.dailyBalances),
               subtitle: Text(loc.dailyBalancesDesc),
@@ -45,6 +31,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const DailyBalancesChart(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.attach_money),
+              title: Text(loc.accountReports),
+              subtitle: Text(loc.accountReportsDesc),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AccountReportsScreen(),
                   ),
                 );
               },
@@ -66,7 +66,7 @@ class ReportsScreen extends StatelessWidget {
           ),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.show_chart),
+              leading: const Icon(Icons.pie_chart),
               title: Text(loc.moreVisualizations),
               subtitle: Text(loc.moreVisualizationsDesc),
               enabled: false,

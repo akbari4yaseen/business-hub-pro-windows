@@ -29,8 +29,7 @@ class AccountDBHelper {
     return result;
   }
 
-  /// If `isActive` is null, returns both active and deactivated.
-  /// Otherwise filters by a.active = isActive?1:0.
+  /// Fetches a paginated list of accounts with optional filters for active status, search query, type, and currency.
   Future<List<Map<String, dynamic>>> getAccountsPage({
     int offset = 0,
     int limit = 30,
@@ -38,109 +37,100 @@ class AccountDBHelper {
     String? searchQuery,
     String? accountType,
     String? currency,
-    double? minBalance,
-    double? maxBalance,
-    bool? isPositiveBalance,
   }) async {
     final db = await database;
 
-    // build WHERE clauses
+    // Build WHERE clauses
     final where = <String>[];
     final args = <dynamic>[];
 
+    // Active filter
     if (isActive != null) {
       where.add('a.active = ?');
       args.add(isActive ? 1 : 0);
     }
 
-    // still exclude system account
+    // Exclude system account
     where.add('a.id <> 2');
 
+    // Search by name or address
     if (searchQuery?.isNotEmpty ?? false) {
       where.add('(LOWER(a.name) LIKE ? OR LOWER(a.address) LIKE ?)');
       final q = '%${searchQuery!.toLowerCase()}%';
       args.addAll([q, q]);
     }
+
+    // Account type filter
     if (accountType != null && accountType != 'all') {
       where.add('a.account_type = ?');
       args.add(accountType);
     }
+
+    // Currency filter: ensure at least one transaction in that currency
     if (currency != null && currency != 'all') {
       where.add('EXISTS ('
-          ' SELECT 1 FROM account_details ad2 '
-          ' WHERE ad2.account_id = a.id AND ad2.currency = ?'
+          ' SELECT 1 FROM account_details ad '
+          ' WHERE ad.account_id = a.id AND ad.currency = ?'
           ')');
       args.add(currency);
     }
 
-    // balance filters via HAVING on the aggregated sub-query
-    final having = <String>[];
-    if (minBalance != null) {
-      having.add('COALESCE(b.total_balance,0) >= ?');
-      args.add(minBalance);
-    }
-    if (maxBalance != null) {
-      having.add('COALESCE(b.total_balance,0) <= ?');
-      args.add(maxBalance);
-    }
-    if (isPositiveBalance != null) {
-      having.add(isPositiveBalance
-          ? 'COALESCE(b.total_balance,0) > 0'
-          : 'COALESCE(b.total_balance,0) <= 0');
-    }
-
-    // 1) page the filtered IDs
+    // 1) Fetch paged IDs matching filters
     final idQuery = '''
-    SELECT a.id
-    FROM accounts AS a
-    LEFT JOIN (
-      SELECT account_id,
-             SUM(CASE WHEN transaction_type='credit' THEN amount ELSE -amount END)
-               AS total_balance
-      FROM account_details
-      GROUP BY account_id
-    ) AS b ON a.id = b.account_id
-    ${where.isNotEmpty ? 'WHERE ' + where.join(' AND ') : ''}
-    ${having.isNotEmpty ? 'HAVING ' + having.join(' AND ') : ''}
-    ORDER BY a.id DESC
-    LIMIT ? OFFSET ?;
-  ''';
+      SELECT a.id
+      FROM accounts AS a
+      LEFT JOIN (
+        SELECT account_id, COALESCE(SUM(amount), 0) AS total_balance
+        FROM account_details
+        GROUP BY account_id
+      ) AS b ON a.id = b.account_id
+      ${where.isNotEmpty ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY a.id DESC
+      LIMIT ? OFFSET ?;
+    ''';
     final idArgs = List.of(args)..addAll([limit, offset]);
     final idRows = await db.rawQuery(idQuery, idArgs);
     final ids = idRows.map((r) => r['id'] as int).toList();
     if (ids.isEmpty) return [];
 
-    // 2) fetch all details for those IDs
+    // 2) Fetch details for those IDs
     final placeholders = List.filled(ids.length, '?').join(',');
     final detailQuery = '''
-    SELECT 
-      a.id, a.name, a.phone, a.account_type, a.address,
-      a.active, a.created_at,
-      ad.amount, ad.currency, ad.transaction_type
-    FROM accounts AS a
-    LEFT JOIN account_details AS ad
-      ON a.id = ad.account_id
-    WHERE a.id IN ($placeholders)
-    ORDER BY a.id DESC;
-  ''';
+      SELECT
+        a.id,
+        a.name,
+        a.phone,
+        a.account_type,
+        a.address,
+        a.active,
+        a.created_at,
+        ad.amount,
+        ad.currency,
+        ad.transaction_type
+      FROM accounts AS a
+      LEFT JOIN account_details AS ad
+        ON a.id = ad.account_id
+      WHERE a.id IN ($placeholders)
+      ORDER BY a.id DESC;
+    ''';
     final detailRows = await db.rawQuery(detailQuery, ids);
 
-    // 3) reassemble
+    // 3) Reassemble into structured list
     final Map<int, Map<String, dynamic>> map = {};
-    for (var row in detailRows) {
+    for (final row in detailRows) {
       final id = row['id'] as int;
-      map.putIfAbsent(
-          id,
-          () => {
-                'id': id,
-                'name': row['name'],
-                'phone': row['phone'],
-                'account_type': row['account_type'],
-                'address': row['address'],
-                'active': row['active'],
-                'created_at': row['created_at'],
-                'account_details': <Map<String, dynamic>>[],
-              });
+      if (!map.containsKey(id)) {
+        map[id] = {
+          'id': id,
+          'name': row['name'],
+          'phone': row['phone'],
+          'account_type': row['account_type'],
+          'address': row['address'],
+          'active': row['active'],
+          'created_at': row['created_at'],
+          'account_details': <Map<String, dynamic>>[],
+        };
+      }
       if (row['amount'] != null) {
         map[id]!['account_details'].add({
           'amount': row['amount'],

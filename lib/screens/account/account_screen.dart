@@ -44,9 +44,6 @@ class _AccountScreenState extends State<AccountScreen>
   String _searchQuery = '';
   String? _selectedAccountType;
   String? _selectedCurrency;
-  double? _minBalance;
-  double? _maxBalance;
-  bool? _isPositiveBalance;
 
   List<String> _currencyOptions = [];
   bool _currenciesLoaded = false;
@@ -134,9 +131,6 @@ class _AccountScreenState extends State<AccountScreen>
         searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
         accountType: _selectedAccountType,
         currency: _selectedCurrency,
-        minBalance: _minBalance,
-        maxBalance: _maxBalance,
-        isPositiveBalance: _isPositiveBalance,
       );
       if (!mounted) return;
       setState(() {
@@ -167,9 +161,6 @@ class _AccountScreenState extends State<AccountScreen>
         searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
         accountType: _selectedAccountType,
         currency: _selectedCurrency,
-        minBalance: _minBalance,
-        maxBalance: _maxBalance,
-        isPositiveBalance: _isPositiveBalance,
       );
       if (!mounted) return;
       setState(() {
@@ -282,9 +273,6 @@ class _AccountScreenState extends State<AccountScreen>
   void _showFilterModal() {
     var tmpType = _selectedAccountType;
     var tmpCurr = _selectedCurrency;
-    var tmpMin = _minBalance;
-    var tmpMax = _maxBalance;
-    var tmpPos = _isPositiveBalance;
 
     showModalBottomSheet(
       context: context,
@@ -297,34 +285,22 @@ class _AccountScreenState extends State<AccountScreen>
             selectedAccountType: tmpType,
             selectedCurrency: tmpCurr,
             currencyOptions: _currencyOptions,
-            minBalance: tmpMin,
-            maxBalance: tmpMax,
-            isPositiveBalance: tmpPos,
-            onChanged: ({accountType, currency, min, max, isPositive}) {
+            onChanged: ({accountType, currency}) {
               setM(() {
-                tmpType = accountType;
-                tmpCurr = currency;
-                tmpMin = min;
-                tmpMax = max;
-                tmpPos = isPositive;
+                if (accountType != null) tmpType = accountType;
+                if (currency != null) tmpCurr = currency;
               });
             },
             onReset: () {
               setM(() {
                 tmpType = null;
                 tmpCurr = null;
-                tmpMin = null;
-                tmpMax = null;
-                tmpPos = null;
               });
             },
-            onApply: ({accountType, currency, min, max, isPositive}) {
+            onApply: ({accountType, currency}) {
               setState(() {
                 _selectedAccountType = tmpType;
                 _selectedCurrency = tmpCurr;
-                _minBalance = tmpMin;
-                _maxBalance = tmpMax;
-                _isPositiveBalance = tmpPos;
               });
               Navigator.pop(context);
               _loadAccounts();

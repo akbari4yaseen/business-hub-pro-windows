@@ -169,9 +169,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             currencyOptions: currencyOptions,
             onChanged: ({type, currency, date}) {
               setModal(() {
-                tmpType = type;
-                tmpCurrency = currency;
-                tmpDate = date;
+                if (type != null) tmpType = type;
+                if (currency != null) tmpCurrency = currency;
+                if (date != null) tmpDate = date;
               });
             },
             onReset: () => setModal(() {
