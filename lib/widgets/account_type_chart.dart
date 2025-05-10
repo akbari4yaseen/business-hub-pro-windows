@@ -15,17 +15,17 @@ class AccountTypeChart extends StatefulWidget {
 class _AccountTypeChartState extends State<AccountTypeChart> {
   late Future<List<Map<String, dynamic>>> _accountTypeCountsFuture;
 
-  // Pastel-ish accent colors for up to 8 slices
-  static const List<Color> _pieColors = [
-    Colors.blueAccent,
-    Colors.redAccent,
-    Colors.greenAccent,
-    Colors.orangeAccent,
-    Colors.purpleAccent,
-    Colors.tealAccent,
-    Colors.amberAccent,
-    Colors.indigoAccent,
-  ];
+  // Predefined mapping of account types to colors
+  static const Map<String, Color> _typeColors = {
+    'customer': Colors.blue,
+    'supplier': Colors.orange,
+    'exchanger': Colors.teal,
+    'bank': Colors.indigo,
+    'income': Colors.green,
+    'expense': Colors.red,
+    'company': Colors.brown,
+    'owner': Colors.lime,
+  };
 
   @override
   void initState() {
@@ -87,19 +87,28 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
                       PieChartData(
                         sectionsSpace: 4,
                         centerSpaceRadius: 40,
-                        sections: data.asMap().entries.map((entry) {
-                          final idx = entry.key;
-                          final item = entry.value;
+                        sections: data.map((item) {
                           final cnt = item['count'] as int;
-                          final color = _pieColors[idx % _pieColors.length];
+                          final color =
+                              _typeColors[item['account_type']] ?? Colors.grey;
+
+                          // calculate percentage
+                          final pct = total > 0 ? cnt / total : 0.0;
+                          final pctValue = pct * 100;
+
                           return PieChartSectionData(
                             value: cnt.toDouble(),
                             color: color,
                             radius: 60,
-                            title: '${(cnt / total * 100).toStringAsFixed(1)}%',
-                            titleStyle: theme.textTheme.titleSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                            // only show the title if >10%
+                            title: pctValue > 10
+                                ? '${pctValue.toStringAsFixed(1)}%'
+                                : '',
+                            // style it so it's readable on the slice
+                            titleStyle: theme.textTheme.bodySmall!.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           );
                         }).toList(),
                       ),
@@ -119,12 +128,10 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
   Widget _buildLegend(
       List<Map<String, dynamic>> data, int total, ThemeData theme) {
     return Column(
-      children: data.asMap().entries.map((entry) {
-        final idx = entry.key;
-        final item = entry.value;
+      children: data.map((item) {
         final cnt = item['count'] as int;
         final pct = total > 0 ? cnt / total : 0.0;
-        final color = _pieColors[idx % _pieColors.length];
+        final color = _typeColors[item['account_type']] ?? Colors.grey;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
@@ -140,7 +147,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
                   child: Text(
                       getLocalizedAccountType(context, item['account_type']),
                       style: theme.textTheme.bodyMedium)),
-              Text('$cnt (${(pct * 100).toStringAsFixed(1)}%)',
+              Text('${cnt} (${(pct * 100).toStringAsFixed(1)}%)',
                   style: theme.textTheme.bodyMedium),
             ],
           ),
