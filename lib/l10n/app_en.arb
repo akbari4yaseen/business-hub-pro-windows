@@ -293,5 +293,22 @@
   "offlineBackupOverdueMessage": "Your last offline backup was more than 7 days ago. Please back up your data locally.",
   "accountInactiveTitle": "The account “{name}” is inactive",
   "accountInactiveMessage": "The account “{name}” has had no transactions in the last {days} days.",
-  "inactivityDays": "The number of days an account has no transaction"
+  "inactivityDays": "The number of days an account has no transaction",
+  "periodicReports": "Periodic Reports",
+  "periodicReportsDesc": "View credit/debit balances over time",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "last7Days": "Last 7 Days",
+  "last14Days": "Last 14 Days",
+  "lastMonth": "Last Month",
+  "last3Months": "Last 3 Months",
+  "last6Months": "Last 6 Months",
+  "lastYear": "Last Year",
+  "customRange": "Custom Range",
+  "period": "Period",
+  "generateReport": "Generate Report",
+  "totalCredit": "Total Credit",
+  "totalDebit": "Total Debit",
+  "pleaseSelectAllFilters": "Please select all filters",
+  "pleaseSelectDateRange": "Please select date range"
 }

@@ -293,5 +293,22 @@
   "offlineBackupOverdueMessage": "آخرین پشتیبان‌گیری آفلاین شما بیش از ۷ روز پیش بوده است. لطفاً اطلاعات خود را محلی/آفلاین پشتیبان‌گیری کنید.",
   "accountInactiveTitle": "حساب «{name}» بدون فعالیت است",
   "accountInactiveMessage": "حساب «{name}» در {days} روز گذشته هیچ معامله‌ای نداشته است.",
-  "inactivityDays": "تعداد روزهای بدون معامله بودن حساب"
+  "inactivityDays": "تعداد روزهای بدون معامله بودن حساب",
+  "periodicReports": "گزارش‌های دوره‌ای",
+  "periodicReportsDesc": "نمایش بردگی‌ و آوردگی‌ها در دوره زمانی",
+  "today": "امروز",
+  "yesterday": "دیروز",
+  "last7Days": "۷ روز گذشته",
+  "last14Days": "۱۴ روز گذشته",
+  "lastMonth": "ماه گذشته",
+  "last3Months": "۳ ماه گذشته",
+  "last6Months": "۶ ماه گذشته",
+  "lastYear": "سال گذشته",
+  "customRange": "دوره دلخواه",
+  "period": "دوره",
+  "generateReport": "ایجاد گزارش",
+  "totalCredit": "کل آوردگی",
+  "totalDebit": "کل بردگی",
+  "pleaseSelectAllFilters": "لطفا تمام فیلترها را انتخاب کنید",
+  "pleaseSelectDateRange": "لطفا دوره زمانی را انتخاب کنید"
 }

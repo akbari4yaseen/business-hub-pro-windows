@@ -149,4 +149,34 @@ class ReportsDBHelper {
 
     return counts;
   }
+
+  /// Returns total credits and debits for accounts >10 filtered by type, currency and date range
+  Future<List<Map<String, dynamic>>> getCreditDebitBalances({
+    required String accountType,
+    required String currency,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final db = await database;
+    final sql = '''
+      SELECT
+        ad.transaction_type,
+        SUM(ad.amount) AS total
+      FROM account_details AS ad
+      JOIN accounts AS a
+        ON ad.account_id = a.id
+      WHERE a.id > 10
+        AND a.account_type = ?
+        AND ad.currency = ?
+        AND ad.date BETWEEN ? AND ?
+      GROUP BY ad.transaction_type;
+    ''';
+    final rows = await db.rawQuery(sql, [
+      accountType,
+      currency,
+      startDate.toIso8601String(),
+      endDate.toIso8601String(),
+    ]);
+    return rows;
+  }
 }

@@ -297,5 +297,22 @@
   "offlineBackupOverdueMessage": "ستاسې وروستی آفلاین بیک اپ له ۷ ورځو ډېر وخت مخکې شوی دی. مهرباني وکړئ خپل معلومات محلي بیک اپ کړئ.",
   "accountInactiveTitle": "حساب “{name}” غیرفعاله دی",
   "accountInactiveMessage": "حساب “{name}” په تېرو {days} ورځو کې هیڅ معامله نه لري.",
-  "inactivityDays": "هغه ورځې چې حساب کومه معامله نه لري"
+  "inactivityDays": "هغه ورځې چې حساب کومه معامله نه لري",
+  "periodicReports": "د دورې راپورونه",
+  "periodicReportsDesc": "د پور/قرض توازن د وخت په اوږدو کې وګورئ",
+  "today": "نن",
+  "yesterday": "پرون",
+  "last7Days": "وروستۍ ۷ ورځې",
+  "last14Days": "وروستۍ ۱۴ ورځې",
+  "lastMonth": "تېر میاشت",
+  "last3Months": "وروستۍ ۳ میاشتې",
+  "last6Months": "وروستۍ ۶ میاشتې",
+  "lastYear": "تېر کال",
+  "customRange": "د خوښې موده",
+  "period": "موده",
+  "generateReport": "راپور جوړول",
+  "totalCredit": "ټول کریډیټ",
+  "totalDebit": "ټول ډیبیټ",
+  "pleaseSelectAllFilters": "مهرباني وکړئ ټول فلټرونه وټاکئ",
+  "pleaseSelectDateRange": "مهرباني وکړئ د نېټې موده وټاکئ"
 }
