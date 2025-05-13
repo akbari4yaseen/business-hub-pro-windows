@@ -14,6 +14,7 @@ class TransactionDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -60,7 +61,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                     ),
                     _detailItem(
                       loc.amount,
-                      '\u200E${NumberFormat('#,###.##').format(transaction['amount'])} ${transaction['currency']}',
+                      '\u200E${_amountFormatter.format(transaction['amount'])} ${transaction['currency']}',
                     ),
                     _detailItem(
                       loc.transactionType,
@@ -70,7 +71,7 @@ class TransactionDetailsSheet extends StatelessWidget {
                     ),
                     _detailItem(
                       loc.balance,
-                      '\u200E${NumberFormat('#,###.##').format(transaction['balance'])} ${transaction['currency']}',
+                      '\u200E${_amountFormatter.format(transaction['balance'])} ${transaction['currency']}',
                     ),
                   ],
                 ),

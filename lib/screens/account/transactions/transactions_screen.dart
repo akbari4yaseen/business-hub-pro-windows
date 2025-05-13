@@ -7,6 +7,7 @@ import 'print_transactions.dart';
 
 import '../../../database/account_db.dart';
 import '../../../database/journal_db.dart';
+import '../../../utils/account_share_helper.dart';
 import '../../journal/edit_journal_screen.dart';
 import '../../journal/add_journal_screen.dart';
 import '../../../database/database_helper.dart';
@@ -143,14 +144,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Future<void> _loadCurrencies() async {
     final list = await DatabaseHelper().getDistinctCurrencies();
     list.sort();
-    currencyOptions = ['all', ...list];
+    setState(() {
+      currencyOptions = ['all', ...list];
+    });
   }
 
-  void _showFilterModal() {
+  void _showFilterModal() async {
     String? tmpType = _selectedType;
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
-    _loadCurrencies();
+    await _loadCurrencies();
     final typeList = ['all', 'credit', 'debit'];
 
     showModalBottomSheet(
@@ -337,6 +340,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 case 'print':
                   _onPrintPressed();
                   break;
+                case 'share':
+                  shareAccountBalances(context, widget.account);
+                  break;
+                case 'whatsapp':
+                  shareAccountBalances(context, widget.account,
+                      viaWhatsApp: true);
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -352,6 +362,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.print),
                   title: Text(loc.print),
+                ),
+              ),
+              PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: const FaIcon(FontAwesomeIcons.shareNodes),
+                  title: Text(loc.shareBalance),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'whatsapp',
+                child: ListTile(
+                  leading: const FaIcon(FontAwesomeIcons.whatsapp),
+                  title: Text(loc.sendBalance),
                 ),
               ),
             ],
@@ -412,9 +437,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final loc = AppLocalizations.of(context)!;
     final currency = entry.value['currency'] ?? entry.key;
     final summary = entry.value['summary'] ?? {};
-    final credit = summary['credit'] ?? 0;
-    final debit = summary['debit'] ?? 0;
-    final balance = summary['balance'] ?? 0;
+    final credit = summary['credit'] as num? ?? 0;
+    final debit = summary['debit'] as num? ?? 0;
+    final balance = summary['balance'] as num? ?? 0;
 
     return Container(
       width: 240,
@@ -606,6 +631,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final icon = isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus;
     final color = isCredit ? Colors.green : Colors.red;
     final balanceColor = tx['balance'] >= 0 ? Colors.green : Colors.red;
+    String formatAmount(num amount) =>
+        '\u200E${_amountFormatter.format(amount)}';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -613,18 +640,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        onTap: () => _showDetails(tx),
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(
-          '\u200E${_amountFormatter.format(tx['amount'])} ${tx['currency']}',
+          '${formatAmount(tx['amount'])} ${tx['currency']}',
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${loc.balance}: \u200E${_amountFormatter.format(tx['balance'])} ${tx['currency']}',
+              '${loc.balance}:${formatAmount(tx['balance'])} ${tx['currency']}',
               style: TextStyle(fontSize: 14, color: balanceColor),
             ),
             Text(formatLocalizedDateTime(context, tx['date']),

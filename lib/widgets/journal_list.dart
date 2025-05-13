@@ -65,7 +65,9 @@ class JournalList extends StatelessWidget {
           shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
           margin: const EdgeInsets.symmetric(vertical: 2),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            onTap: () => onDetails(j),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             leading: CircleAvatar(
               backgroundColor: color.withAlpha(25),
               child: Icon(icon, color: color, size: 18),
