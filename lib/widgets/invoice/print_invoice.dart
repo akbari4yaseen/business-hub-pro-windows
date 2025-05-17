@@ -1,0 +1,292 @@
+import 'package:pdf/pdf.dart';
+import 'dart:convert';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
+import '../../models/invoice.dart';
+import '../../providers/info_provider.dart';
+import '../../providers/inventory_provider.dart';
+import '../../providers/account_provider.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
+
+final _dateFormat = DateFormat('MMM d, y');
+final _currencyFormat = NumberFormat('#,##0.00');
+
+Future<void> printInvoice({
+  required BuildContext context,
+  required Invoice invoice,
+  required InfoProvider infoProvider,
+  required InventoryProvider inventoryProvider,
+  required AccountProvider accountProvider,
+}) async {
+  final info = infoProvider.info;
+  final customer = accountProvider.customers.firstWhere(
+    (c) => c['id'] == invoice.accountId,
+    orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
+  );
+  final customerName = customer['name'];
+
+  final loc = AppLocalizations.of(context)!;
+  final localeCode = Localizations.localeOf(context).languageCode;
+  final isRTL = localeCode != 'en';
+  final pdfDir = isRTL ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+
+  // Load custom fonts
+  final fontDataRegular =
+      await rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf');
+  final fontDataBold = await rootBundle.load('assets/fonts/Vazirmatn-Bold.ttf');
+  final vazirFontRegular = pw.Font.ttf(fontDataRegular);
+  final vazirFontBold = pw.Font.ttf(fontDataBold);
+
+  final pdf = pw.Document(
+    theme: pw.ThemeData.withFont(
+      base: vazirFontRegular,
+      bold: vazirFontBold,
+    ),
+  );
+
+  // Localized date formatter
+  String formatDate(DateTime date) {
+    return DateFormat.yMMMd(localeCode).format(date);
+  }
+
+  // Table headers
+  final itemHeaders = [
+    loc.product,
+    loc.description,
+    loc.quantity,
+    loc.unitPrice,
+    loc.total,
+  ];
+  final headersToUse = isRTL ? itemHeaders.reversed.toList() : itemHeaders;
+
+  // Table data rows
+  final itemRows = invoice.items.map((item) {
+    final product = inventoryProvider.currentStock.firstWhere(
+      (p) => p['id'] == item.productId,
+      orElse: () => {'product_name': loc.unknownProduct},
+    );
+    return [
+      product['product_name'],
+      item.description ?? '',
+      item.quantity.toString(),
+      _currencyFormat.format(item.unitPrice),
+      _currencyFormat.format(item.total),
+    ];
+  }).toList();
+  final dataToUse =
+      isRTL ? itemRows.map((r) => r.reversed.toList()).toList() : itemRows;
+
+  pdf.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      textDirection: pdfDir,
+      header: (pdfContext) => pw.Container(
+        padding: const pw.EdgeInsets.symmetric(vertical: 10),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                // Logo
+                if (info.logo != null)
+                  pw.Container(
+                    width: 60,
+                    height: 60,
+                    child: pw.Image(
+                      pw.MemoryImage(base64Decode(info.logo!)),
+                      fit: pw.BoxFit.contain,
+                    ),
+                  )
+                else
+                  pw.SizedBox(width: 60, height: 60),
+
+                // Business info
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        info.name ?? loc.businessName,
+                        style: pw.TextStyle(
+                            fontSize: 16, fontWeight: pw.FontWeight.bold),
+                      ),
+                      if (info.address != null)
+                        pw.Text(info.address!,
+                            style: pw.TextStyle(fontSize: 10)),
+                      if (info.phone != null)
+                        pw.Text(info.phone!, style: pw.TextStyle(fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 12),
+
+            // Invoice Title Centered
+            pw.Center(
+              child: pw.Text(
+                '${loc.invoice} #${invoice.invoiceNumber}',
+                style:
+                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.SizedBox(height: 4),
+
+            // Printed Date Centered
+            pw.Center(
+              child: pw.Text(
+                '${loc.printed(DateFormat.yMMMd(localeCode).add_jm().format(DateTime.now()))}',
+                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ),
+
+            pw.SizedBox(height: 10),
+            pw.Divider(thickness: 1),
+          ],
+        ),
+      ),
+      build: (pdfContext) {
+        final List<pw.Widget> content = [];
+
+        // Invoice & due dates row
+        content.add(
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('${loc.invoiceDate}: ${formatDate(invoice.date)}'),
+              if (invoice.dueDate != null)
+                pw.Text(
+                  '${loc.dueDate}: ${formatDate(invoice.dueDate!)}',
+                  style: pw.TextStyle(
+                      color: invoice.isOverdue ? PdfColors.red : null),
+                ),
+            ],
+          ),
+        );
+
+        content.add(pw.SizedBox(height: 12));
+
+        // Items table with header styling and alternating rows
+        content.add(
+          pw.Directionality(
+            textDirection: pdfDir,
+            child: pw.TableHelper.fromTextArray(
+              headers: headersToUse,
+              data: dataToUse,
+              headerStyle: pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration: pw.BoxDecoration(color: PdfColors.blueGrey900),
+              rowDecoration: pw.BoxDecoration(
+                  border: pw.Border(
+                      bottom: pw.BorderSide(color: PdfColors.grey400))),
+              oddRowDecoration: pw.BoxDecoration(color: PdfColors.grey100),
+              cellStyle: pw.TextStyle(fontSize: 10),
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              cellAlignments: isRTL
+                  ? {
+                      0: pw.Alignment.centerRight,
+                      1: pw.Alignment.centerRight,
+                      2: pw.Alignment.center,
+                      3: pw.Alignment.centerLeft,
+                      4: pw.Alignment.centerLeft,
+                    }
+                  : {
+                      0: pw.Alignment.centerLeft,
+                      1: pw.Alignment.centerLeft,
+                      2: pw.Alignment.center,
+                      3: pw.Alignment.centerRight,
+                      4: pw.Alignment.centerRight,
+                    },
+            ),
+          ),
+        );
+
+        content.add(pw.SizedBox(height: 12));
+
+        // Totals card
+        content.add(
+          pw.Container(
+            alignment: pw.Alignment.centerRight,
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(8),
+              border: pw.Border.all(color: PdfColors.grey300),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text(
+                  '${loc.subtotal}: ${_currencyFormat.format(invoice.subtotal)} ${invoice.currency}',
+                  style: pw.TextStyle(fontSize: 11),
+                ),
+                if (invoice.paidAmount != null && invoice.paidAmount! > 0)
+                  pw.Text(
+                    '${loc.paidAmount}: ${_currencyFormat.format(invoice.paidAmount)} ${invoice.currency}',
+                    style: pw.TextStyle(fontSize: 11, color: PdfColors.green),
+                  ),
+                pw.Divider(),
+                pw.Text(
+                  '${loc.balanceDue}: ${_currencyFormat.format(invoice.balance)} ${invoice.currency}',
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 12,
+                    color: invoice.balance > 0
+                        ? (invoice.isOverdue ? PdfColors.red : PdfColors.orange)
+                        : PdfColors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // Optional notes section with subtle background
+        if (invoice.notes != null && invoice.notes!.isNotEmpty) {
+          content.add(pw.SizedBox(height: 20));
+          content.add(pw.Text(loc.notes,
+              style:
+                  pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)));
+          content.add(pw.SizedBox(height: 8));
+          content.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                border: pw.Border.all(color: PdfColors.grey300),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+              ),
+              child: pw.Text(invoice.notes!, style: pw.TextStyle(fontSize: 10)),
+            ),
+          );
+        }
+
+        // Optional footer with thank you message or website (customize if needed)
+        content.add(pw.Spacer());
+        content.add(pw.Divider());
+        content.add(
+          pw.Center(
+            child: pw.Text(
+              'Thank you for your business!',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
+          ),
+        );
+
+        return content;
+      },
+    ),
+  );
+
+  await Printing.layoutPdf(
+    onLayout: (format) => pdf.save(),
+  );
+}

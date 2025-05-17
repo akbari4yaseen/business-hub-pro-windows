@@ -22,6 +22,16 @@ class DrawerMenu extends StatelessWidget {
 
     final menuItems = <_MenuItem>[
       _MenuItem(
+        icon: Icons.inventory_2_outlined,
+        title: 'Inventory',
+        onTap: () => Navigator.of(context).pushNamed('/inventory'),
+      ),
+      _MenuItem(
+        icon: Icons.receipt_long_outlined,
+        title: 'Invoices',
+        onTap: () => Navigator.of(context).pushNamed('/invoices'),
+      ),
+      _MenuItem(
         icon: Icons.settings_outlined,
         title: loc.settings,
         onTap: () => _goTo(context, const SettingsScreen()),
@@ -45,7 +55,7 @@ class DrawerMenu extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- HEADER in “unsafe” area now ---
+            // --- HEADER in "unsafe" area now ---
             Container(
               height: _headerHeight,
               color: scheme.primary,

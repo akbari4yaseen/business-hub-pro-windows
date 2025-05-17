@@ -65,7 +65,7 @@ class AboutScreen extends StatelessWidget {
 
                   // Copyright line
                   Text(
-                    '\u200E© ${DateTime.now().year} BusinessHub',
+                    '\u200E© ${DateTime.now().year} BusinessHubPro',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),

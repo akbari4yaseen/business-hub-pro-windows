@@ -1,5 +1,5 @@
 ```
-BusinessHub/
+BusinessHubPro/
 │
 ├── lib/
 │ ├── main.dart # Entry point of the application

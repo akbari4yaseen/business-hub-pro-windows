@@ -79,7 +79,7 @@ class DbInit {
     ''');
 
     await db.execute('''
-      CREATE TABLE notifications(
+      CREATE TABLE IF NOT EXISTS notifications(
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
         title TEXT UNIQUE NOT NULL,
@@ -96,6 +96,151 @@ class DbInit {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         key TEXT UNIQUE NOT NULL,
         value TEXT NOT NULL
+      )
+    ''');
+
+    // Inventory Management Tables
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS units (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        symbol TEXT,
+        description TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        category_id INTEGER NOT NULL,
+        unit_id INTEGER NOT NULL,
+        minimum_stock REAL NOT NULL,
+        reorder_point REAL DEFAULT 0,
+        maximum_stock REAL,
+        has_expiry_date INTEGER NOT NULL,
+        barcode TEXT,
+        sku TEXT,
+        brand TEXT,
+        custom_fields TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (category_id) REFERENCES categories (id),
+        FOREIGN KEY (unit_id) REFERENCES units (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS warehouses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS zones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        warehouse_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bins (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        zone_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (zone_id) REFERENCES zones (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS stock_movements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        source_bin_id INTEGER,
+        destination_bin_id INTEGER,
+        quantity REAL NOT NULL,
+        type TEXT NOT NULL,
+        reference TEXT,
+        notes TEXT,
+        expiry_date TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (product_id) REFERENCES products (id),
+        FOREIGN KEY (source_bin_id) REFERENCES bins (id),
+        FOREIGN KEY (destination_bin_id) REFERENCES bins (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS current_stock (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        bin_id INTEGER NOT NULL,
+        quantity REAL NOT NULL,
+        expiry_date TEXT,
+        FOREIGN KEY (product_id) REFERENCES products (id),
+        FOREIGN KEY (bin_id) REFERENCES bins (id),
+        UNIQUE(product_id, bin_id, expiry_date)
+      )
+    ''');
+
+    // Invoice Management Tables
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id INTEGER NOT NULL,
+        invoice_number TEXT NOT NULL UNIQUE,
+        date TEXT NOT NULL,
+        currency TEXT NOT NULL,
+        notes TEXT,
+        status TEXT NOT NULL,
+        paid_amount REAL DEFAULT 0.0,
+        due_date TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS invoice_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity REAL NOT NULL,
+        unit_price REAL NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products (id)
       )
     ''');
   }

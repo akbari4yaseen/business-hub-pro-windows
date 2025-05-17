@@ -1,5 +1,5 @@
 {
-  "appTitle": "بیزنیزهاب",
+  "appTitle": "بیزنس‌هاب",
   "languageEnglish": "انگلیسی",
   "languageFarsi": "فارسی",
   "languagePashto": "پشتو",
@@ -8,6 +8,7 @@
   "accounts": "حساب‌ها",
   "accountsPrint": "حساب ها",
   "reports": "گزارشات",
+  "inventory": "گدام",
   "password": "رمزعبور",
   "login": "ورود",
   "invalidPassword": "رمزعبور اشتباه است",
@@ -86,7 +87,7 @@
   "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
   "enterPassword": "لطفا رمز عبور خود را وارد کنید.",
   "wrongPassword": "رمز عبور اشتباه است.",
-  "appName": "بیزنیزهاب",
+  "appName": "بیزنس‌هاب",
   "settings": "تنظیمات",
   "help": "راهنمایی",
   "about": "درباره",
@@ -310,5 +311,17 @@
   "totalCredit": "کل آوردگی",
   "totalDebit": "کل بردگی",
   "pleaseSelectAllFilters": "لطفا تمام فیلترها را انتخاب کنید",
-  "pleaseSelectDateRange": "لطفا دوره زمانی را انتخاب کنید"
+  "pleaseSelectDateRange": "لطفا دوره زمانی را انتخاب کنید",
+  "product": "محصول",
+  "quantity": "تعداد",
+  "unitPrice": "قیمت واحد",
+  "total": "جمع",
+  "unknownProduct": "محصول ناشناخته",
+  "invoice": "صورتحساب",
+  "invoiceDate": "تاریخ صورتحساب",
+  "dueDate": "تاریخ سررسید",
+  "subtotal": "جمع جزئی",
+  "paidAmount": "مبلغ پرداخت‌شده",
+  "balanceDue": "مانده بدهی",
+  "notes": "یادداشت‌ها"
 }

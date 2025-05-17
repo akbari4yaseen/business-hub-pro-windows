@@ -4,7 +4,7 @@ import 'db_export_import.dart';
 import 'db_init.dart';
 
 class DatabaseHelper {
-  static const _databaseName = 'BusinessHub.db';
+  static const _databaseName = 'BusinessHubPro.db';
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -23,13 +23,11 @@ class DatabaseHelper {
       path,
       version: 1,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
-      onCreate: onCreate,
+      onCreate: (db, version) async {
+        await DbInit.createTables(db);
+        await DbInit.seedDefaults(db);
+      },
     );
-  }
-
-  Future<void> onCreate(Database db, int version) async {
-    await DbInit.createTables(db);
-    await DbInit.seedDefaults(db);
   }
 
   // Expose export/import utilities

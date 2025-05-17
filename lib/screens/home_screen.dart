@@ -66,6 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => nav.updateIndex(3),
       ),
       _ActionData(
+        label: loc.inventory,
+        icon: Icons.inventory_2,
+        onPressed: () => Navigator.pushNamed(context, '/inventory'),
+      ),
+      _ActionData(
         label: loc.settings,
         icon: Icons.settings,
         onPressed: () => Navigator.pushNamed(context, '/settings'),

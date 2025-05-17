@@ -1,6 +1,6 @@
 {
-    "name": "BusinessHub",
-    "short_name": "BusinessHub",
+    "name": "BusinessHubPro",
+    "short_name": "BusinessHubPro",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

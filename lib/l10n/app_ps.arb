@@ -1,6 +1,6 @@
 {
-  "appTitle": "بیزنیزهاب",
-  "appName": "بیزنیزهاب",
+  "appTitle": "بیزنس‌هاب",
+  "appName": "بیزنس‌هاب",
   "languageEnglish": "انګلیسي",
   "languageFarsi": "فارسي",
   "languagePashto": "پښتو",
@@ -9,6 +9,7 @@
   "accounts": "حسابونه",
   "accountsPrint": "حسابونه",
   "reports": "راپورونه",
+  "inventory": "گدام",
   "password": "پټنوم",
   "login": "ننوتل",
   "invalidPassword": "ناسم پټنوم",
@@ -314,5 +315,17 @@
   "totalCredit": "ټول کریډیټ",
   "totalDebit": "ټول ډیبیټ",
   "pleaseSelectAllFilters": "مهرباني وکړئ ټول فلټرونه وټاکئ",
-  "pleaseSelectDateRange": "مهرباني وکړئ د نېټې موده وټاکئ"
+  "pleaseSelectDateRange": "مهرباني وکړئ د نېټې موده وټاکئ",
+  "product": "محصول",
+  "quantity": "مقدار",
+  "unitPrice": "یونټ قیمت",
+  "total": "مجموع",
+  "unknownProduct": "ناشناخته محصول",
+  "invoice": "رسید",
+  "invoiceDate": "د رسید نېټه",
+  "dueDate": "د ورکړې نېټه",
+  "subtotal": "جزوي مجموعه",
+  "paidAmount": "ورکړل شوې اندازه",
+  "balanceDue": "باقي پیسې",
+  "notes": "یادښتونه"
 }

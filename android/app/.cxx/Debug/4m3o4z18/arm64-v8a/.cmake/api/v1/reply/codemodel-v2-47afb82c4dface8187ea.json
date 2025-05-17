@@ -1,43 +1,36 @@
 {
-	"configurations" : 
-	[
+	"configurations": [
 		{
-			"directories" : 
-			[
+			"directories": [
 				{
-					"build" : ".",
-					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
-					"minimumCMakeVersion" : 
-					{
-						"string" : "3.6.0"
+					"build": ".",
+					"jsonFile": "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion": {
+						"string": "3.6.0"
 					},
-					"projectIndex" : 0,
-					"source" : "."
+					"projectIndex": 0,
+					"source": "."
 				}
 			],
-			"name" : "Debug",
-			"projects" : 
-			[
+			"name": "Debug",
+			"projects": [
 				{
-					"directoryIndexes" : 
-					[
+					"directoryIndexes": [
 						0
 					],
-					"name" : "Project"
+					"name": "Project"
 				}
 			],
-			"targets" : []
+			"targets": []
 		}
 	],
-	"kind" : "codemodel",
-	"paths" : 
-	{
-		"build" : "D:/fullter/BusinessHub/android/app/.cxx/Debug/4m3o4z18/arm64-v8a",
-		"source" : "C:/flutter/packages/flutter_tools/gradle/src/main/groovy"
+	"kind": "codemodel",
+	"paths": {
+		"build": "D:/fullter/BusinessHubPro/android/app/.cxx/Debug/4m3o4z18/arm64-v8a",
+		"source": "C:/flutter/packages/flutter_tools/gradle/src/main/groovy"
 	},
-	"version" : 
-	{
-		"major" : 2,
-		"minor" : 3
+	"version": {
+		"major": 2,
+		"minor": 3
 	}
 }

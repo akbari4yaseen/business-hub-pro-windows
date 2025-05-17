@@ -1,4 +1,3 @@
-import 'package:BusinessHub/utils/utilities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
@@ -9,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/info_provider.dart';
+import '../../../utils/utilities.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/transaction_helper.dart';
 

@@ -18,7 +18,7 @@ class GoogleAuthClient extends http.BaseClient {
 
 /// Encapsulates all Drive backup logic.
 class DriveBackupService {
-  static const _folderName = 'BusinessHub';
+  static const _folderName = 'BusinessHubPro';
   static const _prefsFolderIdKey = 'drive_businesshub_folder_id';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -51,8 +51,7 @@ class DriveBackupService {
 
     // 1) Look for an existing folder
     final result = await driveApi.files.list(
-      q:
-          "mimeType='application/vnd.google-apps.folder' and name='$_folderName' and trashed=false",
+      q: "mimeType='application/vnd.google-apps.folder' and name='$_folderName' and trashed=false",
       spaces: 'drive',
       pageSize: 1,
       $fields: 'files(id)',
@@ -74,7 +73,7 @@ class DriveBackupService {
     return folderId;
   }
 
-  /// Main entry: uploads the local DB into BusinessHub/
+  /// Main entry: uploads the local DB into BusinessHubPro/
   Future<bool> backupDatabase() async {
     try {
       final dbPath = await DatabaseHelper().getDatabasePath();

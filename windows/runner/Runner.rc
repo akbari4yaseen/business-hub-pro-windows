@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "BusinessHub" "\0"
+            VALUE "FileDescription", "BusinessHubPro" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "BusinessHub" "\0"
+            VALUE "InternalName", "BusinessHubPro" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "BusinessHub.exe" "\0"
-            VALUE "ProductName", "BusinessHub" "\0"
+            VALUE "OriginalFilename", "BusinessHubPro.exe" "\0"
+            VALUE "ProductName", "BusinessHubPro" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

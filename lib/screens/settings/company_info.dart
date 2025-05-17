@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/info_provider.dart';
@@ -25,6 +28,25 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  File? _logoFile;
+  String? _logoBase64;
+
+  Future<void> _pickLogo() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      final file = File(picked.path);
+      final bytes = await file.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      setState(() {
+        _logoFile = file;
+        _logoBase64 = base64Image;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -57,6 +79,15 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         : null;
   }
 
+  ImageProvider? _getLogoImage(String? base64) {
+    if (base64 == null) return null;
+    try {
+      return MemoryImage(base64Decode(base64));
+    } catch (_) {
+      return null;
+    }
+  }
+
   String? _validateEmail(String? value) {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty)
@@ -77,6 +108,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               phone: _phoneController.text.trim(),
               email: _emailController.text.trim(),
               address: _addressController.text.trim(),
+              logo: _logoBase64,
             );
 
     try {
@@ -178,12 +210,27 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Center(
-                            child: CircleAvatar(
-                              radius: 44,
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.primary,
-                              child: const Icon(Icons.apartment,
-                                  size: 40, color: Colors.white),
+                            child: GestureDetector(
+                              onTap: _pickLogo,
+                              child: CircleAvatar(
+                                radius: 44,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                backgroundImage: _logoFile != null
+                                    ? FileImage(_logoFile!)
+                                    : _getLogoImage(
+                                        Provider.of<InfoProvider>(context)
+                                            .info
+                                            .logo),
+                                child: (_logoFile == null &&
+                                        Provider.of<InfoProvider>(context)
+                                                .info
+                                                .logo ==
+                                            null)
+                                    ? const Icon(Icons.apartment,
+                                        size: 40, color: Colors.white)
+                                    : null,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 24),
