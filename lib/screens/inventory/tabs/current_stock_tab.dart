@@ -4,7 +4,7 @@ import '../../../providers/inventory_provider.dart';
 import '../widgets/stock_alert_card.dart';
 import '../widgets/stock_list.dart';
 import '../widgets/search_filter_bar.dart';
-import '../dialogs/add_product_dialog.dart';
+import '../add_product_screen.dart';
 
 class CurrentStockTab extends StatefulWidget {
   const CurrentStockTab({Key? key}) : super(key: key);
@@ -20,19 +20,20 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
 
   // Cache the unique values to avoid recalculating them on every build
   List<String> _getUniqueWarehouses(List<Map<String, dynamic>> stock) {
-    return stock
-        .map((e) => e['warehouse_name'] as String)
-        .toSet()
-        .toList()
-        ..sort();
+    return stock.map((e) => e['warehouse_name'] as String).toSet().toList()
+      ..sort();
   }
 
   List<String> _getUniqueCategories(List<Map<String, dynamic>> stock) {
-    return stock
-        .map((e) => e['category_name'] as String)
-        .toSet()
-        .toList()
-        ..sort();
+    return stock.map((e) => e['category_name'] as String).toSet().toList()
+      ..sort();
+  }
+
+  void _showAddProductDialog(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddProductScreen()),
+    );
   }
 
   @override
@@ -174,17 +175,11 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-              value: Provider.of<InventoryProvider>(context, listen: false),
-              child: const AddProductDialog(),
-            ),
-          );
-        },
+        onPressed: () => _showAddProductDialog(context),
+        tooltip: 'Add Product',
+        heroTag: "add_product_stock",
         child: const Icon(Icons.add),
       ),
     );
   }
-} 
+}

@@ -4,7 +4,7 @@ import '../../../providers/inventory_provider.dart';
 import '../../../models/warehouse.dart';
 import '../dialogs/add_warehouse_dialog.dart';
 import '../dialogs/edit_warehouse_dialog.dart';
-import '../dialogs/manage_zones_dialog.dart';
+
 import '../dialogs/move_stock_dialog.dart';
 import '../widgets/search_filter_bar.dart';
 
@@ -19,7 +19,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
   String _searchQuery = '';
   bool _showEmpty = true;
 
-  Map<String, List<Map<String, dynamic>>> _groupStockByWarehouse(List<Map<String, dynamic>> stock) {
+  Map<String, List<Map<String, dynamic>>> _groupStockByWarehouse(
+      List<Map<String, dynamic>> stock) {
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final item in stock) {
       final warehouseName = item['warehouse_name'] as String;
@@ -63,8 +64,11 @@ class _WarehousesTabState extends State<WarehousesTab> {
 
           // Filter warehouses based on search
           final filteredWarehouses = provider.warehouses.where((warehouse) {
-            final matchesSearch = warehouse.name.toLowerCase().contains(_searchQuery.toLowerCase());
-            final hasItems = warehouseStock[warehouse.name]?.isNotEmpty ?? false;
+            final matchesSearch = warehouse.name
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+            final hasItems =
+                warehouseStock[warehouse.name]?.isNotEmpty ?? false;
             return matchesSearch && (_showEmpty || hasItems);
           }).toList();
 
@@ -107,7 +111,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
                           labelText: 'Search Warehouses',
                           prefixIcon: Icon(Icons.search),
                         ),
-                        onChanged: (value) => setState(() => _searchQuery = value),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -145,18 +150,15 @@ class _WarehousesTabState extends State<WarehousesTab> {
                             IconButton(
                               icon: const Icon(Icons.edit),
                               tooltip: 'Edit Warehouse',
-                              onPressed: () => _handleWarehouseAction('edit', warehouse),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.grid_4x4),
-                              tooltip: 'Manage Zones',
-                              onPressed: () => _handleWarehouseAction('zones', warehouse),
+                              onPressed: () =>
+                                  _handleWarehouseAction('edit', warehouse),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete),
                               tooltip: 'Delete Warehouse',
                               onPressed: items.isEmpty
-                                  ? () => _handleWarehouseAction('delete', warehouse)
+                                  ? () => _handleWarehouseAction(
+                                      'delete', warehouse)
                                   : null,
                             ),
                           ],
@@ -173,6 +175,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddWarehouseDialog(context),
+        heroTag: "warehouse_manage_fab",
         child: const Icon(Icons.add),
       ),
     );
@@ -203,9 +206,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Zone: ${item['zone_name'] ?? 'N/A'}'),
-                Text('Bin: ${item['bin_name'] ?? 'N/A'}'),
-                Text('Quantity: ${item['quantity']} ${item['unit_name'] ?? ''}'),
+                Text(
+                    'Quantity: ${item['quantity']} ${item['unit_name'] ?? ''}'),
               ],
             ),
             trailing: IconButton(
@@ -221,14 +223,16 @@ class _WarehousesTabState extends State<WarehousesTab> {
   void _showAddWarehouseDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
+      builder: (dialogContext) =>
+          ChangeNotifierProvider<InventoryProvider>.value(
         value: context.read<InventoryProvider>(),
         child: const AddWarehouseDialog(),
       ),
     );
   }
 
-  Future<void> _handleWarehouseAction(String action, Warehouse warehouse) async {
+  Future<void> _handleWarehouseAction(
+      String action, Warehouse warehouse) async {
     final provider = context.read<InventoryProvider>();
 
     try {
@@ -236,18 +240,10 @@ class _WarehousesTabState extends State<WarehousesTab> {
         case 'edit':
           await showDialog(
             context: context,
-            builder: (context) => ChangeNotifierProvider<InventoryProvider>.value(
+            builder: (context) =>
+                ChangeNotifierProvider<InventoryProvider>.value(
               value: provider,
               child: EditWarehouseDialog(warehouse: warehouse),
-            ),
-          );
-          break;
-        case 'zones':
-          await showDialog(
-            context: context,
-            builder: (context) => ChangeNotifierProvider<InventoryProvider>.value(
-              value: provider,
-              child: ManageZonesDialog(warehouse: warehouse),
             ),
           );
           break;
@@ -257,7 +253,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
             builder: (context) => AlertDialog(
               title: const Text('Delete Warehouse'),
               content: Text(
-                'Are you sure you want to delete the warehouse "${warehouse.name}"? This will also delete all zones and bins in this warehouse.',
+                'Are you sure you want to delete the warehouse "${warehouse.name}"?',
               ),
               actions: [
                 TextButton(
@@ -300,4 +296,4 @@ class _WarehousesTabState extends State<WarehousesTab> {
       ),
     );
   }
-} 
+}

@@ -156,35 +156,11 @@ class DbInit {
     ''');
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS zones (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        warehouse_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS bins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        zone_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (zone_id) REFERENCES zones (id)
-      )
-    ''');
-
-    await db.execute('''
       CREATE TABLE IF NOT EXISTS stock_movements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
-        source_bin_id INTEGER,
-        destination_bin_id INTEGER,
+        source_warehouse_id INTEGER,
+        destination_warehouse_id INTEGER,
         quantity REAL NOT NULL,
         type TEXT NOT NULL,
         reference TEXT,
@@ -193,8 +169,8 @@ class DbInit {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (product_id) REFERENCES products (id),
-        FOREIGN KEY (source_bin_id) REFERENCES bins (id),
-        FOREIGN KEY (destination_bin_id) REFERENCES bins (id)
+        FOREIGN KEY (source_warehouse_id) REFERENCES warehouses (id),
+        FOREIGN KEY (destination_warehouse_id) REFERENCES warehouses (id)
       )
     ''');
 
@@ -202,12 +178,12 @@ class DbInit {
       CREATE TABLE IF NOT EXISTS current_stock (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
-        bin_id INTEGER NOT NULL,
+        warehouse_id INTEGER NOT NULL,
         quantity REAL NOT NULL,
         expiry_date TEXT,
         FOREIGN KEY (product_id) REFERENCES products (id),
-        FOREIGN KEY (bin_id) REFERENCES bins (id),
-        UNIQUE(product_id, bin_id, expiry_date)
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id),
+        UNIQUE(product_id, warehouse_id, expiry_date)
       )
     ''');
 

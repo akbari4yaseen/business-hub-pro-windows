@@ -19,17 +19,11 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   String? _selectedWarehouse;
-  String? _selectedZone;
-  String? _selectedBin;
-  List<String> _zoneOptions = [];
-  List<String> _binOptions = [];
 
   @override
   void initState() {
     super.initState();
     _selectedWarehouse = widget.stockItem['warehouse_name'];
-    _selectedZone = widget.stockItem['zone_name'];
-    _selectedBin = widget.stockItem['bin_name'];
     _quantityController.text = widget.stockItem['quantity'].toString();
   }
 
@@ -37,37 +31,6 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
   void dispose() {
     _quantityController.dispose();
     super.dispose();
-  }
-
-  void _updateZones(InventoryProvider provider) {
-    if (_selectedWarehouse != null) {
-      final warehouse =
-          provider.warehouses.firstWhere((w) => w.name == _selectedWarehouse);
-      _zoneOptions =
-          provider.getWarehouseZones(warehouse.id!).map((z) => z.name).toList();
-      if (!_zoneOptions.contains(_selectedZone)) {
-        _selectedZone = null;
-      }
-      _updateBins(provider);
-    } else {
-      _zoneOptions = [];
-      _selectedZone = null;
-      _binOptions = [];
-      _selectedBin = null;
-    }
-  }
-
-  void _updateBins(InventoryProvider provider) {
-    if (_selectedZone != null) {
-      final zone = provider.zones.firstWhere((z) => z.name == _selectedZone);
-      _binOptions = provider.getZoneBins(zone.id!).map((b) => b.name).toList();
-      if (!_binOptions.contains(_selectedBin)) {
-        _selectedBin = null;
-      }
-    } else {
-      _binOptions = [];
-      _selectedBin = null;
-    }
   }
 
   @override
@@ -84,33 +47,6 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Product: ${widget.stockItem['product_name']}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _quantityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity to Move',
-                      hintText: 'Enter quantity',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a quantity';
-                      }
-                      final quantity = double.tryParse(value);
-                      if (quantity == null || quantity <= 0) {
-                        return 'Please enter a valid quantity';
-                      }
-                      if (quantity > widget.stockItem['quantity']) {
-                        return 'Cannot move more than available quantity';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _selectedWarehouse,
                     decoration: const InputDecoration(
@@ -125,7 +61,6 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
                     onChanged: (value) {
                       setState(() {
                         _selectedWarehouse = value;
-                        _updateZones(provider);
                       });
                     },
                     validator: (value) {
@@ -136,50 +71,19 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _selectedZone,
+                  TextFormField(
+                    controller: _quantityController,
                     decoration: const InputDecoration(
-                      labelText: 'Destination Zone',
+                      labelText: 'Quantity',
                     ),
-                    items: _zoneOptions
-                        .map((z) => DropdownMenuItem(
-                              value: z,
-                              child: Text(z),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedZone = value;
-                        _updateBins(provider);
-                      });
-                    },
+                    keyboardType: TextInputType.number,
                     validator: (value) {
-                      if (value == null) {
-                        return 'Please select a zone';
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a quantity';
                       }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _selectedBin,
-                    decoration: const InputDecoration(
-                      labelText: 'Destination Bin',
-                    ),
-                    items: _binOptions
-                        .map((b) => DropdownMenuItem(
-                              value: b,
-                              child: Text(b),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedBin = value;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select a bin';
+                      final num? quantity = num.tryParse(value);
+                      if (quantity == null || quantity <= 0) {
+                        return 'Enter a valid quantity';
                       }
                       return null;
                     },
@@ -196,41 +100,15 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => _moveStock(context),
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              // TODO: Implement move stock logic between warehouses
+              Navigator.of(context).pop();
+            }
+          },
           child: const Text('Move'),
         ),
       ],
     );
-  }
-
-  Future<void> _moveStock(BuildContext context) async {
-    if (_formKey.currentState!.validate()) {
-      final provider = context.read<InventoryProvider>();
-
-      // Get source and destination bins
-      final sourceBin = provider.bins.firstWhere(
-        (b) => b.name == widget.stockItem['bin_name'],
-      );
-      final destinationBin = provider.bins.firstWhere(
-        (b) => b.name == _selectedBin,
-      );
-
-      // Create stock movement
-      final movement = StockMovement(
-        productId: widget.stockItem['product_id'],
-        sourceBinId: sourceBin.id,
-        destinationBinId: destinationBin.id,
-        quantity: double.parse(_quantityController.text),
-        type: MovementType.transfer,
-        reference: 'Manual Transfer',
-        notes:
-            'Stock moved from ${widget.stockItem['bin_name']} to $_selectedBin',
-      );
-
-      await provider.recordStockMovement(movement);
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    }
   }
 }

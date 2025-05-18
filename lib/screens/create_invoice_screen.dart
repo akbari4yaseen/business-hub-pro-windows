@@ -686,7 +686,7 @@ class InvoiceItemForm extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${item['warehouse_name']} (${item['zone_name']} > ${item['bin_name']})'),
+                Text('${item['warehouse_name']}'),
                 Text(
                   '${item['quantity']} ${item['unit_name'] ?? ''}',
                   style: const TextStyle(fontWeight: FontWeight.bold),

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/warehouse.dart';
-import '../../../models/zone.dart';
-import '../../../models/bin.dart';
 
 class AddWarehouseDialog extends StatefulWidget {
   const AddWarehouseDialog({Key? key}) : super(key: key);
@@ -17,7 +15,6 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final List<ZoneData> _zones = [];
   bool _isSubmitting = false;
 
   @override
@@ -25,21 +22,7 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
     _nameController.dispose();
     _addressController.dispose();
     _descriptionController.dispose();
-    for (final zone in _zones) {
-      zone.nameController.dispose();
-      zone.descriptionController.dispose();
-      for (final bin in zone.bins) {
-        bin.nameController.dispose();
-        bin.descriptionController.dispose();
-      }
-    }
     super.dispose();
-  }
-
-  void _addZone() {
-    setState(() {
-      _zones.add(ZoneData());
-    });
   }
 
   @override
@@ -83,27 +66,6 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Zones',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              ..._zones.map((zone) => ZoneInput(
-                    zone: zone,
-                    onRemove: () {
-                      setState(() {
-                        _zones.remove(zone);
-                      });
-                    },
-                  )),
-              TextButton.icon(
-                onPressed: _addZone,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Zone'),
-              ),
             ],
           ),
         ),
@@ -130,74 +92,19 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
   Future<void> _saveWarehouse() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate that all zones and bins have names
-    bool isValid = true;
-    for (final zone in _zones) {
-      if (zone.nameController.text.isEmpty) {
-        isValid = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All zones must have names')),
-        );
-        break;
-      }
-      for (final bin in zone.bins) {
-        if (bin.nameController.text.isEmpty) {
-          isValid = false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All bins must have names')),
-          );
-          break;
-        }
-      }
-      if (!isValid) break;
-    }
-    if (!isValid) return;
-
     setState(() {
       _isSubmitting = true;
     });
 
     try {
       final provider = context.read<InventoryProvider>();
-      
-      // 1. Create warehouse
       final warehouse = Warehouse(
         name: _nameController.text,
         address: _addressController.text,
         description: _descriptionController.text,
       );
-      
-      final warehouseId = await provider.addWarehouse(warehouse);
-      
-      // 2. Create zones and bins
-      for (final zone in _zones) {
-        final newZone = Zone(
-          warehouseId: warehouseId,
-          name: zone.nameController.text,
-          description: zone.descriptionController.text.isNotEmpty 
-              ? zone.descriptionController.text 
-              : null,
-        );
-        
-        final zoneId = await provider.addZone(newZone);
-        
-        // Create bins for this zone
-        for (final bin in zone.bins) {
-          final newBin = Bin(
-            zoneId: zoneId,
-            name: bin.nameController.text,
-            description: bin.descriptionController.text.isNotEmpty 
-                ? bin.descriptionController.text 
-                : null,
-          );
-          
-          await provider.addBin(newBin);
-        }
-      }
-      
-      // Refresh data
+      await provider.addWarehouse(warehouse);
       await provider.refreshData();
-      
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -215,144 +122,5 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
         });
       }
     }
-  }
-}
-
-class ZoneData {
-  final nameController = TextEditingController();
-  final descriptionController = TextEditingController();
-  final List<BinData> bins = [];
-}
-
-class BinData {
-  final nameController = TextEditingController();
-  final descriptionController = TextEditingController();
-}
-
-class ZoneInput extends StatefulWidget {
-  final ZoneData zone;
-  final VoidCallback onRemove;
-
-  const ZoneInput({
-    Key? key,
-    required this.zone,
-    required this.onRemove,
-  }) : super(key: key);
-
-  @override
-  _ZoneInputState createState() => _ZoneInputState();
-}
-
-class _ZoneInputState extends State<ZoneInput> {
-  void _addBin() {
-    setState(() {
-      widget.zone.bins.add(BinData());
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: widget.zone.nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Zone Name',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a zone name';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: widget.onRemove,
-                ),
-              ],
-            ),
-            TextFormField(
-              controller: widget.zone.descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Zone Description',
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Bins',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...widget.zone.bins.map((bin) => BinInput(
-                  bin: bin,
-                  onRemove: () {
-                    setState(() {
-                      widget.zone.bins.remove(bin);
-                    });
-                  },
-                )),
-            TextButton.icon(
-              onPressed: _addBin,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Bin'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class BinInput extends StatelessWidget {
-  final BinData bin;
-  final VoidCallback onRemove;
-
-  const BinInput({
-    Key? key,
-    required this.bin,
-    required this.onRemove,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: bin.nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Bin Name',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a bin name';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: onRemove,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 } 

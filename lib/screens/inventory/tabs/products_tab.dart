@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/inventory_provider.dart';
-import '../dialogs/manage_categories_dialog.dart';
-import '../dialogs/manage_units_dialog.dart';
-import '../dialogs/add_product_dialog.dart';
+import '../add_product_screen.dart';
+import '../manage_units_screen.dart';
+import '../manage_categories_screen.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({Key? key}) : super(key: key);
@@ -17,7 +17,7 @@ class _ProductsTabState extends State<ProductsTab> {
   String? _selectedCategory;
   bool _showInactive = false;
   final _searchController = TextEditingController();
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -27,9 +27,8 @@ class _ProductsTabState extends State<ProductsTab> {
   // Filter products based on search query and filters
   List<dynamic> _getFilteredProducts(InventoryProvider provider) {
     return provider.products.where((product) {
-      final matchesSearch = product.name
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
+      final matchesSearch =
+          product.name.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesCategory = _selectedCategory == null ||
           provider
               .getCategoryName(product.categoryId)
@@ -61,6 +60,7 @@ class _ProductsTabState extends State<ProductsTab> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddProductDialog(context),
         tooltip: 'Add Product',
+        heroTag: "add_product_product",
         child: const Icon(Icons.add),
       ),
     );
@@ -102,7 +102,8 @@ class _ProductsTabState extends State<ProductsTab> {
                           icon: const Icon(Icons.category, size: 16),
                           label: const Text('Categories'),
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 0),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -111,7 +112,8 @@ class _ProductsTabState extends State<ProductsTab> {
                           icon: const Icon(Icons.straighten, size: 16),
                           label: const Text('Units'),
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 0),
                           ),
                         ),
                       ],
@@ -151,7 +153,8 @@ class _ProductsTabState extends State<ProductsTab> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                     ),
                     value: _selectedCategory,
                     items: [
@@ -159,12 +162,15 @@ class _ProductsTabState extends State<ProductsTab> {
                         value: null,
                         child: Text('All Categories'),
                       ),
-                      ...provider.categories.map((c) => DropdownMenuItem<String>(
-                        value: c.name,
-                        child: Text(c.name),
-                      )).toList(),
+                      ...provider.categories
+                          .map((c) => DropdownMenuItem<String>(
+                                value: c.name,
+                                child: Text(c.name),
+                              ))
+                          .toList(),
                     ],
-                    onChanged: (value) => setState(() => _selectedCategory = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedCategory = value),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -220,7 +226,8 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
-  Widget _buildProductsList(List<dynamic> products, InventoryProvider provider) {
+  Widget _buildProductsList(
+      List<dynamic> products, InventoryProvider provider) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: products.length,
@@ -237,8 +244,8 @@ class _ProductsTabState extends State<ProductsTab> {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: product.isActive 
-            ? BorderSide.none 
+        side: product.isActive
+            ? BorderSide.none
             : const BorderSide(color: Colors.grey, width: 1),
       ),
       child: ListTile(
@@ -267,7 +274,7 @@ class _ProductsTabState extends State<ProductsTab> {
                 Text('Unit: ${provider.getUnitName(product.unitId)}'),
               ],
             ),
-            if (product.sku != null) 
+            if (product.sku != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text('SKU: ${product.sku}'),
@@ -332,59 +339,50 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showManageCategoriesDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-        value: context.read<InventoryProvider>(),
-        child: const ManageCategoriesDialog(),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ManageCategoriesScreen()),
     );
   }
 
   void _showManageUnitsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-        value: context.read<InventoryProvider>(),
-        child: const ManageUnitsDialog(),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ManageUnitsScreen()),
     );
   }
 
   void _showAddProductDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-        value: context.read<InventoryProvider>(),
-        child: const AddProductDialog(),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddProductScreen()),
     );
   }
 
   void _handleProductAction(String action, dynamic product) async {
     final provider = context.read<InventoryProvider>();
-    
+
     switch (action) {
       case 'edit':
-        await showDialog(
-          context: context,
-          builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-            value: provider,
-            child: AddProductDialog(product: product),
-          ),
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AddProductScreen(product: product)),
         );
         break;
-        
+
       case 'activate':
       case 'deactivate':
         try {
-          final updatedProduct = product.copyWith(isActive: action == 'activate');
+          final updatedProduct =
+              product.copyWith(isActive: action == 'activate');
           await provider.updateProduct(updatedProduct);
-          
+
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Product ${action == 'activate' ? 'activated' : 'deactivated'} successfully'),
+              content: Text(
+                  'Product ${action == 'activate' ? 'activated' : 'deactivated'} successfully'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -392,14 +390,14 @@ class _ProductsTabState extends State<ProductsTab> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'), 
+              content: Text('Error: $e'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
         break;
-        
+
       case 'delete':
         final confirm = await showDialog<bool>(
           context: context,
@@ -426,7 +424,7 @@ class _ProductsTabState extends State<ProductsTab> {
         if (confirm == true) {
           try {
             await provider.deleteProduct(product.id);
-            
+
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -452,7 +450,7 @@ class _ProductsTabState extends State<ProductsTab> {
   void _showProductDetails(dynamic product) {
     final provider = context.read<InventoryProvider>();
     final currentStock = provider.getCurrentStockForProduct(product.id);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -475,57 +473,61 @@ class _ProductsTabState extends State<ProductsTab> {
               _buildDetailCard(
                 'Basic Information',
                 [
-                  _buildDetailRow('Category', provider.getCategoryName(product.categoryId)),
+                  _buildDetailRow(
+                      'Category', provider.getCategoryName(product.categoryId)),
                   _buildDetailRow('Unit', provider.getUnitName(product.unitId)),
                   if (product.sku != null) _buildDetailRow('SKU', product.sku),
-                  if (product.barcode != null) _buildDetailRow('Barcode', product.barcode),
+                  if (product.barcode != null)
+                    _buildDetailRow('Barcode', product.barcode),
                 ],
               ),
-              
               if (product.description != null && product.description.isNotEmpty)
                 _buildDetailCard(
                   'Description',
                   [_buildDetailRow('', product.description)],
                 ),
-              
               _buildDetailCard(
                 'Stock Settings',
                 [
-                  _buildDetailRow('Min Stock', product.minStock?.toString() ?? 'Not set'),
-                  _buildDetailRow('Max Stock', product.maxStock?.toString() ?? 'Not set'),
-                  _buildDetailRow('Reorder Point', product.reorderPoint?.toString() ?? 'Not set'),
+                  _buildDetailRow(
+                      'Min Stock', product.minStock?.toString() ?? 'Not set'),
+                  _buildDetailRow(
+                      'Max Stock', product.maxStock?.toString() ?? 'Not set'),
+                  _buildDetailRow('Reorder Point',
+                      product.reorderPoint?.toString() ?? 'Not set'),
                 ],
               ),
-              
               if (product.notes != null && product.notes.isNotEmpty)
                 _buildDetailCard(
-                  'Notes', 
+                  'Notes',
                   [_buildDetailRow('', product.notes)],
                 ),
-              
               _buildDetailCard(
                 'Current Stock',
                 [],
                 footer: currentStock.isEmpty
                     ? const Text('No stock information available')
                     : Column(
-                        children: currentStock.map((stock) => ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(stock['warehouse_name']),
-                          subtitle: Text('${stock['zone_name']} > ${stock['bin_name']}'),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '${stock['quantity']} ${provider.getUnitName(product.unitId)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        )).toList(),
+                        children: currentStock
+                            .map((stock) => ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(stock['warehouse_name']),
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '${stock['quantity']} ${provider.getUnitName(product.unitId)}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
                       ),
               ),
             ],
@@ -547,8 +549,9 @@ class _ProductsTabState extends State<ProductsTab> {
       ),
     );
   }
-  
-  Widget _buildDetailCard(String title, List<Widget> content, {Widget? footer}) {
+
+  Widget _buildDetailCard(String title, List<Widget> content,
+      {Widget? footer}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -581,7 +584,7 @@ class _ProductsTabState extends State<ProductsTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (label.isNotEmpty) 
+          if (label.isNotEmpty)
             SizedBox(
               width: 100,
               child: Text(
@@ -596,4 +599,4 @@ class _ProductsTabState extends State<ProductsTab> {
       ),
     );
   }
-} 
+}

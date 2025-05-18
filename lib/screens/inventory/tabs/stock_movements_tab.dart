@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
-import '../dialogs/add_stock_movement_dialog.dart';
+import '../add_stock_movement_screen.dart';
 import '../widgets/search_filter_bar.dart';
 
 class StockMovementsTab extends StatefulWidget {
@@ -101,6 +101,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddMovementDialog(context),
+        heroTag: "stock_movement_fab",
         child: const Icon(Icons.add),
       ),
     );
@@ -167,26 +168,22 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     // Get source location
     String sourceLocation = 'N/A';
     if (movement.sourceBinId != null) {
-      try {
-        final sourceBin = provider.bins.firstWhere((b) => b.id == movement.sourceBinId);
-        final sourceZone = provider.zones.firstWhere((z) => z.id == sourceBin.zoneId);
-        final sourceWarehouse = provider.warehouses.firstWhere((w) => w.id == sourceZone.warehouseId);
-        sourceLocation = '${sourceWarehouse.name} > ${sourceZone.name} > ${sourceBin.name}';
-      } catch (e) {
-        debugPrint('Error finding source location: $e');
+      final sourceBin = provider.currentStock
+          .where((stock) => stock['bin_id'] == movement.sourceBinId)
+          .firstOrNull;
+      if (sourceBin != null) {
+        sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
       }
     }
     
     // Get destination location
     String destinationLocation = 'N/A';
     if (movement.destinationBinId != null) {
-      try {
-        final destBin = provider.bins.firstWhere((b) => b.id == movement.destinationBinId);
-        final destZone = provider.zones.firstWhere((z) => z.id == destBin.zoneId);
-        final destWarehouse = provider.warehouses.firstWhere((w) => w.id == destZone.warehouseId);
-        destinationLocation = '${destWarehouse.name} > ${destZone.name} > ${destBin.name}';
-      } catch (e) {
-        debugPrint('Error finding destination location: $e');
+      final destBin = provider.currentStock
+          .where((stock) => stock['bin_id'] == movement.destinationBinId)
+          .firstOrNull;
+      if (destBin != null) {
+        destinationLocation = destBin['warehouse_name'] ?? 'N/A';
       }
     }
     
@@ -282,12 +279,9 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
   }
 
   void _showAddMovementDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
-        value: context.read<InventoryProvider>(),
-        child: const AddStockMovementDialog(),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddStockMovementScreen()),
     );
   }
 
@@ -304,25 +298,21 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     // Get locations
     String sourceLocation = 'N/A';
     if (movement.sourceBinId != null) {
-      try {
-        final sourceBin = provider.bins.firstWhere((b) => b.id == movement.sourceBinId);
-        final sourceZone = provider.zones.firstWhere((z) => z.id == sourceBin.zoneId);
-        final sourceWarehouse = provider.warehouses.firstWhere((w) => w.id == sourceZone.warehouseId);
-        sourceLocation = '${sourceWarehouse.name} > ${sourceZone.name} > ${sourceBin.name}';
-      } catch (e) {
-        debugPrint('Error finding source location: $e');
+      final sourceBin = provider.currentStock
+          .where((stock) => stock['bin_id'] == movement.sourceBinId)
+          .firstOrNull;
+      if (sourceBin != null) {
+        sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
       }
     }
     
     String destinationLocation = 'N/A';
     if (movement.destinationBinId != null) {
-      try {
-        final destBin = provider.bins.firstWhere((b) => b.id == movement.destinationBinId);
-        final destZone = provider.zones.firstWhere((z) => z.id == destBin.zoneId);
-        final destWarehouse = provider.warehouses.firstWhere((w) => w.id == destZone.warehouseId);
-        destinationLocation = '${destWarehouse.name} > ${destZone.name} > ${destBin.name}';
-      } catch (e) {
-        debugPrint('Error finding destination location: $e');
+      final destBin = provider.currentStock
+          .where((stock) => stock['bin_id'] == movement.destinationBinId)
+          .firstOrNull;
+      if (destBin != null) {
+        destinationLocation = destBin['warehouse_name'] ?? 'N/A';
       }
     }
     

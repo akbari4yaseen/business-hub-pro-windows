@@ -5,8 +5,6 @@ import '../models/warehouse.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart';
 import '../models/unit.dart';
-import '../models/zone.dart' as inventory_models;
-import '../models/bin.dart' as inventory_models;
 
 class InventoryDB {
   static final InventoryDB _instance = InventoryDB._internal();
@@ -64,16 +62,7 @@ class InventoryDB {
 
   Future<int> deleteWarehouse(int id) async {
     final db = await _db;
-    // First delete all zones in this warehouse
-    final zones = await db.query(
-      'zones',
-      where: 'warehouse_id = ?',
-      whereArgs: [id],
-    );
-    for (final zone in zones) {
-      await deleteZone(zone['id'] as int);
-    }
-    // Then delete the warehouse
+    // Just delete the warehouse
     return await db.delete(
       'warehouses',
       where: 'id = ?',
@@ -94,15 +83,26 @@ class InventoryDB {
       // Insert the movement record
       final movementId = await txn.insert(
         'stock_movements',
-        movement.toMap(),
+        {
+          'product_id': movement.productId,
+          'source_warehouse_id': movement.sourceBinId,
+          'destination_warehouse_id': movement.destinationBinId,
+          'quantity': movement.quantity,
+          'type': movement.type.toString().split('.').last,
+          'reference': movement.reference,
+          'notes': movement.notes,
+          'expiry_date': movement.expiryDate?.toIso8601String(),
+          'created_at': movement.createdAt.toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
       );
 
-      // Update source bin stock
+      // Update source warehouse stock
       if (movement.sourceBinId != null) {
         await txn.rawUpdate('''
           UPDATE current_stock
           SET quantity = quantity - ?
-          WHERE product_id = ? AND bin_id = ?
+          WHERE product_id = ? AND warehouse_id = ?
         ''', [
           movement.quantity,
           movement.productId,
@@ -110,12 +110,12 @@ class InventoryDB {
         ]);
       }
 
-      // Update destination bin stock
+      // Update destination warehouse stock
       if (movement.destinationBinId != null) {
         // Check if stock record exists
         final existingStock = await txn.query(
           'current_stock',
-          where: 'product_id = ? AND bin_id = ?',
+          where: 'product_id = ? AND warehouse_id = ?',
           whereArgs: [movement.productId, movement.destinationBinId],
         );
 
@@ -125,7 +125,7 @@ class InventoryDB {
             'current_stock',
             {
               'product_id': movement.productId,
-              'bin_id': movement.destinationBinId,
+              'warehouse_id': movement.destinationBinId,
               'quantity': movement.quantity,
               'expiry_date': movement.expiryDate?.toIso8601String(),
             },
@@ -135,7 +135,7 @@ class InventoryDB {
           await txn.rawUpdate('''
             UPDATE current_stock
             SET quantity = quantity + ?
-            WHERE product_id = ? AND bin_id = ?
+            WHERE product_id = ? AND warehouse_id = ?
           ''', [
             movement.quantity,
             movement.productId,
@@ -174,16 +174,12 @@ class InventoryDB {
         c.name as category_name,
         u.name as unit_name,
         u.symbol as unit_symbol,
-        w.name as warehouse_name,
-        z.name as zone_name,
-        b.name as bin_name
+        w.name as warehouse_name
       FROM current_stock cs
       JOIN products p ON cs.product_id = p.id
       JOIN categories c ON p.category_id = c.id
       JOIN units u ON p.unit_id = u.id
-      LEFT JOIN bins b ON cs.bin_id = b.id
-      LEFT JOIN zones z ON b.zone_id = z.id
-      LEFT JOIN warehouses w ON z.warehouse_id = w.id
+      LEFT JOIN warehouses w ON cs.warehouse_id = w.id
       WHERE p.is_active = 1
     ''');
   }
@@ -211,15 +207,11 @@ class InventoryDB {
       SELECT 
         p.name as product_name,
         w.name as warehouse_name,
-        z.name as zone_name,
-        b.name as bin_name,
         cs.quantity,
         cs.expiry_date
       FROM current_stock cs
       JOIN products p ON cs.product_id = p.id
-      JOIN bins b ON cs.bin_id = b.id
-      JOIN zones z ON b.zone_id = z.id
-      JOIN warehouses w ON z.warehouse_id = w.id
+      LEFT JOIN warehouses w ON cs.warehouse_id = w.id
       WHERE cs.expiry_date IS NOT NULL 
         AND cs.expiry_date <= ?
       ORDER BY cs.expiry_date
@@ -286,84 +278,5 @@ class InventoryDB {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query('units');
     return List.generate(maps.length, (i) => Unit.fromMap(maps[i]));
-  }
-
-  // Zone operations
-  Future<int> insertZone(inventory_models.Zone zone) async {
-    final db = await _db;
-    return await db.insert('zones', zone.toMap());
-  }
-
-  Future<int> updateZone(inventory_models.Zone zone) async {
-    final db = await _db;
-    return await db.update(
-      'zones',
-      zone.toMap(),
-      where: 'id = ?',
-      whereArgs: [zone.id],
-    );
-  }
-
-  Future<int> deleteZone(int id) async {
-    final db = await _db;
-    // First delete all bins in this zone
-    await db.delete(
-      'bins',
-      where: 'zone_id = ?',
-      whereArgs: [id],
-    );
-    // Then delete the zone
-    return await db.delete(
-      'zones',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  Future<List<inventory_models.Zone>> getZones() async {
-    final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query('zones');
-    return List.generate(
-        maps.length, (i) => inventory_models.Zone.fromMap(maps[i]));
-  }
-
-  // Bin operations
-  Future<int> insertBin(inventory_models.Bin bin) async {
-    final db = await _db;
-    return await db.insert('bins', bin.toMap());
-  }
-
-  Future<int> updateBin(inventory_models.Bin bin) async {
-    final db = await _db;
-    return await db.update(
-      'bins',
-      bin.toMap(),
-      where: 'id = ?',
-      whereArgs: [bin.id],
-    );
-  }
-
-  Future<int> deleteBin(int id) async {
-    final db = await _db;
-    // First update any stock records to remove reference to this bin
-    await db.update(
-      'current_stock',
-      {'bin_id': null},
-      where: 'bin_id = ?',
-      whereArgs: [id],
-    );
-    // Then delete the bin
-    return await db.delete(
-      'bins',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  Future<List<inventory_models.Bin>> getBins() async {
-    final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query('bins');
-    return List.generate(
-        maps.length, (i) => inventory_models.Bin.fromMap(maps[i]));
   }
 }

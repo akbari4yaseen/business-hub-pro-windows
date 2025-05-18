@@ -66,12 +66,7 @@ class StockAlertCard extends StatelessWidget {
     }
 
     if (item.containsKey('warehouse_name')) {
-      final location = [
-        item['warehouse_name'],
-        item['zone_name'],
-        item['bin_name']
-      ].where((e) => e != null).join(' > ');
-      details.add('Location: $location');
+      details.add('Location: ${item['warehouse_name']}');
     }
 
     if (item.containsKey('expiry_date')) {
@@ -94,11 +89,7 @@ class StockAlertCard extends StatelessWidget {
             _buildDetailRow('Category', item['category_name']),
             _buildDetailRow('Current Stock', item['current_stock']?.toString()),
             _buildDetailRow('Minimum Stock', item['minimum_stock']?.toString()),
-            _buildDetailRow('Location', [
-              item['warehouse_name'],
-              item['zone_name'],
-              item['bin_name']
-            ].where((e) => e != null).join(' > ')),
+            _buildDetailRow('Location', item['warehouse_name']),
             if (item.containsKey('expiry_date'))
               _buildDetailRow('Expiry Date', item['expiry_date']),
           ],

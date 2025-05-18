@@ -4,23 +4,18 @@ import '../providers/inventory_provider.dart';
 import '../providers/invoice_provider.dart';
 import '../widgets/invoice/invoice_list.dart';
 import '../models/stock_movement.dart';
-import '../models/warehouse.dart';
-import '../models/zone.dart';
-import '../models/bin.dart';
-import '../models/product.dart';
+
 import '../models/unit.dart';
 import '../models/category.dart' as inventory_models;
 import './create_invoice_screen.dart';
 import './inventory/dialogs/add_warehouse_dialog.dart';
-import './inventory/dialogs/add_product_dialog.dart';
-import './inventory/dialogs/add_stock_movement_dialog.dart';
-import './inventory/dialogs/edit_warehouse_dialog.dart';
-import './inventory/dialogs/manage_zones_dialog.dart';
-import './inventory/dialogs/move_stock_dialog.dart';
+
 import './inventory/tabs/warehouses_tab.dart';
-import './inventory/tabs/current_stock_tab.dart';
+
 import './inventory/tabs/products_tab.dart';
-import './inventory/tabs/stock_movements_tab.dart';
+
+import './inventory/add_product_screen.dart';
+import './inventory/add_stock_movement_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({Key? key}) : super(key: key);
@@ -101,7 +96,8 @@ class _InventoryScreenState extends State<InventoryScreen>
   }
 
   Widget _buildFloatingActionButton() {
-    if (_tabController.index == 4) { // Invoices tab
+    if (_tabController.index == 4) {
+      // Invoices tab
       return FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
@@ -118,27 +114,27 @@ class _InventoryScreenState extends State<InventoryScreen>
       onPressed: () {
         switch (_tabController.index) {
           case 1: // Products tab
-            showDialog(
-              context: context,
-              builder: (context) => ChangeNotifierProvider<InventoryProvider>.value(
-                value: context.read<InventoryProvider>(),
-                child: const AddProductDialog(),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AddProductScreen(),
               ),
             );
             break;
           case 2: // Warehouses tab
             showDialog(
               context: context,
-              builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
+              builder: (dialogContext) =>
+                  ChangeNotifierProvider<InventoryProvider>.value(
                 value: context.read<InventoryProvider>(),
                 child: const AddWarehouseDialog(),
               ),
             );
             break;
           case 3: // Stock Movements tab
-            showDialog(
-              context: context,
-              builder: (context) => const AddStockMovementDialog(),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AddStockMovementScreen(),
+              ),
             );
             break;
         }
@@ -217,7 +213,7 @@ class CurrentStockTab extends StatelessWidget {
                         return ListTile(
                           title: Text(product['product_name']),
                           subtitle: Text(
-                            'Location: ${product['warehouse_name']} > ${product['zone_name']} > ${product['bin_name']}\n'
+                            'Location: ${product['warehouse_name']}\n'
                             'Expires: ${product['expiry_date']}',
                           ),
                           leading: const Icon(
@@ -248,7 +244,7 @@ class CurrentStockTab extends StatelessWidget {
                       return ListTile(
                         title: Text(stock['product_name']),
                         subtitle: Text(
-                          'Location: ${stock['warehouse_name']} > ${stock['zone_name']} > ${stock['bin_name']}\n'
+                          'Location: ${stock['warehouse_name']}\n'
                           'Quantity: ${stock['quantity']}',
                         ),
                         trailing: stock['expiry_date'] != null
@@ -310,7 +306,8 @@ class ManageCategoriesDialog extends StatelessWidget {
           onPressed: () {
             showDialog(
               context: context,
-              builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
+              builder: (dialogContext) =>
+                  ChangeNotifierProvider<InventoryProvider>.value(
                 value: context.read<InventoryProvider>(),
                 child: const AddCategoryDialog(),
               ),
@@ -415,9 +412,8 @@ class ManageUnitsDialog extends StatelessWidget {
                 final unit = provider.units[index];
                 return ListTile(
                   title: Text(unit.name),
-                  subtitle: unit.description != null
-                      ? Text(unit.description!)
-                      : null,
+                  subtitle:
+                      unit.description != null ? Text(unit.description!) : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -455,7 +451,8 @@ class ManageUnitsDialog extends StatelessWidget {
           onPressed: () {
             showDialog(
               context: context,
-              builder: (dialogContext) => ChangeNotifierProvider<InventoryProvider>.value(
+              builder: (dialogContext) =>
+                  ChangeNotifierProvider<InventoryProvider>.value(
                 value: context.read<InventoryProvider>(),
                 child: const AddUnitDialog(),
               ),
@@ -566,40 +563,43 @@ class StockMovementsTab extends StatelessWidget {
               child: Text('No stock movements recorded yet'),
             );
           }
-          
+
           return ListView.builder(
             itemCount: provider.stockMovements.length,
             itemBuilder: (context, index) {
               final movement = provider.stockMovements[index];
-              
+
               // Get the product name
               final productName = provider.currentStock
-                  .where((stock) => stock['product_id'] == movement.productId)
-                  .map((stock) => stock['product_name'] as String)
-                  .firstOrNull ?? 'Unknown Product';
-              
+                      .where(
+                          (stock) => stock['product_id'] == movement.productId)
+                      .map((stock) => stock['product_name'] as String)
+                      .firstOrNull ??
+                  'Unknown Product';
+
               // Get location names
               String sourceLocation = 'N/A';
               String destinationLocation = 'N/A';
-              
+
               if (movement.sourceBinId != null) {
                 final sourceBin = provider.currentStock
                     .where((stock) => stock['bin_id'] == movement.sourceBinId)
                     .firstOrNull;
                 if (sourceBin != null) {
-                  sourceLocation = '${sourceBin['warehouse_name']} > ${sourceBin['zone_name']} > ${sourceBin['bin_name']}';
+                  sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
                 }
               }
-              
+
               if (movement.destinationBinId != null) {
                 final destBin = provider.currentStock
-                    .where((stock) => stock['bin_id'] == movement.destinationBinId)
+                    .where(
+                        (stock) => stock['bin_id'] == movement.destinationBinId)
                     .firstOrNull;
                 if (destBin != null) {
-                  destinationLocation = '${destBin['warehouse_name']} > ${destBin['zone_name']} > ${destBin['bin_name']}';
+                  destinationLocation = destBin['warehouse_name'] ?? 'N/A';
                 }
               }
-              
+
               // Get movement type icon and color
               IconData typeIcon;
               Color typeColor;
@@ -621,7 +621,7 @@ class StockMovementsTab extends StatelessWidget {
                   typeColor = Colors.orange;
                   break;
               }
-              
+
               return Card(
                 margin: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -640,11 +640,14 @@ class StockMovementsTab extends StatelessWidget {
                       Text('Quantity: ${movement.quantity.toString()}'),
                       Text('From: $sourceLocation'),
                       Text('To: $destinationLocation'),
-                      if (movement.reference != null && movement.reference!.isNotEmpty)
+                      if (movement.reference != null &&
+                          movement.reference!.isNotEmpty)
                         Text('Reference: ${movement.reference}'),
                       if (movement.expiryDate != null)
-                        Text('Expires: ${movement.expiryDate?.toString().split(' ')[0] ?? 'N/A'}'),
-                      Text('Date: ${movement.createdAt.toString().split('.')[0]}'),
+                        Text(
+                            'Expires: ${movement.expiryDate?.toString().split(' ')[0] ?? 'N/A'}'),
+                      Text(
+                          'Date: ${movement.createdAt.toString().split('.')[0]}'),
                     ],
                   ),
                   isThreeLine: true,
@@ -654,15 +657,6 @@ class StockMovementsTab extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => const AddStockMovementDialog(),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
-} 
+}

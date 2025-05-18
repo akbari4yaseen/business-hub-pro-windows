@@ -99,7 +99,6 @@ class _InventoryScreenState extends State<InventoryScreen>
 
 // Disable overscroll glow (removes fade effect on scroll)
 class NoGlowScrollBehavior extends ScrollBehavior {
-  @override
   Widget buildViewportChrome(
     BuildContext context,
     Widget child,

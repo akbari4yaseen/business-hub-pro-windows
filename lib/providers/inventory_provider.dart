@@ -5,8 +5,6 @@ import '../models/warehouse.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart' as inventory_models;
 import '../models/unit.dart';
-import '../models/zone.dart' as inventory_models;
-import '../models/bin.dart' as inventory_models;
 
 class InventoryProvider with ChangeNotifier {
   final InventoryDB _db = InventoryDB();
@@ -16,8 +14,6 @@ class InventoryProvider with ChangeNotifier {
   List<Map<String, dynamic>> _expiringProducts = [];
   List<inventory_models.Category> _categories = [];
   List<Unit> _units = [];
-  List<inventory_models.Zone> _zones = [];
-  List<inventory_models.Bin> _bins = [];
   List<Warehouse> _warehouses = [];
   List<StockMovement> _stockMovements = [];
   List<Product> _allProducts = [];
@@ -29,8 +25,6 @@ class InventoryProvider with ChangeNotifier {
   List<Map<String, dynamic>> get expiringProducts => _expiringProducts;
   List<inventory_models.Category> get categories => _categories;
   List<Unit> get units => _units;
-  List<inventory_models.Zone> get zones => _zones;
-  List<inventory_models.Bin> get bins => _bins;
   List<Warehouse> get warehouses => _warehouses;
   List<StockMovement> get stockMovements => _stockMovements;
   bool get isLoading => _isLoading;
@@ -325,84 +319,6 @@ class InventoryProvider with ChangeNotifier {
     }
   }
 
-  // Zone operations
-  Future<int> addZone(inventory_models.Zone zone) async {
-    try {
-      final id = await _db.insertZone(zone);
-      await _refreshZones();
-      notifyListeners();
-      return id;
-    } catch (e) {
-      debugPrint('Error adding zone: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> updateZone(inventory_models.Zone zone) async {
-    try {
-      await _db.updateZone(zone);
-      await _refreshZones();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error updating zone: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> deleteZone(int id) async {
-    try {
-      await _db.deleteZone(id);
-      await _refreshZones();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error deleting zone: $e');
-      rethrow;
-    }
-  }
-
-  List<inventory_models.Zone> getWarehouseZones(int warehouseId) {
-    return _zones.where((zone) => zone.warehouseId == warehouseId).toList();
-  }
-
-  // Bin operations
-  Future<int> addBin(inventory_models.Bin bin) async {
-    try {
-      final id = await _db.insertBin(bin);
-      await _refreshBins();
-      notifyListeners();
-      return id;
-    } catch (e) {
-      debugPrint('Error adding bin: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> updateBin(inventory_models.Bin bin) async {
-    try {
-      await _db.updateBin(bin);
-      await _refreshBins();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error updating bin: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> deleteBin(int id) async {
-    try {
-      await _db.deleteBin(id);
-      await _refreshBins();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error deleting bin: $e');
-      rethrow;
-    }
-  }
-
-  List<inventory_models.Bin> getZoneBins(int zoneId) {
-    return _bins.where((bin) => bin.zoneId == zoneId).toList();
-  }
-
   // Individual refresh methods to reduce memory pressure
   Future<void> _refreshCurrentStock() async {
     try {
@@ -445,22 +361,6 @@ class InventoryProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _refreshZones() async {
-    try {
-      _zones = await _db.getZones();
-    } catch (e) {
-      debugPrint('Error refreshing zones: $e');
-    }
-  }
-
-  Future<void> _refreshBins() async {
-    try {
-      _bins = await _db.getBins();
-    } catch (e) {
-      debugPrint('Error refreshing bins: $e');
-    }
-  }
-
   Future<void> _refreshWarehouses() async {
     try {
       _warehouses = await _db.getWarehouses();
@@ -497,8 +397,6 @@ class InventoryProvider with ChangeNotifier {
       await _refreshExpiringProducts();
       await _refreshCategories();
       await _refreshUnits();
-      await _refreshZones();
-      await _refreshBins();
       await _refreshWarehouses();
       await _refreshProducts();
       await _refreshStockMovements();

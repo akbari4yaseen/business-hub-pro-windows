@@ -46,11 +46,7 @@ class StockList extends StatelessWidget {
                   if (item['warehouse_name'] != null)
                     _buildInfoRow(
                       Icons.location_on,
-                      [
-                        item['warehouse_name'],
-                        item['zone_name'],
-                        item['bin_name']
-                      ].where((e) => e != null).join(' > '),
+                      item['warehouse_name'],
                     ),
                   if (item['expiry_date'] != null)
                     _buildInfoRow(
@@ -119,11 +115,7 @@ class StockList extends StatelessWidget {
               _buildDetailRow('Current Stock', '${item['quantity']}'),
               _buildDetailRow('Minimum Stock', '${item['minimum_stock']}'),
               _buildDetailRow('Maximum Stock', '${item['maximum_stock']}'),
-              _buildDetailRow('Location', [
-                item['warehouse_name'],
-                item['zone_name'],
-                item['bin_name']
-              ].where((e) => e != null).join(' > ')),
+              _buildDetailRow('Location', item['warehouse_name']),
               if (item['expiry_date'] != null)
                 _buildDetailRow('Expiry Date', item['expiry_date']),
               if (item['last_movement'] != null)
