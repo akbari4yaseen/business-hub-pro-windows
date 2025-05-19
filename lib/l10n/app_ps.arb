@@ -321,11 +321,14 @@
   "unitPrice": "یونټ قیمت",
   "total": "مجموع",
   "unknownProduct": "ناشناخته محصول",
-  "invoice": "رسید",
-  "invoiceDate": "د رسید نېټه",
+  "invoice": "فاکتور",
+  "invoiceDate": "د فاکتور نېټه",
   "dueDate": "د ورکړې نېټه",
   "subtotal": "جزوي مجموعه",
   "paidAmount": "ورکړل شوې اندازه",
   "balanceDue": "باقي پیسې",
-  "notes": "یادښتونه"
+  "notes": "یادښتونه",
+  "note": "یادښت",
+  "soldGoodsNotReturnable": "پلورل شوي توکي بېرته نه اخیستل کېږي",
+  "sells": "پلورونه"
 }

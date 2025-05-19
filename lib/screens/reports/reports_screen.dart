@@ -6,18 +6,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'periodic_reports_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
-  final VoidCallback openDrawer;
-  const ReportsScreen({Key? key, required this.openDrawer}) : super(key: key);
+  const ReportsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: openDrawer,
-        ),
         title: Text(loc.reports),
       ),
       body: ListView(

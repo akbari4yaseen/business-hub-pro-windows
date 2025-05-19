@@ -1,16 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../database/invoice_db.dart';
 import '../models/invoice.dart';
-import '../models/product.dart';
 import '../models/stock_movement.dart';
 import '../providers/inventory_provider.dart';
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
 
 class InvoiceProvider with ChangeNotifier {
   final InvoiceDBHelper _db = InvoiceDBHelper();
   final InventoryProvider _inventoryProvider;
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   List<Invoice> _invoices = [];
   List<Invoice> _overdueInvoices = [];

@@ -323,5 +323,8 @@
   "subtotal": "Subtotal",
   "paidAmount": "Paid Amount",
   "balanceDue": "Balance Due",
-  "notes": "Notes"
+  "notes": "Notes",
+  "note": "Note",
+  "soldGoodsNotReturnable": "Sold goods are not returnable",
+  "sells": "Sells"
 }

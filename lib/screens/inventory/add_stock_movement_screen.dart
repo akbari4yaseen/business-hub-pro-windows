@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/stock_movement.dart';
-import '../../models/warehouse.dart';
 
 class AddStockMovementScreen extends StatefulWidget {
   const AddStockMovementScreen({Key? key}) : super(key: key);
@@ -68,7 +67,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                     if (products.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.all(16.0),
-                        child: Text('No products available. Please add products to inventory first.'),
+                        child: Text(
+                            'No products available. Please add products to inventory first.'),
                       );
                     }
                     return DropdownButtonFormField<int>(
@@ -120,7 +120,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockIn && value == null) {
+                          if (_selectedType != MovementType.stockIn &&
+                              value == null) {
                             return 'Please select a source warehouse';
                           }
                           return null;
@@ -151,7 +152,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockOut && value == null) {
+                          if (_selectedType != MovementType.stockOut &&
+                              value == null) {
                             return 'Please select a destination warehouse';
                           }
                           return null;
@@ -192,7 +194,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                 const SizedBox(height: 16),
                 ListTile(
                   title: const Text('Expiry Date'),
-                  subtitle: Text(_expiryDate?.toString().split(' ')[0] ?? 'Not set'),
+                  subtitle:
+                      Text(_expiryDate?.toString().split(' ')[0] ?? 'Not set'),
                   trailing: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
@@ -200,7 +203,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 3650)),
                       );
                       if (date != null) {
                         setState(() {
@@ -258,7 +262,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
         type: _selectedType,
         sourceBinId: _selectedSourceWarehouseId,
         destinationBinId: _selectedDestinationWarehouseId,
-        reference: _referenceController.text.isEmpty ? null : _referenceController.text,
+        reference: _referenceController.text.isEmpty
+            ? null
+            : _referenceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         expiryDate: _expiryDate,
         createdAt: DateTime.now(),
@@ -271,7 +277,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
       debugPrint('Error recording stock movement: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error recording stock movement: [${e.toString()}')),
+          SnackBar(
+              content:
+                  Text('Error recording stock movement: [${e.toString()}')),
         );
       }
     } finally {
@@ -282,4 +290,4 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
       }
     }
   }
-} 
+}

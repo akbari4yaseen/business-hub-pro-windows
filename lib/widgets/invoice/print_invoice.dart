@@ -69,15 +69,20 @@ Future<void> printInvoice({
       orElse: () => {'product_name': loc.unknownProduct},
     );
     return [
-      product['product_name'],
+      product['product_name'] ?? loc.unknownProduct,
       item.description ?? '',
-      item.quantity.toString(),
+      (item.quantity).toString(),
       _currencyFormat.format(item.unitPrice),
       _currencyFormat.format(item.total),
     ];
   }).toList();
   final dataToUse =
       isRTL ? itemRows.map((r) => r.reversed.toList()).toList() : itemRows;
+
+  // Defensive assertion to ensure headers and data row lengths match
+  assert(
+      headersToUse.length == (dataToUse.isNotEmpty ? dataToUse[0].length : 0),
+      'Table headers and data row length mismatch: headers=[$headersToUse.length], row=[$dataToUse.isNotEmpty ? dataToUse[0].length : 0]');
 
   pdf.addPage(
     pw.MultiPage(
@@ -93,17 +98,26 @@ Future<void> printInvoice({
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 // Logo
-                if (info.logo != null)
-                  pw.Container(
-                    width: 60,
-                    height: 60,
-                    child: pw.Image(
-                      pw.MemoryImage(base64Decode(info.logo!)),
-                      fit: pw.BoxFit.contain,
-                    ),
-                  )
-                else
-                  pw.SizedBox(width: 60, height: 60),
+                (() {
+                  if (info.logo != null && info.logo!.isNotEmpty) {
+                    try {
+                      final bytes = base64Decode(info.logo!);
+                      if (bytes.isNotEmpty) {
+                        return pw.Container(
+                          width: 60,
+                          height: 60,
+                          child: pw.Image(
+                            pw.MemoryImage(bytes),
+                            fit: pw.BoxFit.contain,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // Ignore and fall through to placeholder
+                    }
+                  }
+                  return pw.SizedBox(width: 60, height: 60);
+                })(),
 
                 // Business info
                 pw.Expanded(
@@ -158,6 +172,7 @@ Future<void> printInvoice({
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
+              pw.Text('${loc.customer}: ${customerName}'),
               pw.Text('${loc.invoiceDate}: ${formatDate(invoice.date)}'),
               if (invoice.dueDate != null)
                 pw.Text(
@@ -215,12 +230,6 @@ Future<void> printInvoice({
         content.add(
           pw.Container(
             alignment: pw.Alignment.centerRight,
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey100,
-              borderRadius: pw.BorderRadius.circular(8),
-              border: pw.Border.all(color: PdfColors.grey300),
-            ),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
@@ -252,20 +261,12 @@ Future<void> printInvoice({
         // Optional notes section with subtle background
         if (invoice.notes != null && invoice.notes!.isNotEmpty) {
           content.add(pw.SizedBox(height: 20));
-          content.add(pw.Text(loc.notes,
+          content.add(pw.Text('${loc.note}:',
               style:
                   pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)));
           content.add(pw.SizedBox(height: 8));
           content.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(10),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.grey100,
-                border: pw.Border.all(color: PdfColors.grey300),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-              ),
-              child: pw.Text(invoice.notes!, style: pw.TextStyle(fontSize: 10)),
-            ),
+            pw.Text(invoice.notes!, style: pw.TextStyle(fontSize: 10)),
           );
         }
 
@@ -275,7 +276,7 @@ Future<void> printInvoice({
         content.add(
           pw.Center(
             child: pw.Text(
-              'Thank you for your business!',
+              loc.soldGoodsNotReturnable,
               style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
             ),
           ),

@@ -44,19 +44,19 @@ void _handleFlutterError(FlutterErrorDetails details) {
 void main() async {
   // Set up global error handling
   FlutterError.onError = _handleFlutterError;
-  
+
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Optimize for performance and rendering
   WidgetsBinding.instance.renderView.automaticSystemUiAdjustment = false;
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, 
-    overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
-  
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+      overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
+
   // Reduce GPU pressure
   debugPaintSizeEnabled = false;
   debugRepaintRainbowEnabled = false;
   debugRepaintTextRainbowEnabled = false;
-  
+
   // Initialize dates
   await initializeDateFormatting();
 
@@ -91,7 +91,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => InfoProvider()),
         ChangeNotifierProvider.value(value: inventoryProvider),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
-        ChangeNotifierProvider(create: (context) => InvoiceProvider(context.read<InventoryProvider>())),
+        ChangeNotifierProvider(
+            create: (context) =>
+                InvoiceProvider(context.read<InventoryProvider>())),
       ],
       child: MyApp(initialRoute: initialRoute),
     ),
@@ -125,14 +127,13 @@ class MyApp extends StatelessWidget {
         '/notifications': (_) => NotificationsScreen(),
         '/reminders': (_) => RemindersScreen(),
         '/inventory': (_) => const InventoryScreen(),
-        '/invoices': (_) => const InvoiceScreen(),
+        '/reports': (_) => const ReportsScreen(),
       },
-      
+
       // Error handling for the entire app
       builder: (context, child) {
         // Add error boundary for entire app
         ErrorWidget.builder = (FlutterErrorDetails details) {
-          debugPrint('App-level error: ${details.exception}');
           return Material(
             child: Container(
               color: Colors.white,
@@ -160,10 +161,7 @@ class MyApp extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pushNamedAndRemoveUntil(
-                          context, 
-                          '/home', 
-                          (route) => false
-                        );
+                            context, '/home', (route) => false);
                       },
                       child: const Text('Return to Home'),
                     ),
@@ -173,17 +171,17 @@ class MyApp extends StatelessWidget {
             ),
           );
         };
-        
+
         // Add memory optimizations
         return MediaQuery(
           // Restrict image cache size
           data: MediaQuery.of(context).copyWith(
-            devicePixelRatio: 1.0 // Reduce memory pressure for images
-          ),
+              devicePixelRatio: 1.0 // Reduce memory pressure for images
+              ),
           child: child!,
         );
       },
-      
+
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -232,7 +230,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
       HomeScreen(openDrawer: _openDrawer),
       JournalScreen(openDrawer: _openDrawer),
       AccountScreen(openDrawer: _openDrawer),
-      ReportsScreen(openDrawer: _openDrawer),
+      InvoiceScreen(openDrawer: _openDrawer),
     ];
 
     return Scaffold(
@@ -261,8 +259,8 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
             label: localizations.accounts,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.insert_chart_outlined_rounded),
-            label: localizations.reports,
+            icon: const Icon(Icons.receipt_long_outlined),
+            label: localizations.invoice,
           ),
         ],
       ),

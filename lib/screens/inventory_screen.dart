@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/invoice_provider.dart';
-import '../widgets/invoice/invoice_list.dart';
 import '../models/stock_movement.dart';
 
 import '../models/unit.dart';
 import '../models/category.dart' as inventory_models;
-import './create_invoice_screen.dart';
 import './inventory/dialogs/add_warehouse_dialog.dart';
 
 import './inventory/tabs/warehouses_tab.dart';
@@ -31,7 +29,7 @@ class _InventoryScreenState extends State<InventoryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     // Initialize inventory data
     Future.microtask(() async {
       await context.read<InventoryProvider>().initialize();
@@ -61,7 +59,6 @@ class _InventoryScreenState extends State<InventoryScreen>
             Tab(text: 'Products'),
             Tab(text: 'Warehouses'),
             Tab(text: 'Stock Movements'),
-            Tab(text: 'Invoices'),
           ],
         ),
       ),
@@ -72,23 +69,6 @@ class _InventoryScreenState extends State<InventoryScreen>
           const ProductsTab(),
           const WarehousesTab(),
           const StockMovementsTab(),
-          Consumer<InvoiceProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              return InvoiceList(
-                invoices: provider.invoices,
-                onPaymentRecorded: (invoice, amount) async {
-                  await provider.recordPayment(invoice.id!, amount);
-                },
-                onInvoiceFinalized: (invoice) async {
-                  await provider.finalizeInvoice(invoice);
-                },
-              );
-            },
-          ),
         ],
       ),
       floatingActionButton: _buildFloatingActionButton(),
@@ -96,20 +76,6 @@ class _InventoryScreenState extends State<InventoryScreen>
   }
 
   Widget _buildFloatingActionButton() {
-    if (_tabController.index == 4) {
-      // Invoices tab
-      return FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CreateInvoiceScreen(),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-        tooltip: 'Create Invoice',
-      );
-    }
     return FloatingActionButton(
       onPressed: () {
         switch (_tabController.index) {

@@ -99,7 +99,7 @@ class DriveBackupService {
       );
 
       return true;
-    } catch (e, st) {
+    } catch (e) {
       // you may wish to log `st` somewhere
       print('Backup error: $e');
       return false;

@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _ActionData(
         label: loc.reports,
         icon: Icons.bar_chart,
-        onPressed: () => nav.updateIndex(3),
+        onPressed: () => Navigator.pushNamed(context, '/reports'),
       ),
       _ActionData(
         label: loc.inventory,

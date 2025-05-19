@@ -1,12 +1,4 @@
-import 'package:flutter/foundation.dart';
-
-enum InvoiceStatus {
-  draft,
-  finalized,
-  partiallyPaid,
-  paid,
-  cancelled
-}
+enum InvoiceStatus { draft, finalized, partiallyPaid, paid, cancelled }
 
 class Invoice {
   final int? id;
@@ -38,18 +30,19 @@ class Invoice {
   }) : createdAt = createdAt ?? DateTime.now();
 
   double get subtotal => items.fold(0, (sum, item) => sum + item.total);
-  
-  double get total => subtotal; // Can be extended to include tax, discounts etc.
-  
+
+  double get total =>
+      subtotal; // Can be extended to include tax, discounts etc.
+
   double get balance => total - (paidAmount ?? 0.0);
 
   bool get isPaid => status == InvoiceStatus.paid;
-  
-  bool get isOverdue => 
-    status != InvoiceStatus.paid && 
-    status != InvoiceStatus.cancelled && 
-    dueDate != null && 
-    dueDate!.isBefore(DateTime.now());
+
+  bool get isOverdue =>
+      status != InvoiceStatus.paid &&
+      status != InvoiceStatus.cancelled &&
+      dueDate != null &&
+      dueDate!.isBefore(DateTime.now());
 
   Map<String, dynamic> toMap() {
     return {
@@ -81,13 +74,13 @@ class Invoice {
       ),
       items: [], // Items need to be loaded separately
       paidAmount: map['paid_amount'] as double?,
-      dueDate: map['due_date'] != null 
-        ? DateTime.parse(map['due_date'] as String)
-        : null,
+      dueDate: map['due_date'] != null
+          ? DateTime.parse(map['due_date'] as String)
+          : null,
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null 
-        ? DateTime.parse(map['updated_at'] as String)
-        : null,
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : null,
     );
   }
 
@@ -180,4 +173,4 @@ class InvoiceItem {
       description: description ?? this.description,
     );
   }
-} 
+}
