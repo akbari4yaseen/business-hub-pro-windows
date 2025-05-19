@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../providers/inventory_provider.dart';
 import '../providers/invoice_provider.dart';
 
@@ -23,10 +25,8 @@ class _InventoryScreenState extends State<InventoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Initialize inventory data
     Future.microtask(() async {
       await context.read<InventoryProvider>().initialize();
-      // Force a specific refresh of warehouses and products data
       await context.read<InventoryProvider>().refreshWarehouses();
       await context.read<InventoryProvider>().refreshProducts();
       await context.read<InvoiceProvider>().initialize();
@@ -41,27 +41,29 @@ class _InventoryScreenState extends State<InventoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inventory Management'),
+        title: Text(local.inventoryManagement),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          tabs: const [
-            Tab(text: 'Current Stock'),
-            Tab(text: 'Products'),
-            Tab(text: 'Warehouses'),
-            Tab(text: 'Stock Movements'),
+          tabs: [
+            Tab(text: local.currentStock),
+            Tab(text: local.products),
+            Tab(text: local.warehouses),
+            Tab(text: local.stockMovements),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          const CurrentStockTab(),
-          const ProductsTab(),
-          const WarehousesTab(),
-          const StockMovementsTab(),
+        children: const [
+          CurrentStockTab(),
+          ProductsTab(),
+          WarehousesTab(),
+          StockMovementsTab(),
         ],
       ),
     );

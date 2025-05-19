@@ -326,5 +326,10 @@
   "notes": "Notes",
   "note": "Note",
   "soldGoodsNotReturnable": "Sold goods are not returnable",
-  "sells": "Sells"
+  "sells": "Sells",
+  "inventoryManagement": "Inventory Management",
+  "currentStock": "Current Stock",
+  "products": "Products",
+  "warehouses": "Warehouses",
+  "stockMovements": "Stock Movements"
 }

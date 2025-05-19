@@ -330,5 +330,10 @@
   "notes": "یادښتونه",
   "note": "یادښت",
   "soldGoodsNotReturnable": "پلورل شوي توکي بېرته نه اخیستل کېږي",
-  "sells": "پلورونه"
+  "sells": "پلورونه",
+  "inventoryManagement": "د گدام مدیریت",
+  "currentStock": "اوسنی موجودي",
+  "products": "اجناس",
+  "warehouses": "ګودامونه",
+  "stockMovements": "د گدام حرکتونه"
 }

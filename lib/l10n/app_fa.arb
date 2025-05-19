@@ -326,5 +326,10 @@
   "notes": "یادداشت‌ها",
   "note": "یادداشت",
   "soldGoodsNotReturnable": "جنس فروخته شده پس گرفته نمی شود",
-  "sells": "فروشات"
+  "sells": "فروشات",
+  "inventoryManagement": "مدیریت گدام",
+  "currentStock": "گدام فعلی",
+  "products": "اجناس",
+  "warehouses": "انبارها",
+  "stockMovements": "جابجایی گدام"
 }
