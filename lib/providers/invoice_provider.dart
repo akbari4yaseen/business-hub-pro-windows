@@ -106,8 +106,23 @@ class InvoiceProvider with ChangeNotifier {
   // Delete invoice
   Future<void> deleteInvoice(int id) async {
     try {
+      // Get the invoice first to check its status and items
+      final invoice = await getInvoice(id);
+      if (invoice == null) {
+        throw Exception('Invoice not found');
+      }
+
+      // Only allow deletion of draft invoices
+      if (invoice.status != InvoiceStatus.draft) {
+        throw Exception('Only draft invoices can be deleted');
+      }
+
+      // Delete the invoice
       await _db.deleteInvoice(id);
+
+      // Refresh data
       await loadInvoices();
+      await loadOverdueInvoices();
     } catch (e) {
       _error = e.toString();
       notifyListeners();

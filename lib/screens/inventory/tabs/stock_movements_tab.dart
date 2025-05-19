@@ -31,18 +31,17 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
               (p) => p.id == movement.productId,
               orElse: () => throw Exception('Product not found for movement'),
             );
-            
-            final matchesSearch = product.name
-                .toLowerCase()
-                .contains(_searchQuery.toLowerCase());
-                
+
+            final matchesSearch =
+                product.name.toLowerCase().contains(_searchQuery.toLowerCase());
+
             // For warehouse and category filtering, we would need to join with product and location data
             // Simplified version:
-            final matchesType = _selectedType == null || 
-                movement.type == _selectedType;
-                
+            final matchesType =
+                _selectedType == null || movement.type == _selectedType;
+
             final matchesDateRange = _isWithinDateRange(movement.createdAt);
-            
+
             return matchesSearch && matchesType && matchesDateRange;
           }).toList();
 
@@ -60,10 +59,10 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
                             setState(() => _selectedWarehouse = warehouse),
                         onCategoryChanged: (category) =>
                             setState(() => _selectedCategory = category),
-                        warehouses: provider.warehouses.map((w) => w.name).toList(),
-                        categories: provider.categories
-                            .map((c) => c.name)
-                            .toList(),
+                        warehouses:
+                            provider.warehouses.map((w) => w.name).toList(),
+                        categories:
+                            provider.categories.map((c) => c.name).toList(),
                       ),
                       const SizedBox(height: 8),
                       _buildTypeFilter(),
@@ -89,8 +88,8 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
                       )
                     : SliverList(
                         delegate: SliverChildBuilderDelegate(
-                          (context, index) =>
-                              _buildMovementCard(context, provider, movements[index]),
+                          (context, index) => _buildMovementCard(
+                              context, provider, movements[index]),
                           childCount: movements.length,
                         ),
                       ),
@@ -158,13 +157,14 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     );
   }
 
-  Widget _buildMovementCard(BuildContext context, InventoryProvider provider, StockMovement movement) {
+  Widget _buildMovementCard(BuildContext context, InventoryProvider provider,
+      StockMovement movement) {
     // Get product info
     final product = provider.products.firstWhere(
       (p) => p.id == movement.productId,
       orElse: () => throw Exception('Product not found for movement'),
     );
-    
+
     // Get source location
     String sourceLocation = 'N/A';
     if (movement.sourceBinId != null) {
@@ -175,7 +175,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
       }
     }
-    
+
     // Get destination location
     String destinationLocation = 'N/A';
     if (movement.destinationBinId != null) {
@@ -186,11 +186,11 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         destinationLocation = destBin['warehouse_name'] ?? 'N/A';
       }
     }
-    
+
     // Set color and icon based on movement type
     Color color;
     IconData icon;
-    
+
     switch (movement.type) {
       case MovementType.stockIn:
         color = Colors.green;
@@ -285,16 +285,17 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     );
   }
 
-  void _showMovementDetails(BuildContext context, InventoryProvider provider, StockMovement movement) {
+  void _showMovementDetails(BuildContext context, InventoryProvider provider,
+      StockMovement movement) {
     // Get product
     final product = provider.products.firstWhere(
       (p) => p.id == movement.productId,
       orElse: () => throw Exception('Product not found for movement'),
     );
-    
+
     // Get unit
     final unitName = provider.getUnitName(product.unitId);
-    
+
     // Get locations
     String sourceLocation = 'N/A';
     if (movement.sourceBinId != null) {
@@ -305,7 +306,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
       }
     }
-    
+
     String destinationLocation = 'N/A';
     if (movement.destinationBinId != null) {
       final destBin = provider.currentStock
@@ -315,7 +316,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         destinationLocation = destBin['warehouse_name'] ?? 'N/A';
       }
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -335,7 +336,8 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
               if (movement.notes != null)
                 _buildDetailRow('Notes', movement.notes!),
               if (movement.expiryDate != null)
-                _buildDetailRow('Expiry Date', _formatDate(movement.expiryDate!)),
+                _buildDetailRow(
+                    'Expiry Date', _formatDate(movement.expiryDate!)),
               _buildDetailRow('Created At', _formatDate(movement.createdAt)),
             ],
           ),
@@ -368,4 +370,4 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       ),
     );
   }
-} 
+}

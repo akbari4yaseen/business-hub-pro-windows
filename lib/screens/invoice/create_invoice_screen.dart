@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../models/invoice.dart';
+import '../../models/invoice.dart';
 
-import '../providers/invoice_provider.dart';
-import '../providers/inventory_provider.dart';
-import '../providers/account_provider.dart';
+import '../../providers/invoice_provider.dart';
+import '../../providers/inventory_provider.dart';
+import '../../providers/account_provider.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
-  const CreateInvoiceScreen({Key? key}) : super(key: key);
+  final Invoice? invoice;
+
+  const CreateInvoiceScreen({
+    Key? key,
+    this.invoice,
+  }) : super(key: key);
 
   @override
   _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
@@ -33,8 +38,39 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     Future.microtask(() {
       context.read<AccountProvider>().initialize();
       context.read<InventoryProvider>().initialize();
-      // Add initial item by default for better UX
-      _addItem();
+      
+      // If editing an existing invoice, populate the form
+      if (widget.invoice != null) {
+        _populateForm(widget.invoice!);
+      } else {
+        // Add initial item by default for better UX
+        _addItem();
+      }
+    });
+  }
+
+  void _populateForm(Invoice invoice) {
+    setState(() {
+      _selectedAccountId = invoice.accountId;
+      _date = invoice.date;
+      _dueDate = invoice.dueDate;
+      _currency = invoice.currency;
+      _notesController.text = invoice.notes ?? '';
+      
+      // Clear existing items and add invoice items
+      for (final item in _items) {
+        item.dispose();
+      }
+      _items.clear();
+      
+      for (final item in invoice.items) {
+        final formData = InvoiceItemFormData();
+        formData.selectedProductId = item.productId;
+        formData.quantityController.text = item.quantity.toString();
+        formData.unitPriceController.text = _currencyFormat.format(item.unitPrice);
+        formData.descriptionController.text = item.description ?? '';
+        _items.add(formData);
+      }
     });
   }
 
@@ -85,8 +121,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Invoice'),
+        title: Text(widget.invoice != null ? 'Edit Invoice' : 'Create Invoice'),
         actions: [
+          if (widget.invoice != null)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _showDeleteConfirmation(context),
+              tooltip: 'Delete Invoice',
+            ),
           _isSubmitting
               ? const Center(
                   child: Padding(
@@ -367,14 +409,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one item')),
-      );
-      return;
-    }
 
     setState(() {
       _isSubmitting = true;
@@ -382,7 +418,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     try {
       final invoiceProvider = context.read<InvoiceProvider>();
-      final invoiceNumber = await invoiceProvider.generateInvoiceNumber();
+      final invoiceNumber = widget.invoice?.invoiceNumber ?? 
+          await invoiceProvider.generateInvoiceNumber();
 
       for (final item in _items) {
         if (item.selectedProductId == null) {
@@ -402,6 +439,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
 
       final invoice = Invoice(
+        id: widget.invoice?.id,
         accountId: _selectedAccountId!,
         invoiceNumber: invoiceNumber,
         date: _date,
@@ -418,12 +456,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             .toList(),
       );
 
-      await invoiceProvider.createInvoice(invoice);
+      if (widget.invoice != null) {
+        await invoiceProvider.updateInvoice(invoice);
+      } else {
+        await invoiceProvider.createInvoice(invoice);
+      }
+      
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating invoice: ${e.toString()}')),
+          SnackBar(content: Text('Error ${widget.invoice != null ? "updating" : "creating"} invoice: ${e.toString()}')),
         );
       }
     } finally {
@@ -431,6 +474,45 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         setState(() {
           _isSubmitting = false;
         });
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Invoice'),
+        content: const Text('Are you sure you want to delete this invoice? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<InvoiceProvider>().deleteInvoice(widget.invoice!.id!);
+        if (context.mounted) {
+          Navigator.of(context).pop(); // Return to previous screen
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invoice deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting invoice: $e')),
+          );
+        }
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../utils/date_formatters.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/inventory_provider.dart';
@@ -8,12 +9,12 @@ import '../../providers/info_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../widgets/invoice/record_payment_dialog.dart';
 import '../../widgets/invoice/print_invoice.dart';
+import 'create_invoice_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final Invoice invoice;
 
-  static final _dateFormat = DateFormat('MMM d, y');
-  static final _currencyFormat = NumberFormat('#,##0.00');
+  static final _currencyFormat = NumberFormat('#,###.##');
 
   const InvoiceDetailScreen({
     Key? key,
@@ -41,6 +42,26 @@ class InvoiceDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Invoice ${invoice.invoiceNumber}'),
         actions: [
+          if (invoice.status == InvoiceStatus.draft) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => CreateInvoiceScreen(
+                      invoice: invoice,
+                    ),
+                  ),
+                );
+              },
+              tooltip: 'Edit Invoice',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _showDeleteConfirmation(context),
+              tooltip: 'Delete Invoice',
+            ),
+          ],
           if (invoice.status != InvoiceStatus.draft &&
               invoice.status != InvoiceStatus.paid &&
               invoice.status != InvoiceStatus.cancelled)
@@ -128,7 +149,7 @@ class InvoiceDetailScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _dateFormat.format(invoice.date),
+                      formatLocalizedDate(context, invoice.date.toString()),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -148,7 +169,8 @@ class InvoiceDetailScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _dateFormat.format(invoice.dueDate!),
+                        formatLocalizedDate(
+                            context, invoice.dueDate.toString()),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -303,5 +325,45 @@ class InvoiceDetailScreen extends StatelessWidget {
       inventoryProvider: context.read<InventoryProvider>(),
       accountProvider: context.read<AccountProvider>(),
     );
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Invoice'),
+        content: const Text(
+            'Are you sure you want to delete this invoice? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<InvoiceProvider>().deleteInvoice(invoice.id!);
+        if (context.mounted) {
+          Navigator.of(context).pop(); // Return to previous screen
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invoice deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting invoice: $e')),
+          );
+        }
+      }
+    }
   }
 }
