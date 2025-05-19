@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
+import '../../utils/date_formatters.dart';
 import '../../models/invoice.dart';
 import '../../providers/info_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/account_provider.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 
-final _dateFormat = DateFormat('MMM d, y');
-final _currencyFormat = NumberFormat('#,##0.00');
+final _currencyFormat = NumberFormat('#,###.##');
 
 Future<void> printInvoice({
   required BuildContext context,
@@ -27,6 +27,7 @@ Future<void> printInvoice({
     orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
   );
   final customerName = customer['name'];
+  final currentDateTime = DateTime.now();
 
   final loc = AppLocalizations.of(context)!;
   final localeCode = Localizations.localeOf(context).languageCode;
@@ -46,11 +47,6 @@ Future<void> printInvoice({
       bold: vazirFontBold,
     ),
   );
-
-  // Localized date formatter
-  String formatDate(DateTime date) {
-    return DateFormat.yMMMd(localeCode).format(date);
-  }
 
   // Table headers
   final itemHeaders = [
@@ -94,9 +90,28 @@ Future<void> printInvoice({
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
             pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
+                // Business info
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        info.name ?? loc.businessName,
+                        style: pw.TextStyle(
+                            fontSize: 16, fontWeight: pw.FontWeight.bold),
+                      ),
+                      if (info.address != null)
+                        pw.Text(info.address!,
+                            style: pw.TextStyle(fontSize: 10)),
+                      if (info.phone != null)
+                        pw.Text(info.phone!, style: pw.TextStyle(fontSize: 10)),
+                    ],
+                  ),
+                ),
+
                 // Logo
                 (() {
                   if (info.logo != null && info.logo!.isNotEmpty) {
@@ -118,73 +133,47 @@ Future<void> printInvoice({
                   }
                   return pw.SizedBox(width: 60, height: 60);
                 })(),
-
-                // Business info
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(
-                        info.name ?? loc.businessName,
-                        style: pw.TextStyle(
-                            fontSize: 16, fontWeight: pw.FontWeight.bold),
-                      ),
-                      if (info.address != null)
-                        pw.Text(info.address!,
-                            style: pw.TextStyle(fontSize: 10)),
-                      if (info.phone != null)
-                        pw.Text(info.phone!, style: pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                ),
               ],
             ),
             pw.SizedBox(height: 12),
-
-            // Invoice Title Centered
-            pw.Center(
-              child: pw.Text(
-                '${loc.invoice} #${invoice.invoiceNumber}',
-                style:
-                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-              ),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  '${loc.invoice} ${invoice.invoiceNumber}',
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Text(
+                  '${loc.printed(formatLocalizedDateTime(context, currentDateTime.toString()))}',
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                ),
+              ],
             ),
-            pw.SizedBox(height: 4),
+            pw.SizedBox(height: 5),
+            // Invoice & due dates row
 
-            // Printed Date Centered
-            pw.Center(
-              child: pw.Text(
-                '${loc.printed(DateFormat.yMMMd(localeCode).add_jm().format(DateTime.now()))}',
-                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-              ),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('${loc.customer}: ${customerName}'),
+                pw.Text(
+                    '${loc.invoiceDate}: ${formatLocalizedDate(context, invoice.date.toString())}'),
+                if (invoice.dueDate != null)
+                  pw.Text(
+                    '${loc.dueDate}: ${formatLocalizedDate(context, invoice.dueDate.toString())}',
+                    style: pw.TextStyle(
+                        color: invoice.isOverdue ? PdfColors.red : null),
+                  ),
+              ],
             ),
 
-            pw.SizedBox(height: 10),
             pw.Divider(thickness: 1),
           ],
         ),
       ),
       build: (pdfContext) {
         final List<pw.Widget> content = [];
-
-        // Invoice & due dates row
-        content.add(
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text('${loc.customer}: ${customerName}'),
-              pw.Text('${loc.invoiceDate}: ${formatDate(invoice.date)}'),
-              if (invoice.dueDate != null)
-                pw.Text(
-                  '${loc.dueDate}: ${formatDate(invoice.dueDate!)}',
-                  style: pw.TextStyle(
-                      color: invoice.isOverdue ? PdfColors.red : null),
-                ),
-            ],
-          ),
-        );
-
-        content.add(pw.SizedBox(height: 12));
 
         // Items table with header styling and alternating rows
         content.add(
@@ -207,18 +196,18 @@ Future<void> printInvoice({
               border: pw.TableBorder.all(color: PdfColors.grey300),
               cellAlignments: isRTL
                   ? {
-                      0: pw.Alignment.centerRight,
-                      1: pw.Alignment.centerRight,
-                      2: pw.Alignment.center,
-                      3: pw.Alignment.centerLeft,
-                      4: pw.Alignment.centerLeft,
-                    }
-                  : {
                       0: pw.Alignment.centerLeft,
                       1: pw.Alignment.centerLeft,
                       2: pw.Alignment.center,
                       3: pw.Alignment.centerRight,
                       4: pw.Alignment.centerRight,
+                    }
+                  : {
+                      0: pw.Alignment.centerLeft,
+                      1: pw.Alignment.centerLeft,
+                      2: pw.Alignment.center,
+                      3: pw.Alignment.centerLeft,
+                      4: pw.Alignment.centerLeft,
                     },
             ),
           ),
@@ -258,7 +247,7 @@ Future<void> printInvoice({
           ),
         );
 
-        // Optional notes section with subtle background
+        // Optional notes section
         if (invoice.notes != null && invoice.notes!.isNotEmpty) {
           content.add(pw.SizedBox(height: 20));
           content.add(pw.Text('${loc.note}:',
@@ -270,7 +259,6 @@ Future<void> printInvoice({
           );
         }
 
-        // Optional footer with thank you message or website (customize if needed)
         content.add(pw.Spacer());
         content.add(pw.Divider());
         content.add(

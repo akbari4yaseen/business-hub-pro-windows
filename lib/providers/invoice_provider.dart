@@ -271,10 +271,9 @@ class InvoiceProvider with ChangeNotifier {
 
         final stockId = stock['id'] as int?;
         final availableQuantity = (stock['quantity'] as num?)?.toDouble();
-        final binId = stock['bin_id'] as int?;
-        // Remove warehouseId and zoneId if you don't use them here
+        final warehouseId = stock['warehouse_id'] as int?;
 
-        if (stockId == null || availableQuantity == null || binId == null) {
+        if (stockId == null || availableQuantity == null || warehouseId == null) {
           throw Exception('Invalid stock entry with null values');
         }
 
@@ -285,9 +284,8 @@ class InvoiceProvider with ChangeNotifier {
         await _db.updateStockQuantity(
           stockId,
           availableQuantity - deduction,
-
           0, // zoneId - unused
-          binId,
+          warehouseId,
           productId,
         );
 
