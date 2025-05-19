@@ -167,24 +167,19 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
 
     // Get source location
     String sourceLocation = 'N/A';
-    if (movement.sourceBinId != null) {
-      final sourceBin = provider.currentStock
-          .where((stock) => stock['bin_id'] == movement.sourceBinId)
-          .firstOrNull;
-      if (sourceBin != null) {
-        sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
-      }
+
+    if (movement.sourceWarehouseId != null) {
+      final sourceWarehouse = provider.warehouses
+          .firstWhere((w) => w.id == movement.sourceWarehouseId);
+      sourceLocation = sourceWarehouse.name;
     }
 
     // Get destination location
     String destinationLocation = 'N/A';
-    if (movement.destinationBinId != null) {
-      final destBin = provider.currentStock
-          .where((stock) => stock['bin_id'] == movement.destinationBinId)
-          .firstOrNull;
-      if (destBin != null) {
-        destinationLocation = destBin['warehouse_name'] ?? 'N/A';
-      }
+    if (movement.destinationWarehouseId != null) {
+      final destWarehouse = provider.warehouses
+          .firstWhere((w) => w.id == movement.destinationWarehouseId);
+      destinationLocation = destWarehouse.name;
     }
 
     // Set color and icon based on movement type
@@ -298,23 +293,17 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
 
     // Get locations
     String sourceLocation = 'N/A';
-    if (movement.sourceBinId != null) {
-      final sourceBin = provider.currentStock
-          .where((stock) => stock['bin_id'] == movement.sourceBinId)
-          .firstOrNull;
-      if (sourceBin != null) {
-        sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
-      }
+    if (movement.sourceWarehouseId != null) {
+      final sourceWarehouse = provider.warehouses
+          .firstWhere((w) => w.id == movement.sourceWarehouseId);
+      sourceLocation = sourceWarehouse.name;
     }
 
     String destinationLocation = 'N/A';
-    if (movement.destinationBinId != null) {
-      final destBin = provider.currentStock
-          .where((stock) => stock['bin_id'] == movement.destinationBinId)
-          .firstOrNull;
-      if (destBin != null) {
-        destinationLocation = destBin['warehouse_name'] ?? 'N/A';
-      }
+    if (movement.destinationWarehouseId != null) {
+      final destWarehouse = provider.warehouses
+          .firstWhere((w) => w.id == movement.destinationWarehouseId);
+      destinationLocation = destWarehouse.name;
     }
 
     showDialog(

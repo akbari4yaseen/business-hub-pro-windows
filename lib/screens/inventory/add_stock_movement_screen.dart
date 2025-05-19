@@ -260,8 +260,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
         productId: _selectedProductId!,
         quantity: double.parse(_quantityController.text),
         type: _selectedType,
-        sourceBinId: _selectedSourceWarehouseId,
-        destinationBinId: _selectedDestinationWarehouseId,
+        sourceWarehouseId: _selectedSourceWarehouseId,
+        destinationWarehouseId: _selectedDestinationWarehouseId,
         reference: _referenceController.text.isEmpty
             ? null
             : _referenceController.text,

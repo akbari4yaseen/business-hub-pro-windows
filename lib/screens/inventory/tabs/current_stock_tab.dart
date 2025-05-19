@@ -4,7 +4,6 @@ import '../../../providers/inventory_provider.dart';
 import '../widgets/stock_alert_card.dart';
 import '../widgets/stock_list.dart';
 import '../widgets/search_filter_bar.dart';
-import '../add_product_screen.dart';
 
 class CurrentStockTab extends StatefulWidget {
   const CurrentStockTab({Key? key}) : super(key: key);
@@ -27,13 +26,6 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
   List<String> _getUniqueCategories(List<Map<String, dynamic>> stock) {
     return stock.map((e) => e['category_name'] as String).toSet().toList()
       ..sort();
-  }
-
-  void _showAddProductDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddProductScreen()),
-    );
   }
 
   @override
@@ -173,12 +165,6 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddProductDialog(context),
-        tooltip: 'Add Product',
-        heroTag: "add_product_stock",
-        child: const Icon(Icons.add),
       ),
     );
   }

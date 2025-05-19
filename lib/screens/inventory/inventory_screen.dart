@@ -16,12 +16,39 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isInitializing = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    Future.microtask(() => context.read<InventoryProvider>().initialize());
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      setState(() {
+        _isInitializing = true;
+        _error = null;
+      });
+      
+      final provider = context.read<InventoryProvider>();
+      await provider.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+          _error = e.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -35,6 +62,13 @@ class _InventoryScreenState extends State<InventoryScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _isInitializing ? null : _initializeData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(72),
           child: ScrollConfiguration(
@@ -83,16 +117,36 @@ class _InventoryScreenState extends State<InventoryScreen>
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const BouncingScrollPhysics(),
-        children: const [
-          CurrentStockTab(),
-          ProductsTab(),
-          WarehousesTab(),
-          StockMovementsTab(),
-        ],
-      ),
+      body: _isInitializing
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Error: $_error',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _initializeData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  physics: const BouncingScrollPhysics(),
+                  children: const [
+                    CurrentStockTab(),
+                    ProductsTab(),
+                    WarehousesTab(),
+                    StockMovementsTab(),
+                  ],
+                ),
     );
   }
 }

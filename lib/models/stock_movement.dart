@@ -8,8 +8,8 @@ enum MovementType {
 class StockMovement {
   final int? id;
   final int productId;
-  final int? sourceBinId;  // null for stock in
-  final int? destinationBinId;  // null for stock out
+  final int? sourceWarehouseId;  // null for stock in
+  final int? destinationWarehouseId;  // null for stock out
   final double quantity;
   final MovementType type;
   final String? reference;  // Reference number or document
@@ -21,8 +21,8 @@ class StockMovement {
   StockMovement({
     this.id,
     required this.productId,
-    this.sourceBinId,
-    this.destinationBinId,
+    this.sourceWarehouseId,
+    this.destinationWarehouseId,
     required this.quantity,
     required this.type,
     this.reference,
@@ -37,8 +37,8 @@ class StockMovement {
     return {
       'id': id,
       'product_id': productId,
-      'source_bin_id': sourceBinId,
-      'destination_bin_id': destinationBinId,
+      'source_warehouse_id': sourceWarehouseId,
+      'destination_warehouse_id': destinationWarehouseId,
       'quantity': quantity,
       'type': type.toString().split('.').last,
       'reference': reference,
@@ -53,8 +53,8 @@ class StockMovement {
     return StockMovement(
       id: map['id'],
       productId: map['product_id'],
-      sourceBinId: map['source_bin_id'],
-      destinationBinId: map['destination_bin_id'],
+      sourceWarehouseId: map['source_warehouse_id'],
+      destinationWarehouseId: map['destination_warehouse_id'],
       quantity: map['quantity'],
       type: MovementType.values.firstWhere(
         (e) => e.toString().split('.').last == map['type'],

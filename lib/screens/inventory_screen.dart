@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/invoice_provider.dart';
-import '../models/stock_movement.dart';
 
 import '../models/unit.dart';
 import '../models/category.dart' as inventory_models;
 import './inventory/dialogs/add_warehouse_dialog.dart';
 
 import './inventory/tabs/warehouses_tab.dart';
-
 import './inventory/tabs/products_tab.dart';
+import './inventory/tabs/current_stock_tab.dart';
+import './inventory/tabs/stock_movements_tab.dart';
 
 import './inventory/add_product_screen.dart';
 import './inventory/add_stock_movement_screen.dart';
@@ -106,125 +106,6 @@ class _InventoryScreenState extends State<InventoryScreen>
         }
       },
       child: const Icon(Icons.add),
-    );
-  }
-}
-
-class CurrentStockTab extends StatelessWidget {
-  const CurrentStockTab({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<InventoryProvider>(
-      builder: (context, provider, child) {
-        final currentStock = provider.currentStock;
-        final lowStockProducts = provider.lowStockProducts;
-        final expiringProducts = provider.expiringProducts;
-
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (lowStockProducts.isNotEmpty) ...[
-                  const Text(
-                    'Low Stock Alerts',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Card(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: lowStockProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = lowStockProducts[index];
-                        return ListTile(
-                          title: Text(product['product_name']),
-                          subtitle: Text(
-                            'Current: ${product['current_stock']} / Minimum: ${product['minimum_stock']}',
-                          ),
-                          leading: const Icon(
-                            Icons.warning,
-                            color: Colors.red,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (expiringProducts.isNotEmpty) ...[
-                  const Text(
-                    'Expiring Products',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Card(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: expiringProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = expiringProducts[index];
-                        return ListTile(
-                          title: Text(product['product_name']),
-                          subtitle: Text(
-                            'Location: ${product['warehouse_name']}\n'
-                            'Expires: ${product['expiry_date']}',
-                          ),
-                          leading: const Icon(
-                            Icons.schedule,
-                            color: Colors.orange,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                const Text(
-                  'Current Stock',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: currentStock.length,
-                    itemBuilder: (context, index) {
-                      final stock = currentStock[index];
-                      return ListTile(
-                        title: Text(stock['product_name']),
-                        subtitle: Text(
-                          'Location: ${stock['warehouse_name']}\n'
-                          'Quantity: ${stock['quantity']}',
-                        ),
-                        trailing: stock['expiry_date'] != null
-                            ? Text('Expires: ${stock['expiry_date']}')
-                            : null,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -512,117 +393,6 @@ class _AddUnitDialogState extends State<AddUnitDialog> {
           child: const Text('Add'),
         ),
       ],
-    );
-  }
-}
-
-class StockMovementsTab extends StatelessWidget {
-  const StockMovementsTab({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer<InventoryProvider>(
-        builder: (context, provider, child) {
-          if (provider.stockMovements.isEmpty) {
-            return const Center(
-              child: Text('No stock movements recorded yet'),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: provider.stockMovements.length,
-            itemBuilder: (context, index) {
-              final movement = provider.stockMovements[index];
-
-              // Get the product name
-              final productName = provider.currentStock
-                      .where(
-                          (stock) => stock['product_id'] == movement.productId)
-                      .map((stock) => stock['product_name'] as String)
-                      .firstOrNull ??
-                  'Unknown Product';
-
-              // Get location names
-              String sourceLocation = 'N/A';
-              String destinationLocation = 'N/A';
-
-              if (movement.sourceBinId != null) {
-                final sourceBin = provider.currentStock
-                    .where((stock) => stock['bin_id'] == movement.sourceBinId)
-                    .firstOrNull;
-                if (sourceBin != null) {
-                  sourceLocation = sourceBin['warehouse_name'] ?? 'N/A';
-                }
-              }
-
-              if (movement.destinationBinId != null) {
-                final destBin = provider.currentStock
-                    .where(
-                        (stock) => stock['bin_id'] == movement.destinationBinId)
-                    .firstOrNull;
-                if (destBin != null) {
-                  destinationLocation = destBin['warehouse_name'] ?? 'N/A';
-                }
-              }
-
-              // Get movement type icon and color
-              IconData typeIcon;
-              Color typeColor;
-              switch (movement.type) {
-                case MovementType.stockIn:
-                  typeIcon = Icons.add_box;
-                  typeColor = Colors.green;
-                  break;
-                case MovementType.stockOut:
-                  typeIcon = Icons.remove_circle;
-                  typeColor = Colors.red;
-                  break;
-                case MovementType.transfer:
-                  typeIcon = Icons.swap_horiz;
-                  typeColor = Colors.blue;
-                  break;
-                case MovementType.adjustment:
-                  typeIcon = Icons.tune;
-                  typeColor = Colors.orange;
-                  break;
-              }
-
-              return Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: typeColor.withOpacity(0.2),
-                    child: Icon(typeIcon, color: typeColor),
-                  ),
-                  title: Text(productName),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Type: ${movement.type.toString().split('.').last}'),
-                      Text('Quantity: ${movement.quantity.toString()}'),
-                      Text('From: $sourceLocation'),
-                      Text('To: $destinationLocation'),
-                      if (movement.reference != null &&
-                          movement.reference!.isNotEmpty)
-                        Text('Reference: ${movement.reference}'),
-                      if (movement.expiryDate != null)
-                        Text(
-                            'Expires: ${movement.expiryDate?.toString().split(' ')[0] ?? 'N/A'}'),
-                      Text(
-                          'Date: ${movement.createdAt.toString().split('.')[0]}'),
-                    ],
-                  ),
-                  isThreeLine: true,
-                ),
-              );
-            },
-          );
-        },
-      ),
     );
   }
 }

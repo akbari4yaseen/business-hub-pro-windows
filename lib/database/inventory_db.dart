@@ -85,8 +85,8 @@ class InventoryDB {
         'stock_movements',
         {
           'product_id': movement.productId,
-          'source_warehouse_id': movement.sourceBinId,
-          'destination_warehouse_id': movement.destinationBinId,
+          'source_warehouse_id': movement.sourceWarehouseId,
+          'destination_warehouse_id': movement.destinationWarehouseId,
           'quantity': movement.quantity,
           'type': movement.type.toString().split('.').last,
           'reference': movement.reference,
@@ -98,7 +98,7 @@ class InventoryDB {
       );
 
       // Update source warehouse stock
-      if (movement.sourceBinId != null) {
+      if (movement.sourceWarehouseId != null) {
         await txn.rawUpdate('''
           UPDATE current_stock
           SET quantity = quantity - ?
@@ -106,17 +106,17 @@ class InventoryDB {
         ''', [
           movement.quantity,
           movement.productId,
-          movement.sourceBinId,
+          movement.sourceWarehouseId,
         ]);
       }
 
       // Update destination warehouse stock
-      if (movement.destinationBinId != null) {
+      if (movement.destinationWarehouseId != null) {
         // Check if stock record exists
         final existingStock = await txn.query(
           'current_stock',
           where: 'product_id = ? AND warehouse_id = ?',
-          whereArgs: [movement.productId, movement.destinationBinId],
+          whereArgs: [movement.productId, movement.destinationWarehouseId],
         );
 
         if (existingStock.isEmpty) {
@@ -125,7 +125,7 @@ class InventoryDB {
             'current_stock',
             {
               'product_id': movement.productId,
-              'warehouse_id': movement.destinationBinId,
+              'warehouse_id': movement.destinationWarehouseId,
               'quantity': movement.quantity,
               'expiry_date': movement.expiryDate?.toIso8601String(),
             },
@@ -139,7 +139,7 @@ class InventoryDB {
           ''', [
             movement.quantity,
             movement.productId,
-            movement.destinationBinId,
+            movement.destinationWarehouseId,
           ]);
         }
       }
