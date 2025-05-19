@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../utils/date_formatters.dart';
-import '../utils/utilities.dart';
+import '../../utils/date_formatters.dart';
+import '../../utils/utilities.dart';
 
 class PrintSettings {
   final DateTime? startDate;

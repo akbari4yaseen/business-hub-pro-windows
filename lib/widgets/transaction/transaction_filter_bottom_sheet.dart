@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../utils/date_formatters.dart';
+import '../../utils/date_formatters.dart';
 
-class JournalFilterBottomSheet extends StatelessWidget {
+class TransactionFilterBottomSheet extends StatelessWidget {
   final String? selectedType;
   final String? selectedCurrency;
   final DateTime? selectedDate;
@@ -13,7 +13,7 @@ class JournalFilterBottomSheet extends StatelessWidget {
   final void Function({String? type, String? currency, DateTime? date})
       onChanged;
 
-  const JournalFilterBottomSheet({
+  const TransactionFilterBottomSheet({
     Key? key,
     this.selectedType,
     this.selectedCurrency,

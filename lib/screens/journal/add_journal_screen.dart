@@ -8,7 +8,7 @@ import '../../providers/settings_provider.dart';
 import '../../utils/utilities.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
-import '../../widgets/journal_form_widgets.dart';
+import '../../widgets/journal/journal_form_widgets.dart';
 import '../../constants/currencies.dart';
 import '../../utils/number_input_formatter.dart';
 

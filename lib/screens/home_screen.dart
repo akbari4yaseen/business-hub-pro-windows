@@ -8,8 +8,8 @@ import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
-import '../widgets/recent_transaction_list.dart';
-import '../widgets/account_type_chart.dart';
+import '../widgets/transaction/recent_transaction_list.dart';
+import '../widgets/account/account_type_chart.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback openDrawer;

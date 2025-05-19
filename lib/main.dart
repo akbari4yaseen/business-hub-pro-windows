@@ -30,7 +30,7 @@ import 'screens/settings/company_info.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/reminders/reminders_screen.dart';
 import 'screens/inventory_screen.dart';
-import 'screens/invoice_screen.dart';
+import 'screens/invoice/invoice_screen.dart';
 
 import 'database/user_dao.dart';
 import 'database/database_helper.dart';

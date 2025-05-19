@@ -12,13 +12,13 @@ import '../../journal/edit_journal_screen.dart';
 import '../../journal/add_journal_screen.dart';
 import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../widgets/transaction_details_widget.dart';
+import '../../../widgets/transaction/transaction_details_widget.dart';
 import '../../../widgets/search_bar.dart';
-import '../../../widgets/transaction_filter_bottom_sheet.dart';
+import '../../../widgets/transaction/transaction_filter_bottom_sheet.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
 import '../../../widgets/auth_widget.dart';
-import '../../../widgets/transaction_print_settings_dialog.dart';
+import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
 import '../../../utils/transaction_share_helper.dart';
 import '../../../utils/transaction_helper.dart';
 

@@ -6,8 +6,8 @@ import '../../providers/invoice_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/info_provider.dart';
 import '../../providers/account_provider.dart';
-import 'record_payment_dialog.dart';
-import 'print_invoice.dart';
+import '../../widgets/invoice/record_payment_dialog.dart';
+import '../../widgets/invoice/print_invoice.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final Invoice invoice;

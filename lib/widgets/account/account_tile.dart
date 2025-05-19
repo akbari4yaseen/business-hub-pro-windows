@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../../utils/utilities.dart';
+import '../../../utils/utilities.dart';
 
 class AccountTile extends StatelessWidget {
   final Map<String, dynamic> account;

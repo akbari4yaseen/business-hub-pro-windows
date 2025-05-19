@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../utils/date_formatters.dart';
+import '../../../utils/date_formatters.dart';
 
 class TransactionDetailsSheet extends StatelessWidget {
   final Map<String, dynamic> transaction;

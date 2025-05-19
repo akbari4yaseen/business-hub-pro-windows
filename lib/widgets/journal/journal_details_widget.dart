@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import '../../utils/date_formatters.dart';
-import '../../utils/utilities.dart';
+import '../../../utils/date_formatters.dart';
+import '../../../utils/utilities.dart';
 
 /// A reusable widget that displays journal entry details in a draggable bottom sheet.
 class JournalDetailsWidget extends StatelessWidget {

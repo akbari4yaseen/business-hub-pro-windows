@@ -8,11 +8,11 @@ import 'edit_journal_screen.dart';
 
 import '../../database/journal_db.dart';
 import '../../database/database_helper.dart';
-import '../../widgets/journal_filter_bottom_sheet.dart';
-import '../../widgets/journal_list.dart';
+import '../../widgets/journal/journal_filter_bottom_sheet.dart';
+import '../../widgets/journal/journal_list.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
-import '../../widgets/journal_details_widget.dart';
+import '../../widgets/journal/journal_details_widget.dart';
 import '../../utils/search_manager.dart';
 import '../../utils/transaction_share_helper.dart';
 

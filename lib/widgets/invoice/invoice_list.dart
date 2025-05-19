@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/invoice.dart';
 import 'record_payment_dialog.dart';
-import 'invoice_detail_screen.dart';
+import '../../screens/invoice/invoice_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/account_provider.dart';
 

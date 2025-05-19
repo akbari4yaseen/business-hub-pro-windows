@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../utils/utilities.dart';
-import '../utils/date_formatters.dart';
+import '../../utils/utilities.dart';
+import '../../utils/date_formatters.dart';
 
 class RecentTransactionList extends StatelessWidget {
   final Future<List<Map<String, dynamic>>> transactionsFuture;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../utils/utilities.dart';
+import '../../utils/utilities.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// A reusable field for selecting an account.
