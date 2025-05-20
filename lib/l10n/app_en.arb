@@ -337,5 +337,7 @@
   "overdue": "Overdue",
   "createInvoice": "Create Invoice",
   "failedRecordPayment": "Failed to record payment: {error}",
-  "failedFinalizeInvoice": "Failed to finalize invoice: {error}"
+  "failedFinalizeInvoice": "Failed to finalize invoice: {error}",
+  "confirmFinalizeInvoice": "Confirm Invoice Finalization",
+  "finalizeInvoiceConfirmation": "Are you sure you want to finalize this invoice? This action cannot be undone."
 }

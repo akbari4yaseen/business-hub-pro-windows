@@ -33,6 +33,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   int? _selectedAccountId;
   static final _currencyFormat = NumberFormat('#,####.##');
   bool _isSubmitting = false;
+  final ValueNotifier<double> _totalNotifier = ValueNotifier<double>(0);
 
   @override
   void initState() {
@@ -93,6 +94,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _totalNotifier.dispose();
     for (final item in _items) {
       item.dispose();
     }
@@ -102,6 +104,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   void _addItem() {
     setState(() {
       _items.add(InvoiceItemFormData());
+      _updateTotal();
     });
   }
 
@@ -109,7 +112,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     setState(() {
       _items[index].dispose();
       _items.removeAt(index);
+      _updateTotal();
     });
+  }
+
+  void _updateTotal() {
+    _totalNotifier.value = _items.fold(
+      0,
+      (sum, item) => sum + (item.quantity * item.unitPrice),
+    );
   }
 
   Future<void> _selectDate(BuildContext context, bool isDueDate) async {
@@ -279,6 +290,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           key: ObjectKey(item),
                           formData: item,
                           onRemove: () => _removeItem(index),
+                          onUpdate: _updateTotal,
                         );
                       }),
                   ],
@@ -329,13 +341,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      '${_currencyFormat.format(_calculateTotal())} $_currency',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
-                      ),
+                    ValueListenableBuilder<double>(
+                      valueListenable: _totalNotifier,
+                      builder: (context, total, child) {
+                        return Text(
+                          '${_currencyFormat.format(total)} $_currency',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -397,13 +414,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  double _calculateTotal() {
-    return _items.fold(
-      0,
-      (sum, item) => sum + (item.quantity * item.unitPrice),
     );
   }
 
@@ -539,16 +549,23 @@ class InvoiceItemFormData {
   }
 }
 
-class InvoiceItemForm extends StatelessWidget {
+class InvoiceItemForm extends StatefulWidget {
   final InvoiceItemFormData formData;
   final VoidCallback onRemove;
+  final VoidCallback onUpdate;
 
   const InvoiceItemForm({
     Key? key,
     required this.formData,
     required this.onRemove,
+    required this.onUpdate,
   }) : super(key: key);
 
+  @override
+  State<InvoiceItemForm> createState() => _InvoiceItemFormState();
+}
+
+class _InvoiceItemFormState extends State<InvoiceItemForm> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -573,10 +590,10 @@ class InvoiceItemForm extends StatelessWidget {
                 return Column(
                   children: [
                     Autocomplete<Map<String, dynamic>>(
-                      initialValue: formData.selectedProductId != null
+                      initialValue: widget.formData.selectedProductId != null
                           ? TextEditingValue(
                               text: products
-                                  .firstWhere((p) => p.id == formData.selectedProductId)
+                                  .firstWhere((p) => p.id == widget.formData.selectedProductId)
                                   .name,
                             )
                           : null,
@@ -609,12 +626,14 @@ class InvoiceItemForm extends StatelessWidget {
                       },
                       displayStringForOption: (option) => option['name'],
                       onSelected: (option) {
-                        formData.selectedProductId = option['id'];
+                        setState(() {
+                          widget.formData.selectedProductId = option['id'];
+                        });
                         final product = products.firstWhere((p) => p.id == option['id']);
                         
                         // Set description if the product has one
                         if (product.description.isNotEmpty) {
-                          formData.descriptionController.text = product.description;
+                          widget.formData.descriptionController.text = product.description;
                         }
 
                         // Check if we have stock
@@ -633,18 +652,25 @@ class InvoiceItemForm extends StatelessWidget {
                         }
                       },
                       fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                        return TextFormField(
-                          controller: textEditingController,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Product',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select a product';
-                            }
-                            return null;
-                          },
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Product',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please select a product';
+                                }
+                                return null;
+                              },
+                            ),
+                            if (widget.formData.selectedProductId != null)
+                              _buildStockInfo(provider, widget.formData.selectedProductId!),
+                          ],
                         );
                       },
                       optionsViewBuilder: (context, onSelected, options) {
@@ -679,8 +705,6 @@ class InvoiceItemForm extends StatelessWidget {
                         );
                       },
                     ),
-                    if (formData.selectedProductId != null)
-                      _buildStockInfo(provider, formData.selectedProductId!),
                   ],
                 );
               },
@@ -690,7 +714,7 @@ class InvoiceItemForm extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: formData.quantityController,
+                    controller: widget.formData.quantityController,
                     decoration: const InputDecoration(
                       labelText: 'Quantity',
                     ),
@@ -701,6 +725,7 @@ class InvoiceItemForm extends StatelessWidget {
                       FilteringTextInputFormatter.allow(
                           RegExp(r'^\d*\.?\d{0,2}')),
                     ],
+                    onChanged: (_) => widget.onUpdate(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Required';
@@ -711,11 +736,11 @@ class InvoiceItemForm extends StatelessWidget {
                       }
 
                       // Check if we have enough stock
-                      if (formData.selectedProductId != null) {
+                      if (widget.formData.selectedProductId != null) {
                         final provider = Provider.of<InventoryProvider>(context,
                             listen: false);
                         final stock = provider.getCurrentStockForProduct(
-                            formData.selectedProductId!);
+                            widget.formData.selectedProductId!);
                         final totalStock = stock.fold<double>(0,
                             (sum, item) => sum + (item['quantity'] as double));
 
@@ -731,7 +756,7 @@ class InvoiceItemForm extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
-                    controller: formData.unitPriceController,
+                    controller: widget.formData.unitPriceController,
                     decoration: const InputDecoration(
                       labelText: 'Unit Price',
                     ),
@@ -742,6 +767,7 @@ class InvoiceItemForm extends StatelessWidget {
                       FilteringTextInputFormatter.allow(
                           RegExp(r'^\d*\.?\d{0,2}')),
                     ],
+                    onChanged: (_) => widget.onUpdate(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Required';
@@ -758,7 +784,7 @@ class InvoiceItemForm extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextFormField(
-              controller: formData.descriptionController,
+              controller: widget.formData.descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Description (Optional)',
               ),
@@ -767,7 +793,7 @@ class InvoiceItemForm extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: onRemove,
+                onPressed: widget.onRemove,
                 icon: const Icon(Icons.delete, color: Colors.red),
                 label: const Text(
                   'Remove',

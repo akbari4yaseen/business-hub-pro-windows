@@ -81,11 +81,33 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                     }
                   },
                   onInvoiceFinalized: (invoice) async {
-                    try {
-                      await provider.finalizeInvoice(invoice);
-                    } catch (e) {
-                      _showErrorSnackbar(
-                          context, local.failedFinalizeInvoice(e.toString()));
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text(local.confirmFinalizeInvoice),
+                          content: Text(local.finalizeInvoiceConfirmation),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text(local.cancel),
+                              onPressed: () => Navigator.of(context).pop(false),
+                            ),
+                            TextButton(
+                              child: Text(local.confirm),
+                              onPressed: () => Navigator.of(context).pop(true),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirmed == true) {
+                      try {
+                        await provider.finalizeInvoice(invoice);
+                      } catch (e) {
+                        _showErrorSnackbar(
+                            context, local.failedFinalizeInvoice(e.toString()));
+                      }
                     }
                   },
                 ),
@@ -103,11 +125,33 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                     }
                   },
                   onInvoiceFinalized: (invoice) async {
-                    try {
-                      await provider.finalizeInvoice(invoice);
-                    } catch (e) {
-                      _showErrorSnackbar(
-                          context, local.failedFinalizeInvoice(e.toString()));
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text(local.confirmFinalizeInvoice),
+                          content: Text(local.finalizeInvoiceConfirmation),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text(local.cancel),
+                              onPressed: () => Navigator.of(context).pop(false),
+                            ),
+                            TextButton(
+                              child: Text(local.confirm),
+                              onPressed: () => Navigator.of(context).pop(true),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirmed == true) {
+                      try {
+                        await provider.finalizeInvoice(invoice);
+                      } catch (e) {
+                        _showErrorSnackbar(
+                            context, local.failedFinalizeInvoice(e.toString()));
+                      }
                     }
                   },
                 ),

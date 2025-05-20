@@ -321,8 +321,8 @@
   "unitPrice": "فی",
   "total": "مجموع",
   "unknownProduct": "ناشناخته جنس",
-  "invoice": "فاکتور",
-  "invoiceDate": "د فاکتور نېټه",
+  "invoice": "بل",
+  "invoiceDate": "د بل نېټه",
   "dueDate": "د ورکړې نېټه",
   "subtotal": "مجموعه",
   "paidAmount": "ورکړل شوې اندازه",
@@ -336,10 +336,12 @@
   "products": "اجناس",
   "warehouses": "ګودامونه",
   "stockMovements": "د گدام حرکتونه",
-  "invoices": "فاکتورونه",
-  "allInvoices": "ټول فاکتورونه",
+  "invoices": "بلونه",
+  "allInvoices": "ټول بلونه",
   "overdue": "ناوخته",
   "createInvoice": "نوی بل جوړ کړئ",
   "failedRecordPayment": "د تادیې ثبت کې تېروتنه: {error}",
-  "failedFinalizeInvoice": "د بل وروستۍ کولو کې تېروتنه: {error}"
+  "failedFinalizeInvoice": "د بل وروستۍ کولو کې تېروتنه: {error}",
+  "confirmFinalizeInvoice": "د بل حساب وروستی کول تایید کړئ",
+  "finalizeInvoiceConfirmation": "تاسو باوري یاست چې غواړئ دا حساب وروستی کړئ؟ دا عمل نشي بیرته اخیستل کیدی."
 }
