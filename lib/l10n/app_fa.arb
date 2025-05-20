@@ -331,5 +331,11 @@
   "currentStock": "گدام فعلی",
   "products": "اجناس",
   "warehouses": "انبارها",
-  "stockMovements": "جابجایی گدام"
+  "stockMovements": "جابجایی گدام",
+  "invoices": "فاکتورها",
+  "allInvoices": "همه فاکتورها",
+  "overdue": "سررسید",
+  "createInvoice": "ایجاد فاکتور",
+  "failedRecordPayment": "خطا در ثبت پرداخت: {error}",
+  "failedFinalizeInvoice": "خطا در نهایی‌سازی فاکتور: {error}"
 }

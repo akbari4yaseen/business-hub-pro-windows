@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../providers/invoice_provider.dart';
 import '../../widgets/invoice/invoice_list.dart';
 import 'create_invoice_screen.dart';
@@ -16,21 +17,18 @@ class InvoiceScreen extends StatefulWidget {
 class _InvoiceScreenState extends State<InvoiceScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
   bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    // Initialize invoice data with error handling
     Future.microtask(() {
       if (!_isDisposed) {
         try {
           context.read<InvoiceProvider>().initialize();
         } catch (e) {
-          debugPrint('Error initializing invoice provider: $e');
+          // debugPrint('Error initializing invoice provider: $e');
         }
       }
     });
@@ -45,18 +43,20 @@ class _InvoiceScreenState extends State<InvoiceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: widget.openDrawer,
         ),
-        title: const Text('Invoices'),
+        title: Text(local.invoices),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'All Invoices'),
-            Tab(text: 'Overdue'),
+          tabs: [
+            Tab(text: local.allInvoices),
+            Tab(text: local.overdue),
           ],
         ),
       ),
@@ -69,7 +69,6 @@ class _InvoiceScreenState extends State<InvoiceScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              // All Invoices Tab - Wrap in error boundaries
               ErrorHandler(
                 child: InvoiceList(
                   invoices: provider.invoices,
@@ -78,7 +77,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                       await provider.recordPayment(invoice.id!, amount);
                     } catch (e) {
                       _showErrorSnackbar(
-                          context, 'Failed to record payment: $e');
+                          context, local.failedRecordPayment(e.toString()));
                     }
                   },
                   onInvoiceFinalized: (invoice) async {
@@ -86,13 +85,11 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                       await provider.finalizeInvoice(invoice);
                     } catch (e) {
                       _showErrorSnackbar(
-                          context, 'Failed to finalize invoice: $e');
+                          context, local.failedFinalizeInvoice(e.toString()));
                     }
                   },
                 ),
               ),
-
-              // Overdue Invoices Tab - Wrap in error boundaries
               ErrorHandler(
                 child: InvoiceList(
                   invoices: provider.overdueInvoices,
@@ -102,7 +99,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                       await provider.recordPayment(invoice.id!, amount);
                     } catch (e) {
                       _showErrorSnackbar(
-                          context, 'Failed to record payment: $e');
+                          context, local.failedRecordPayment(e.toString()));
                     }
                   },
                   onInvoiceFinalized: (invoice) async {
@@ -110,7 +107,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
                       await provider.finalizeInvoice(invoice);
                     } catch (e) {
                       _showErrorSnackbar(
-                          context, 'Failed to finalize invoice: $e');
+                          context, local.failedFinalizeInvoice(e.toString()));
                     }
                   },
                 ),
@@ -127,8 +124,8 @@ class _InvoiceScreenState extends State<InvoiceScreen>
             ),
           );
         },
+        tooltip: local.createInvoice,
         child: const Icon(Icons.add),
-        tooltip: 'Create Invoice',
       ),
     );
   }
@@ -142,7 +139,6 @@ class _InvoiceScreenState extends State<InvoiceScreen>
   }
 }
 
-// Error handler widget to prevent crashes from propagating
 class ErrorHandler extends StatelessWidget {
   final Widget child;
 
@@ -151,12 +147,9 @@ class ErrorHandler extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Builder(builder: (context) {
-      // Set up error handling
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
-        debugPrint('UI Rendering Error: ${details.exception}');
       };
-
       return child;
     });
   }

@@ -335,5 +335,11 @@
   "currentStock": "اوسنی موجودي",
   "products": "اجناس",
   "warehouses": "ګودامونه",
-  "stockMovements": "د گدام حرکتونه"
+  "stockMovements": "د گدام حرکتونه",
+  "invoices": "فاکتورونه",
+  "allInvoices": "ټول فاکتورونه",
+  "overdue": "ناوخته",
+  "createInvoice": "نوی بل جوړ کړئ",
+  "failedRecordPayment": "د تادیې ثبت کې تېروتنه: {error}",
+  "failedFinalizeInvoice": "د بل وروستۍ کولو کې تېروتنه: {error}"
 }

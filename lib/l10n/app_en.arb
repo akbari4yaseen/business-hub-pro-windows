@@ -331,5 +331,11 @@
   "currentStock": "Current Stock",
   "products": "Products",
   "warehouses": "Warehouses",
-  "stockMovements": "Stock Movements"
+  "stockMovements": "Stock Movements",
+  "invoices": "Invoices",
+  "allInvoices": "All Invoices",
+  "overdue": "Overdue",
+  "createInvoice": "Create Invoice",
+  "failedRecordPayment": "Failed to record payment: {error}",
+  "failedFinalizeInvoice": "Failed to finalize invoice: {error}"
 }

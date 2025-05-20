@@ -5,6 +5,8 @@ import 'package:badges/badges.dart' as badges;
 
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
+import '../../providers/account_provider.dart';
+import '../../providers/inventory_provider.dart';
 import '../database/account_db.dart';
 import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
@@ -40,6 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             days: days,
           );
+
+      context.read<AccountProvider>().initialize();
+      context.read<InventoryProvider>().initialize();
     });
   }
 

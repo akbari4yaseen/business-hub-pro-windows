@@ -6,7 +6,6 @@ import '../dialogs/add_warehouse_dialog.dart';
 import '../dialogs/edit_warehouse_dialog.dart';
 
 import '../dialogs/move_stock_dialog.dart';
-import '../widgets/search_filter_bar.dart';
 
 class WarehousesTab extends StatefulWidget {
   const WarehousesTab({Key? key}) : super(key: key);

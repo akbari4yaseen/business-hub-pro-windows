@@ -348,12 +348,8 @@ class InvoiceDBHelper {
     });
   }
 
-  Future<void> updateStockQuantity(
-      int stockId,
-      double newQuantity,
-      int zoneId, // Same here
-      int binId,
-      int productId) async {
+  Future<void> updateStockQuantity(int stockId, double newQuantity,
+      int warehouse_id, int productId, String invoiceNumber) async {
     final db = await _db;
 
     // Update the stock record
@@ -364,18 +360,21 @@ class InvoiceDBHelper {
       whereArgs: [stockId],
     );
 
-    final now = DateTime.now().toIso8601String();
-
     // Insert a stock movement record for tracking
-    await db.insert('stock_movements', {
-      'product_id': productId,
-      'quantity': -(newQuantity), // negative because stock reduced
-      'type': 'SALE', // type matches column in table
-      'reference': 'Invoice Sale',
-      'notes': null,
-      'expiry_date': null,
-      'created_at': now,
-      'updated_at': now,
-    });
+    // await db.insert(
+    //   'stock_movements',
+    //   {
+    //     'product_id': productId,
+    //     'source_warehouse_id': warehouse_id,
+    //     'destination_warehouse_id': 'N/A',
+    //     'quantity': newQuantity,
+    //     'type': 'SALE',
+    //     'reference': invoiceId,
+    //     'notes': '',
+    //     'expiry_date': '',
+    //     'created_at': DateTime.now().toIso8601String(),
+    //     'updated_at': DateTime.now().toIso8601String(),
+    //   },
+    // );
   }
 }

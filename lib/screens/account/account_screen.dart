@@ -481,19 +481,18 @@ class _AccountScreenState extends State<AccountScreen>
             ],
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: loc.activeAccounts),
+            Tab(text: loc.deactivatedAccounts)
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                TabBar(
-                  controller: _tabController,
-                  indicatorColor: cs.primary,
-                  tabs: [
-                    Tab(text: loc.activeAccounts),
-                    Tab(text: loc.deactivatedAccounts)
-                  ],
-                ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,

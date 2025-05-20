@@ -74,8 +74,8 @@ class InvoiceProvider with ChangeNotifier {
         items: invoice.items.map((item) => item.toMap()).toList(),
       );
 
-      // 2. Update warehouse inventory for each item
-      await _updateInventoryForInvoice(invoice.items);
+      // // 2. Update warehouse inventory for each item
+      // await _updateInventoryForInvoice(invoice.items, invoiceId);
 
       // 3. Fetch updated invoices
       await loadInvoices();
@@ -154,18 +154,20 @@ class InvoiceProvider with ChangeNotifier {
       await updateInvoice(updatedInvoice);
 
       // Then update inventory with a stock movement for each item
-      for (final item in invoice.items) {
-        // Create a stock movement (negative quantity because products are going out)
-        final movement = StockMovement(
-          productId: item.productId,
-          quantity: -item.quantity,
-          type: MovementType.stockOut,
-          reference: 'Invoice ${invoice.invoiceNumber}',
-          notes: 'Finalized invoice',
-        );
+      // for (final item in invoice.items) {
+      //   // Create a stock movement (negative quantity because products are going out)
+      //   final movement = StockMovement(
+      //     productId: item.productId,
+      //     quantity: -item.quantity,
+      //     type: MovementType.stockOut,
+      //     reference: 'Invoice ${invoice.invoiceNumber}',
+      //     notes: 'Finalized invoice',
+      //   );
 
-        await _inventoryProvider.recordStockMovement(movement);
-      }
+      //   await _inventoryProvider.recordStockMovement(movement);
+      // }
+      // // 2. Update warehouse inventory for each item
+      await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
 
       // Refresh data to reflect changes
       await loadInvoices();
@@ -265,7 +267,8 @@ class InvoiceProvider with ChangeNotifier {
   }
 
   // New method to update warehouse inventory when items are sold
-  Future<void> _updateInventoryForInvoice(List<InvoiceItem> items) async {
+  Future<void> _updateInventoryForInvoice(
+      List<InvoiceItem> items, String invoiceNumber) async {
     final currentStock = _inventoryProvider.currentStock;
 
     for (final item in items) {
@@ -288,7 +291,9 @@ class InvoiceProvider with ChangeNotifier {
         final availableQuantity = (stock['quantity'] as num?)?.toDouble();
         final warehouseId = stock['warehouse_id'] as int?;
 
-        if (stockId == null || availableQuantity == null || warehouseId == null) {
+        if (stockId == null ||
+            availableQuantity == null ||
+            warehouseId == null) {
           throw Exception('Invalid stock entry with null values');
         }
 
@@ -296,13 +301,8 @@ class InvoiceProvider with ChangeNotifier {
             ? availableQuantity
             : remainingQuantity;
 
-        await _db.updateStockQuantity(
-          stockId,
-          availableQuantity - deduction,
-          0, // zoneId - unused
-          warehouseId,
-          productId,
-        );
+        await _db.updateStockQuantity(stockId, availableQuantity - deduction,
+            warehouseId, productId, invoiceNumber);
 
         remainingQuantity -= deduction;
       }

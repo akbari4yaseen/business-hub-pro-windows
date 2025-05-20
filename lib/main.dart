@@ -260,7 +260,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.receipt_long_outlined),
-            label: localizations.invoice,
+            label: localizations.invoices,
           ),
         ],
       ),

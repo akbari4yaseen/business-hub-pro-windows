@@ -527,6 +527,55 @@ class AccountDBHelper {
     return accountDataMap.values.toList();
   }
 
+  Future<Map<String, dynamic>?> getAccountById(int id) async {
+    final db = await database;
+
+    final sql = '''
+    SELECT 
+      a.id,
+      a.name,
+      a.phone,
+      a.account_type,
+      a.address,
+      a.active,
+      a.created_at,
+      ad.amount,
+      ad.currency,
+      ad.transaction_type
+    FROM accounts AS a
+    LEFT JOIN account_details AS ad
+      ON a.id = ad.account_id
+    WHERE a.id = ?;
+    ''';
+
+    final rows = await db.rawQuery(sql, [id]);
+
+    if (rows.isEmpty) return null;
+
+    final Map<String, dynamic> account = {
+      'id': rows.first['id'],
+      'name': rows.first['name'],
+      'phone': rows.first['phone'],
+      'account_type': rows.first['account_type'],
+      'address': rows.first['address'],
+      'active': rows.first['active'],
+      'created_at': rows.first['created_at'],
+      'account_details': <Map<String, dynamic>>[],
+    };
+
+    for (final row in rows) {
+      if (row['amount'] != null) {
+        account['account_details'].add({
+          'amount': row['amount'],
+          'currency': row['currency'],
+          'transaction_type': row['transaction_type'],
+        });
+      }
+    }
+
+    return account;
+  }
+
   /// Returns all active accounts (id > 10) that have had **no** transactions
   /// in the past [days] days.
   Future<List<Map<String, dynamic>>> getAccountsNoTransactionsSince({
