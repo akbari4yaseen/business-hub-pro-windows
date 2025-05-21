@@ -31,7 +31,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   DateTime? _dueDate;
   late String _currency;
   int? _selectedAccountId;
-  static final _currencyFormat = NumberFormat('#,####.##');
+  static final _currencyFormat = NumberFormat('#,###.##');
   bool _isSubmitting = false;
   final ValueNotifier<double> _totalNotifier = ValueNotifier<double>(0);
 
@@ -593,16 +593,20 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                       initialValue: widget.formData.selectedProductId != null
                           ? TextEditingValue(
                               text: products
-                                  .firstWhere((p) => p.id == widget.formData.selectedProductId)
+                                  .firstWhere((p) =>
+                                      p.id == widget.formData.selectedProductId)
                                   .name,
                             )
                           : null,
                       optionsBuilder: (TextEditingValue textEditingValue) {
                         if (textEditingValue.text.isEmpty) {
                           return products.map((product) {
-                            final stock = provider.getCurrentStockForProduct(product.id!);
+                            final stock =
+                                provider.getCurrentStockForProduct(product.id!);
                             final totalStock = stock.fold<double>(
-                                0, (sum, item) => sum + (item['quantity'] as double));
+                                0,
+                                (sum, item) =>
+                                    sum + (item['quantity'] as double));
                             return {
                               'id': product.id,
                               'name': product.name,
@@ -611,12 +615,16 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                           }).toList();
                         }
                         return products.where((product) {
-                          return product.name.toLowerCase()
+                          return product.name
+                              .toLowerCase()
                               .contains(textEditingValue.text.toLowerCase());
                         }).map((product) {
-                          final stock = provider.getCurrentStockForProduct(product.id!);
+                          final stock =
+                              provider.getCurrentStockForProduct(product.id!);
                           final totalStock = stock.fold<double>(
-                              0, (sum, item) => sum + (item['quantity'] as double));
+                              0,
+                              (sum, item) =>
+                                  sum + (item['quantity'] as double));
                           return {
                             'id': product.id,
                             'name': product.name,
@@ -629,17 +637,20 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         setState(() {
                           widget.formData.selectedProductId = option['id'];
                         });
-                        final product = products.firstWhere((p) => p.id == option['id']);
-                        
+                        final product =
+                            products.firstWhere((p) => p.id == option['id']);
+
                         // Set description if the product has one
                         if (product.description.isNotEmpty) {
-                          widget.formData.descriptionController.text = product.description;
+                          widget.formData.descriptionController.text =
+                              product.description;
                         }
 
                         // Check if we have stock
-                        final stock = provider.getCurrentStockForProduct(product.id!);
-                        final totalStock = stock.fold<double>(
-                            0, (sum, item) => sum + (item['quantity'] as double));
+                        final stock =
+                            provider.getCurrentStockForProduct(product.id!);
+                        final totalStock = stock.fold<double>(0,
+                            (sum, item) => sum + (item['quantity'] as double));
 
                         if (totalStock <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -651,7 +662,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                           );
                         }
                       },
-                      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                      fieldViewBuilder: (context, textEditingController,
+                          focusNode, onFieldSubmitted) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -669,7 +681,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                               },
                             ),
                             if (widget.formData.selectedProductId != null)
-                              _buildStockInfo(provider, widget.formData.selectedProductId!),
+                              _buildStockInfo(
+                                  provider, widget.formData.selectedProductId!),
                           ],
                         );
                       },
@@ -745,7 +758,7 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                             (sum, item) => sum + (item['quantity'] as double));
 
                         if (quantity > totalStock) {
-                          return 'Not enough stock (${totalStock.toStringAsFixed(2)})';
+                          return 'Not enough stock (${NumberFormat("#,###.##").format(totalStock)})';
                         }
                       }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../database/invoice_db.dart';
 import '../models/invoice.dart';
-import '../models/stock_movement.dart';
 import '../providers/inventory_provider.dart';
 import 'package:flutter/material.dart';
 
@@ -168,7 +167,7 @@ class InvoiceProvider with ChangeNotifier {
       // }
       // // 2. Update warehouse inventory for each item
       await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
-
+      await _db.finalizeInvoice(invoice.id!);
       // Refresh data to reflect changes
       await loadInvoices();
       await loadOverdueInvoices();

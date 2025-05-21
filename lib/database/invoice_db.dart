@@ -314,6 +314,9 @@ class InvoiceDBHelper {
       final invoice = invoiceResult.first;
       final currentPaidAmount = invoice['paid_amount'] as double? ?? 0.0;
       final newPaidAmount = currentPaidAmount + amount;
+      final accountId = invoice['account_id'] as int;
+      final currency = invoice['currency'] as String;
+      final invoiceNumber = invoice['invoice_number'] as String;
 
       // Get total amount
       final totalResult = await txn.rawQuery('''
@@ -344,6 +347,78 @@ class InvoiceDBHelper {
         },
         where: 'id = ?',
         whereArgs: [invoiceId],
+      );
+
+      // Record payment in account_details
+      await txn.insert(
+        'account_details',
+        {
+          'date': DateTime.now().toIso8601String(),
+          'account_id': accountId,
+          'amount': amount,
+          'currency': currency,
+          'transaction_type': 'credit',
+          'description': 'Payment for Invoice $invoiceNumber',
+          'transaction_id': invoiceId,
+          'transaction_group': 'invoice_payment',
+        },
+      );
+    });
+  }
+
+  Future<void> finalizeInvoice(int invoiceId) async {
+    final db = await _db;
+
+    return await db.transaction((txn) async {
+      // Get invoice details
+      final invoiceResult = await txn.query(
+        'invoices',
+        where: 'id = ?',
+        whereArgs: [invoiceId],
+      );
+
+      if (invoiceResult.isEmpty) {
+        throw Exception('Invoice not found');
+      }
+
+      final invoice = invoiceResult.first;
+      final accountId = invoice['account_id'] as int;
+      final currency = invoice['currency'] as String;
+      final invoiceNumber = invoice['invoice_number'] as String;
+
+      // Get total amount
+      final totalResult = await txn.rawQuery('''
+        SELECT SUM(quantity * unit_price) as total 
+        FROM invoice_items 
+        WHERE invoice_id = ?
+      ''', [invoiceId]);
+
+      final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+
+      // Update invoice status
+      await txn.update(
+        'invoices',
+        {
+          'status': 'finalized',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [invoiceId],
+      );
+
+      // Record invoice amount in account_details
+      await txn.insert(
+        'account_details',
+        {
+          'date': DateTime.now().toIso8601String(),
+          'account_id': accountId,
+          'amount': totalAmount,
+          'currency': currency,
+          'transaction_type': 'debit',
+          'description': 'Invoice $invoiceNumber',
+          'transaction_id': invoiceId,
+          'transaction_group': 'invoice',
+        },
       );
     });
   }
