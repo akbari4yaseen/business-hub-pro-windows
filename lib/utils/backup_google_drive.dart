@@ -24,7 +24,7 @@ class DriveBackupService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [drive.DriveApi.driveFileScope],
     serverClientId:
-        '671765261723-1oaflrjjjd9m80deqnuv3uggl2qdrvo9.apps.googleusercontent.com',
+        '436609276204-ti9s0mr3k6f9s3oo9bi76d4ti7tohfuh.apps.googleusercontent.com',
   );
 
   drive.DriveApi? _driveApi;

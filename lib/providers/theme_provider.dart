@@ -21,7 +21,7 @@ class ThemeProvider with ChangeNotifier {
   Color get bottomNavBackgroundColor =>
       _isDarkMode ? Colors.grey[900]! : Colors.white;
   Color get bottomNavSelectedItemColor =>
-      _isDarkMode ? Colors.white : Colors.blue;
+      _isDarkMode ? Colors.white : AppTheme.primaryColor;
   Color get bottomNavUnselectedItemColor =>
       _isDarkMode ? Colors.grey : Colors.black87.withValues(alpha: 0.7);
 

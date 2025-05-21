@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../themes/app_theme.dart';
 
 import '../../../utils/utilities.dart';
 
@@ -14,7 +15,7 @@ class AccountTile extends StatelessWidget {
   // Predefined mapping of account types to colors
   static const Map<String, Color> _typeColors = {
     'system': Colors.pink,
-    'customer': Colors.blue,
+    'customer': AppTheme.primaryColor,
     'supplier': Colors.orange,
     'exchanger': Colors.teal,
     'bank': Colors.indigo,
@@ -34,7 +35,7 @@ class AccountTile extends StatelessWidget {
   // Returns the appropriate icon color based on type and active state
   static Color _iconColor(String? type, bool isActive) {
     if (!isActive) return Colors.grey;
-    return _typeColors[type] ?? Colors.blue;
+    return _typeColors[type] ?? AppTheme.primaryColor;
   }
 
   @override

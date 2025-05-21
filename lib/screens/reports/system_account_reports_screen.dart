@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
+import '../../themes/app_theme.dart';
 
 class SystemAccountReportsScreen extends StatefulWidget {
   const SystemAccountReportsScreen({Key? key}) : super(key: key);
@@ -18,7 +19,7 @@ class _SystemAccountReportsScreenState
 
   static const _systemAccounts = <int, _AccountMeta>{
     1: _AccountMeta('treasure', Icons.account_balance_wallet, Colors.amber),
-    3: _AccountMeta('asset', Icons.pie_chart, Colors.blue),
+    3: _AccountMeta('asset', Icons.pie_chart, AppTheme.primaryColor),
     9: _AccountMeta('profit', Icons.trending_up, Colors.green),
     10: _AccountMeta('loss', Icons.trending_down, Colors.red),
   };
@@ -219,7 +220,7 @@ class _CurrencyCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Colors.blue, Color(0xFF6353DA)],
+          colors: [AppTheme.primaryColor, Color(0xFF6353DA)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

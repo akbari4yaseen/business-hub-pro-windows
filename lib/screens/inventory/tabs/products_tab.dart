@@ -4,6 +4,7 @@ import '../../../providers/inventory_provider.dart';
 import '../add_product_screen.dart';
 import '../manage_units_screen.dart';
 import '../manage_categories_screen.dart';
+import '../../../themes/app_theme.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({Key? key}) : super(key: key);
@@ -265,7 +266,7 @@ class _ProductsTabState extends State<ProductsTab> {
               children: [
                 Chip(
                   label: Text(provider.getCategoryName(product.categoryId)),
-                  backgroundColor: Colors.blue.withOpacity(0.1),
+                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                   labelStyle: const TextStyle(fontSize: 12),
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -517,7 +518,7 @@ class _ProductsTabState extends State<ProductsTab> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
+                                      color: AppTheme.primaryColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(

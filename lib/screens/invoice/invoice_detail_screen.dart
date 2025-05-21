@@ -10,6 +10,7 @@ import '../../providers/account_provider.dart';
 import '../../widgets/invoice/record_payment_dialog.dart';
 import '../../widgets/invoice/print_invoice.dart';
 import 'create_invoice_screen.dart';
+import '../../themes/app_theme.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final Invoice invoice;
@@ -26,7 +27,7 @@ class InvoiceDetailScreen extends StatelessWidget {
       case InvoiceStatus.draft:
         return Colors.grey;
       case InvoiceStatus.finalized:
-        return Colors.blue;
+        return AppTheme.primaryColor;
       case InvoiceStatus.partiallyPaid:
         return Colors.orange;
       case InvoiceStatus.paid:
@@ -107,9 +108,9 @@ class InvoiceDetailScreen extends StatelessWidget {
                   child: Text(
                     'Customer: ' + customerName,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black87),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 );
               },

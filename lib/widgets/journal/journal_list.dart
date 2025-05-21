@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import '../../themes/app_theme.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../utils/date_formatters.dart';
@@ -132,7 +133,7 @@ class JournalList extends StatelessWidget {
                 PopupMenuItem(
                   value: 'edit',
                   child: ListTile(
-                    leading: const Icon(Icons.edit, color: Colors.blue),
+                    leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
                     title: Text(loc.edit),
                   ),
                 ),

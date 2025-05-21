@@ -5,6 +5,7 @@ import 'record_payment_dialog.dart';
 import '../../screens/invoice/invoice_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/account_provider.dart';
+import '../../themes/app_theme.dart';
 
 class InvoiceList extends StatelessWidget {
   final List<Invoice> invoices;
@@ -25,9 +26,7 @@ class InvoiceList extends StatelessWidget {
     if (invoices.isEmpty) {
       return Center(
         child: Text(
-          showOverdueWarning 
-            ? 'No overdue invoices'
-            : 'No invoices found',
+          showOverdueWarning ? 'No overdue invoices' : 'No invoices found',
         ),
       );
     }
@@ -76,7 +75,7 @@ class InvoiceListItem extends StatelessWidget {
       case InvoiceStatus.draft:
         return Colors.grey;
       case InvoiceStatus.finalized:
-        return Colors.blue;
+        return AppTheme.primaryColor;
       case InvoiceStatus.partiallyPaid:
         return Colors.orange;
       case InvoiceStatus.paid:
@@ -120,14 +119,16 @@ class InvoiceListItem extends StatelessWidget {
                   builder: (context, accountProvider, child) {
                     final customer = accountProvider.customers.firstWhere(
                       (c) => c['id'] == invoice.accountId,
-                      orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
+                      orElse: () =>
+                          <String, dynamic>{'name': 'Unknown Customer'},
                     );
                     final customerName = customer['name'];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
                       child: Text(
                         'Customer: ' + customerName,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black87),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),
                     );
@@ -175,7 +176,8 @@ class InvoiceListItem extends StatelessWidget {
                         'Due: ${_dateFormat.format(invoice.dueDate!)}',
                         style: TextStyle(
                           color: invoice.isOverdue ? Colors.red : null,
-                          fontWeight: invoice.isOverdue ? FontWeight.bold : null,
+                          fontWeight:
+                              invoice.isOverdue ? FontWeight.bold : null,
                         ),
                       ),
                   ],
@@ -220,7 +222,8 @@ class InvoiceListItem extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                        Icon(Icons.warning,
+                            color: Colors.red.shade700, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -260,4 +263,4 @@ class InvoiceListItem extends StatelessWidget {
       ),
     );
   }
-} 
+}

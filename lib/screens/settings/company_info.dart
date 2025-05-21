@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/info_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../themes/app_theme.dart';
 
 class CompanyInfoScreen extends StatefulWidget {
   const CompanyInfoScreen({super.key});
@@ -169,7 +170,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.blue, width: 2),
+            borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
             borderRadius: BorderRadius.circular(12),
           ),
           errorBorder: OutlineInputBorder(

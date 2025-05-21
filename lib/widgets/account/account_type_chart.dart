@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../themes/app_theme.dart';
 
 class AccountTypeChart extends StatefulWidget {
   const AccountTypeChart({Key? key}) : super(key: key);
@@ -17,7 +18,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
 
   // Predefined mapping of account types to colors
   static const Map<String, Color> _typeColors = {
-    'customer': Colors.blue,
+    'customer': AppTheme.primaryColor,
     'supplier': Colors.orange,
     'exchanger': Colors.teal,
     'bank': Colors.indigo,

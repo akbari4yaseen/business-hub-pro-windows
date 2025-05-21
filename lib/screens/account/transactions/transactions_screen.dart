@@ -21,6 +21,7 @@ import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
 import '../../../utils/transaction_share_helper.dart';
 import '../../../utils/transaction_helper.dart';
+import '../../../themes/app_theme.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -585,7 +586,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           // close the auth dialog
           Navigator.of(ctx).pop();
 
-          // Step 2: ask “are you sure?”
+          // Step 2: ask "are you sure?"
           showDialog(
             context: ctx,
             builder: (confirmCtx) => AlertDialog(
@@ -702,7 +703,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             PopupMenuItem(
               value: 'edit',
               child: ListTile(
-                leading: const Icon(Icons.edit, color: Colors.blue),
+                leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
                 title: Text(loc.edit),
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
 import '../../utils/date_formatters.dart';
+import '../../themes/app_theme.dart';
 
 class PeriodicReportsScreen extends StatefulWidget {
   const PeriodicReportsScreen({Key? key}) : super(key: key);
@@ -337,7 +338,7 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                   const SizedBox(height: 12),
                   Card(
                     child: ListTile(
-                      leading: const Icon(Icons.balance, color: Colors.blue),
+                      leading: const Icon(Icons.balance, color: AppTheme.primaryColor),
                       title: Text(loc.balance),
                       trailing: Text(
                         _currency != null

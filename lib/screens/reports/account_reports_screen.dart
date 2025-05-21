@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../database/reports_db.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../themes/app_theme.dart';
 
 class AccountReportsScreen extends StatefulWidget {
   const AccountReportsScreen({Key? key}) : super(key: key);
@@ -16,7 +17,7 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
   late Future<Map<String, int>> _futureCount;
 
   static const Map<String, AccountMeta> _accountMeta = {
-    'customer': AccountMeta(Icons.person, Colors.blue),
+    'customer': AccountMeta(Icons.person, AppTheme.primaryColor),
     'supplier': AccountMeta(Icons.local_shipping, Colors.orange),
     'exchanger': AccountMeta(Icons.swap_horiz, Colors.purple),
     'bank': AccountMeta(Icons.account_balance, Colors.green),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:badges/badges.dart' as badges;
+import '../themes/app_theme.dart';
 
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
@@ -198,7 +199,7 @@ class _ActionButton extends StatelessWidget {
       children: [
         FloatingActionButton(
           onPressed: onPressed,
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: AppTheme.primaryColor,
           child: Icon(icon, color: Colors.white),
           heroTag: 'actionButton_$id',
         ),

@@ -4,8 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 
 import 'providers/theme_provider.dart';
 import 'providers/bottom_navigation_provider.dart';
@@ -47,15 +45,15 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Optimize for performance and rendering
-  WidgetsBinding.instance.renderView.automaticSystemUiAdjustment = false;
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-      overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
+  // // Optimize for performance and rendering
+  // WidgetsBinding.instance.renderView.automaticSystemUiAdjustment = false;
+  // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+  //     overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
 
-  // Reduce GPU pressure
-  debugPaintSizeEnabled = false;
-  debugRepaintRainbowEnabled = false;
-  debugRepaintTextRainbowEnabled = false;
+  // // Reduce GPU pressure
+  // debugPaintSizeEnabled = false;
+  // debugRepaintRainbowEnabled = false;
+  // debugRepaintTextRainbowEnabled = false;
 
   // Initialize dates
   await initializeDateFormatting();

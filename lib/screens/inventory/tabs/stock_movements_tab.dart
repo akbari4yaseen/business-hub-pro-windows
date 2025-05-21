@@ -4,6 +4,7 @@ import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
 import '../add_stock_movement_screen.dart';
 import '../widgets/search_filter_bar.dart';
+import '../../../themes/app_theme.dart';
 
 class StockMovementsTab extends StatefulWidget {
   const StockMovementsTab({Key? key}) : super(key: key);
@@ -196,7 +197,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         icon = Icons.remove_circle;
         break;
       case MovementType.transfer:
-        color = Colors.blue;
+        color = AppTheme.primaryColor;
         icon = Icons.swap_horiz;
         break;
       case MovementType.adjustment:

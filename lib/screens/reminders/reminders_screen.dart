@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../themes/app_theme.dart';
 
 import 'add_reminder_sheet.dart';
 import '../../models/reminder.dart';
@@ -285,7 +286,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                                 child: ListTile(
                                   leading: const Icon(
                                     Icons.edit,
-                                    color: Colors.blue,
+                                    color: AppTheme.primaryColor,
                                   ),
                                   title: Text(loc.edit),
                                 ),
