@@ -1,42 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'create_invoice_screen.dart';
 
 import '../../providers/invoice_provider.dart';
 import '../../widgets/invoice/invoice_list.dart';
-import 'create_invoice_screen.dart';
+import '../../models/invoice.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final VoidCallback openDrawer;
   const InvoiceScreen({Key? key, required this.openDrawer}) : super(key: key);
 
   @override
-  _InvoiceScreenState createState() => _InvoiceScreenState();
+  State<InvoiceScreen> createState() => _InvoiceScreenState();
 }
 
 class _InvoiceScreenState extends State<InvoiceScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  bool _isDisposed = false;
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Initialize invoice provider after build context is available
     Future.microtask(() {
-      if (!_isDisposed) {
-        try {
-          context.read<InvoiceProvider>().initialize();
-        } catch (e) {
-          // debugPrint('Error initializing invoice provider: $e');
-        }
+      if (mounted) {
+        context.read<InvoiceProvider>().initialize();
       }
     });
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
     _tabController.dispose();
     super.dispose();
   }
@@ -61,7 +58,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
         ),
       ),
       body: Consumer<InvoiceProvider>(
-        builder: (context, provider, child) {
+        builder: (context, provider, _) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -69,102 +66,23 @@ class _InvoiceScreenState extends State<InvoiceScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              ErrorHandler(
-                child: InvoiceList(
-                  invoices: provider.invoices,
-                  onPaymentRecorded: (invoice, amount) async {
-                    try {
-                      await provider.recordPayment(invoice.id!, amount);
-                    } catch (e) {
-                      _showErrorSnackbar(
-                          context, local.failedRecordPayment(e.toString()));
-                    }
-                  },
-                  onInvoiceFinalized: (invoice) async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text(local.confirmFinalizeInvoice),
-                          content: Text(local.finalizeInvoiceConfirmation),
-                          actions: <Widget>[
-                            TextButton(
-                              child: Text(local.cancel),
-                              onPressed: () => Navigator.of(context).pop(false),
-                            ),
-                            TextButton(
-                              child: Text(local.confirm),
-                              onPressed: () => Navigator.of(context).pop(true),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (confirmed == true) {
-                      try {
-                        await provider.finalizeInvoice(invoice);
-                      } catch (e) {
-                        _showErrorSnackbar(
-                            context, local.failedFinalizeInvoice(e.toString()));
-                      }
-                    }
-                  },
-                ),
-              ),
-              ErrorHandler(
-                child: InvoiceList(
-                  invoices: provider.overdueInvoices,
-                  showOverdueWarning: true,
-                  onPaymentRecorded: (invoice, amount) async {
-                    try {
-                      await provider.recordPayment(invoice.id!, amount);
-                    } catch (e) {
-                      _showErrorSnackbar(
-                          context, local.failedRecordPayment(e.toString()));
-                    }
-                  },
-                  onInvoiceFinalized: (invoice) async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text(local.confirmFinalizeInvoice),
-                          content: Text(local.finalizeInvoiceConfirmation),
-                          actions: <Widget>[
-                            TextButton(
-                              child: Text(local.cancel),
-                              onPressed: () => Navigator.of(context).pop(false),
-                            ),
-                            TextButton(
-                              child: Text(local.confirm),
-                              onPressed: () => Navigator.of(context).pop(true),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (confirmed == true) {
-                      try {
-                        await provider.finalizeInvoice(invoice);
-                      } catch (e) {
-                        _showErrorSnackbar(
-                            context, local.failedFinalizeInvoice(e.toString()));
-                      }
-                    }
-                  },
-                ),
+              _buildInvoiceList(context, local, provider.invoices),
+              _buildInvoiceList(
+                context,
+                local,
+                provider.overdueInvoices,
+                showOverdueWarning: true,
               ),
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "create_invoice_fab",
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const CreateInvoiceScreen(),
+              builder: (_) => const CreateInvoiceScreen(),
             ),
           );
         },
@@ -174,27 +92,60 @@ class _InvoiceScreenState extends State<InvoiceScreen>
     );
   }
 
+  Widget _buildInvoiceList(
+    BuildContext context,
+    AppLocalizations local,
+    List<Invoice> invoices, {
+    bool showOverdueWarning = false,
+  }) {
+    final provider = context.read<InvoiceProvider>();
+
+    return InvoiceList(
+      invoices: invoices,
+      showOverdueWarning: showOverdueWarning,
+      onPaymentRecorded: (invoice, amount) async {
+        try {
+          await provider.recordPayment(invoice.id!, amount);
+        } catch (e) {
+          _showErrorSnackbar(context, local.failedRecordPayment(e.toString()));
+        }
+      },
+      onInvoiceFinalized: (invoice) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(local.confirmFinalizeInvoice),
+            content: Text(local.finalizeInvoiceConfirmation),
+            actions: [
+              TextButton(
+                child: Text(local.cancel),
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              TextButton(
+                child: Text(local.confirm),
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed == true) {
+          try {
+            await provider.finalizeInvoice(invoice);
+          } catch (e) {
+            _showErrorSnackbar(
+                context, local.failedFinalizeInvoice(e.toString()));
+          }
+        }
+      },
+    );
+  }
+
   void _showErrorSnackbar(BuildContext context, String message) {
-    if (!_isDisposed) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
-  }
-}
-
-class ErrorHandler extends StatelessWidget {
-  final Widget child;
-
-  const ErrorHandler({Key? key, required this.child}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Builder(builder: (context) {
-      FlutterError.onError = (FlutterErrorDetails details) {
-        FlutterError.presentError(details);
-      };
-      return child;
-    });
   }
 }
