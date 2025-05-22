@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../../providers/inventory_provider.dart';
 import '../widgets/stock_alert_card.dart';
 import '../widgets/stock_list.dart';
@@ -30,6 +32,8 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
@@ -43,14 +47,14 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Error: ${provider.error}',
+                    '${loc.error}: ${provider.error}',
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.initialize(),
-                    child: const Text('Retry'),
+                    child: Text(loc.retry),
                   ),
                 ],
               ),
@@ -110,7 +114,7 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Row(
                               children: [
-                                const Text('Active filters:'),
+                                Text('${loc.activeFilters}:'),
                                 const SizedBox(width: 8),
                                 TextButton(
                                   onPressed: () => setState(() {
@@ -118,7 +122,7 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                                     _selectedWarehouse = null;
                                     _selectedCategory = null;
                                   }),
-                                  child: const Text('Clear all'),
+                                  child: Text(loc.clearAll),
                                 ),
                               ],
                             ),
@@ -130,7 +134,7 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                 if (provider.lowStockProducts.isNotEmpty)
                   SliverToBoxAdapter(
                     child: StockAlertCard(
-                      title: 'Low Stock Alerts',
+                      title: loc.lowStockAlerts,
                       icon: Icons.warning,
                       color: Colors.red,
                       items: provider.lowStockProducts,
@@ -139,7 +143,7 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                 if (provider.expiringProducts.isNotEmpty)
                   SliverToBoxAdapter(
                     child: StockAlertCard(
-                      title: 'Expiring Products',
+                      title: loc.expiringProducts,
                       icon: Icons.schedule,
                       color: Colors.orange,
                       items: provider.expiringProducts,
@@ -148,10 +152,10 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                 SliverPadding(
                   padding: const EdgeInsets.all(16.0),
                   sliver: filteredStock.isEmpty
-                      ? const SliverFillRemaining(
+                      ? SliverFillRemaining(
                           child: Center(
                             child: Text(
-                              'No items found',
+                              loc.noItemsFound,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontStyle: FontStyle.italic,

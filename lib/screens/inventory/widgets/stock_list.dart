@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class StockList extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -10,12 +11,14 @@ class StockList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     if (items.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         child: Center(
           child: Text(
-            'No items found',
-            style: TextStyle(
+            loc.noItemsFound,
+            style: const TextStyle(
               fontSize: 16,
               fontStyle: FontStyle.italic,
             ),
@@ -41,33 +44,33 @@ class StockList extends StatelessWidget {
                   const SizedBox(height: 4),
                   _buildInfoRow(
                     Icons.inventory,
-                    'Stock: ${item['quantity']} ${item['unit_name'] ?? ''}',
+                    '${loc.stock}: ${item['quantity']} ${item['unit_name'] ?? ''}',
                   ),
                   if (item['warehouse_name'] != null)
                     _buildInfoRow(
                       Icons.location_on,
-                      item['warehouse_name'],
+                      '${loc.location}: ${item['warehouse_name']}',
                     ),
                   if (item['expiry_date'] != null)
                     _buildInfoRow(
                       Icons.event,
-                      'Expires: ${item['expiry_date']}',
+                      '${loc.expires}: ${item['expiry_date']}',
                     ),
                 ],
               ),
               trailing: PopupMenuButton<String>(
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'move',
-                    child: Text('Move Stock'),
+                    child: Text(loc.moveStock),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'adjust',
-                    child: Text('Adjust Quantity'),
+                    child: Text(loc.adjustQuantity),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'history',
-                    child: Text('View History'),
+                    child: Text(loc.viewHistory),
                   ),
                 ],
                 onSelected: (value) => _handleMenuAction(context, value, item),
@@ -100,6 +103,8 @@ class StockList extends StatelessWidget {
   }
 
   void _showDetailsDialog(BuildContext context, Map<String, dynamic> item) {
+    final loc = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -109,24 +114,24 @@ class StockList extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailRow('SKU', item['sku']),
-              _buildDetailRow('Category', item['category_name']),
-              _buildDetailRow('Unit', item['unit_name']),
-              _buildDetailRow('Current Stock', '${item['quantity']}'),
-              _buildDetailRow('Minimum Stock', '${item['minimum_stock']}'),
-              _buildDetailRow('Maximum Stock', '${item['maximum_stock']}'),
-              _buildDetailRow('Location', item['warehouse_name']),
+              _buildDetailRow(loc.sku, item['sku']),
+              _buildDetailRow(loc.category, item['category_name']),
+              _buildDetailRow(loc.unit, item['unit_name']),
+              _buildDetailRow(loc.currentStock, '${item['quantity']}'),
+              _buildDetailRow(loc.minimumStock, '${item['minimum_stock']}'),
+              _buildDetailRow(loc.maximumStock, '${item['maximum_stock']}'),
+              _buildDetailRow(loc.location, item['warehouse_name']),
               if (item['expiry_date'] != null)
-                _buildDetailRow('Expiry Date', item['expiry_date']),
+                _buildDetailRow(loc.expiryDate, item['expiry_date']),
               if (item['last_movement'] != null)
-                _buildDetailRow('Last Movement', item['last_movement']),
+                _buildDetailRow(loc.lastMovement, item['last_movement']),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
@@ -168,4 +173,4 @@ class StockList extends StatelessWidget {
         break;
     }
   }
-} 
+}
