@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/product.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../providers/theme_provider.dart';
 
 class AddProductScreen extends StatefulWidget {
   final Product? product;
@@ -31,7 +33,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (widget.product != null) {
         _isEditing = true;
         _nameController.text = widget.product!.name;
-        _descriptionController.text = widget.product!.description ?? '';
+        _descriptionController.text = widget.product!.description;
         _selectedCategoryId = widget.product!.categoryId;
         _selectedUnitId = widget.product!.unitId;
         _minimumStockController.text = widget.product!.minimumStock.toString();
@@ -50,12 +52,47 @@ class _AddProductScreenState extends State<AddProductScreen> {
     super.dispose();
   }
 
+  void _handleSubmit() {
+    if (_formKey.currentState!.validate()) {
+      final product = Product(
+        id: _isEditing ? widget.product!.id : null,
+        name: _nameController.text,
+        description: _descriptionController.text,
+        categoryId: _selectedCategoryId!,
+        unitId: _selectedUnitId!,
+        minimumStock: double.parse(_minimumStockController.text),
+        reorderPoint: _isEditing ? widget.product!.reorderPoint : 0,
+        maximumStock:
+            _isEditing ? widget.product!.maximumStock : double.infinity,
+        hasExpiryDate: _hasExpiryDate,
+        barcode:
+            _barcodeController.text.isEmpty ? null : _barcodeController.text,
+        isActive: true,
+      );
+
+      final inventoryProvider = context.read<InventoryProvider>();
+
+      if (_isEditing) {
+        inventoryProvider.updateProduct(product);
+      } else {
+        inventoryProvider.addProduct(product);
+      }
+
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Product' : 'Add New Product'),
+        actions: [
+          IconButton(onPressed: _handleSubmit, icon: Icon(Icons.save)),
+        ],
       ),
+      backgroundColor: themeProvider.appBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -175,44 +212,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final product = Product(
-                    id: _isEditing ? widget.product!.id : null,
-                    name: _nameController.text,
-                    description: _descriptionController.text,
-                    categoryId: _selectedCategoryId!,
-                    unitId: _selectedUnitId!,
-                    minimumStock: double.parse(_minimumStockController.text),
-                    reorderPoint: _isEditing ? widget.product!.reorderPoint : 0,
-                    maximumStock: _isEditing ? widget.product!.maximumStock : double.infinity,
-                    hasExpiryDate: _hasExpiryDate,
-                    barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
-                    isActive: true,
-                  );
-                  if (_isEditing) {
-                    context.read<InventoryProvider>().updateProduct(product);
-                  } else {
-                    context.read<InventoryProvider>().addProduct(product);
-                  }
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text(_isEditing ? 'Save' : 'Add'),
-            ),
-          ],
-        ),
-      ),
     );
   }
-} 
+}

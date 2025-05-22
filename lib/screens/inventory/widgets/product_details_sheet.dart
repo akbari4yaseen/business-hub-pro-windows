@@ -1,0 +1,219 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../add_product_screen.dart';
+import '../../../providers/inventory_provider.dart';
+import '../../../themes/app_theme.dart';
+
+class ProductDetailsSheet extends StatelessWidget {
+  final dynamic product;
+
+  const ProductDetailsSheet({
+    Key? key,
+    required this.product,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<InventoryProvider>();
+    final currentStock = provider.getCurrentStockForProduct(product.id);
+    final loc = AppLocalizations.of(context)!;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) => Column(
+        children: [
+          // Header
+          Padding(
+              padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (!product.isActive)
+                  Chip(
+                    label: Text(loc.inactive),
+                    backgroundColor: Colors.grey,
+                    labelStyle: const TextStyle(color: Colors.white),
+                  ),
+              ],
+            ),
+          ),
+
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetailCard(
+                    loc.basicInfo,
+                    [
+                      _buildDetailRow(loc.category,
+                          provider.getCategoryName(product.categoryId)),
+                      _buildDetailRow(
+                          loc.unit, provider.getUnitName(product.unitId)),
+                      if (product.sku != null)
+                        _buildDetailRow(loc.sku, product.sku),
+                      if (product.barcode != null)
+                        _buildDetailRow(loc.barcode, product.barcode),
+                    ],
+                  ),
+                  if (product.description != null &&
+                      product.description.isNotEmpty)
+                    _buildDetailCard(
+                      loc.description,
+                      [_buildDetailRow('', product.description)],
+                    ),
+                  _buildDetailCard(
+                    loc.stockSettings,
+                    [
+                      _buildDetailRow(loc.minStock,
+                          product.minimumStock?.toString() ?? loc.notSet),
+                      _buildDetailRow(loc.maxStock,
+                          product.maximumStock?.toString() ?? loc.notSet),
+                      _buildDetailRow(loc.reorderPoint,
+                          product.reorderPoint?.toString() ?? loc.notSet),
+                    ],
+                  ),
+                  _buildDetailCard(
+                    loc.currentStock,
+                    [],
+                    footer: currentStock.isEmpty
+                        ? Text(loc.noStockAvailable)
+                        : Column(
+                            children: currentStock
+                                .map((stock) => ListTile(
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(stock['warehouse_name']),
+                                      trailing: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryColor
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '${stock['quantity']} ${provider.getUnitName(product.unitId)}',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Bottom actions
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 3,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(loc.close),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _handleProductAction(context, product);
+                  },
+                  child: Text(loc.editProduct),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailCard(String title, List<Widget> content,
+      {Widget? footer}) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            if (content.isNotEmpty) const Divider(),
+            ...content,
+            if (footer != null) ...[
+              if (content.isNotEmpty) const SizedBox(height: 8),
+              footer,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (label.isNotEmpty)
+            SizedBox(
+              width: 100,
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleProductAction(BuildContext context, dynamic product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddProductScreen(product: product),
+      ),
+    );
+  }
+}

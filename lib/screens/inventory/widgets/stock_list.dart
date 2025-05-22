@@ -58,24 +58,7 @@ class StockList extends StatelessWidget {
                     ),
                 ],
               ),
-              trailing: PopupMenuButton<String>(
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'move',
-                    child: Text(loc.moveStock),
-                  ),
-                  PopupMenuItem(
-                    value: 'adjust',
-                    child: Text(loc.adjustQuantity),
-                  ),
-                  PopupMenuItem(
-                    value: 'history',
-                    child: Text(loc.viewHistory),
-                  ),
-                ],
-                onSelected: (value) => _handleMenuAction(context, value, item),
-              ),
-              onTap: () => _showDetailsDialog(context, item),
+              onTap: () => _showDetailsBottomSheet(context, item),
             ),
           );
         },
@@ -89,51 +72,86 @@ class StockList extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
+          Icon(
+            icon,
+            size: 16,
+          ),
           const SizedBox(width: 4),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: Colors.grey[800]),
-            ),
+            child: Text(text),
           ),
         ],
       ),
     );
   }
 
-  void _showDetailsDialog(BuildContext context, Map<String, dynamic> item) {
+  void _showDetailsBottomSheet(
+      BuildContext context, Map<String, dynamic> item) {
     final loc = AppLocalizations.of(context)!;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(item['product_name']),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDetailRow(loc.sku, item['sku']),
-              _buildDetailRow(loc.category, item['category_name']),
-              _buildDetailRow(loc.unit, item['unit_name']),
-              _buildDetailRow(loc.currentStock, '${item['quantity']}'),
-              _buildDetailRow(loc.minimumStock, '${item['minimum_stock']}'),
-              _buildDetailRow(loc.maximumStock, '${item['maximum_stock']}'),
-              _buildDetailRow(loc.location, item['warehouse_name']),
-              if (item['expiry_date'] != null)
-                _buildDetailRow(loc.expiryDate, item['expiry_date']),
-              if (item['last_movement'] != null)
-                _buildDetailRow(loc.lastMovement, item['last_movement']),
-            ],
-          ),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item['product_name'],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow(loc.sku, item['sku']),
+                    _buildDetailRow(loc.category, item['category_name']),
+                    _buildDetailRow(loc.unit, item['unit_name']),
+                    _buildDetailRow(loc.currentStock, '${item['quantity']}'),
+                    _buildDetailRow(
+                        loc.minimumStock, '${item['minimum_stock']}'),
+                    _buildDetailRow(
+                        loc.maximumStock, '${item['maximum_stock']}'),
+                    _buildDetailRow(loc.location, item['warehouse_name']),
+                    if (item['expiry_date'] != null)
+                      _buildDetailRow(loc.expiryDate, item['expiry_date']),
+                    if (item['last_movement'] != null)
+                      _buildDetailRow(loc.lastMovement, item['last_movement']),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(loc.close),
-          ),
-        ],
       ),
     );
   }
@@ -154,23 +172,5 @@ class StockList extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _handleMenuAction(
-    BuildContext context,
-    String action,
-    Map<String, dynamic> item,
-  ) {
-    switch (action) {
-      case 'move':
-        // TODO: Implement move stock functionality
-        break;
-      case 'adjust':
-        // TODO: Implement adjust quantity functionality
-        break;
-      case 'history':
-        // TODO: Implement view history functionality
-        break;
-    }
   }
 }

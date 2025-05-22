@@ -6,6 +6,7 @@ import '../../../providers/inventory_provider.dart';
 import '../add_product_screen.dart';
 import '../manage_units_screen.dart';
 import '../manage_categories_screen.dart';
+import '../widgets/product_details_sheet.dart';
 import '../../../themes/app_theme.dart';
 
 class ProductsTab extends StatefulWidget {
@@ -64,7 +65,7 @@ class _ProductsTabState extends State<ProductsTab> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddProductDialog(context),
-        tooltip: 'Add Product',
+        tooltip: loc.addProduct,
         heroTag: "add_product_product",
         child: const Icon(Icons.add),
       ),
@@ -72,6 +73,7 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Widget _buildHeader(BuildContext context, InventoryProvider provider) {
+    final loc = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.all(12.0),
       elevation: 2,
@@ -83,8 +85,8 @@ class _ProductsTabState extends State<ProductsTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 Text(
-                  'Products',
+                Text(
+                  loc.products,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -98,14 +100,14 @@ class _ProductsTabState extends State<ProductsTab> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.refresh),
-                          tooltip: 'Refresh Products',
+                          tooltip: loc.refreshProducts,
                           onPressed: () => provider.refreshProducts(),
                         ),
                         const SizedBox(width: 4),
                         ElevatedButton.icon(
                           onPressed: () => _showManageCategoriesDialog(context),
                           icon: const Icon(Icons.category, size: 16),
-                          label: const Text('Categories'),
+                          label: Text(loc.categories),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),
@@ -115,7 +117,7 @@ class _ProductsTabState extends State<ProductsTab> {
                         ElevatedButton.icon(
                           onPressed: () => _showManageUnitsDialog(context),
                           icon: const Icon(Icons.straighten, size: 16),
-                          label: const Text('Units'),
+                          label: Text(loc.units),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),
@@ -128,10 +130,11 @@ class _ProductsTabState extends State<ProductsTab> {
               ],
             ),
             const Divider(),
+            const SizedBox(height: 10),
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Search Products',
+                labelText: loc.searchProducts,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -148,34 +151,43 @@ class _ProductsTabState extends State<ProductsTab> {
               ),
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
+                    isDense: true,
                     decoration: InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                      labelText: loc.category, // e.g., "Category"
+                      hintText: loc.allCategories, // e.g., "All Categories"
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12),
                     ),
                     value: _selectedCategory,
                     items: [
-                      const DropdownMenuItem<String>(
+                      DropdownMenuItem<String>(
                         value: null,
-                        child: Text('All Categories'),
+                        child: Text(loc.allCategories),
                       ),
-                      ...provider.categories
-                          .map((c) => DropdownMenuItem<String>(
-                                value: c.name,
-                                child: Text(c.name),
-                              ))
-                          .toList(),
+                      ...provider.categories.map(
+                        (category) => DropdownMenuItem<String>(
+                          value: category.name,
+                          child: Text(
+                            category.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
                     ],
-                    onChanged: (value) =>
-                        setState(() => _selectedCategory = value),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -453,150 +465,13 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showProductDetails(dynamic product) {
-    final provider = context.read<InventoryProvider>();
-    final currentStock = provider.getCurrentStockForProduct(product.id);
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Expanded(child: Text(product.name)),
-            if (!product.isActive)
-              const Chip(
-                label: Text('Inactive'),
-                backgroundColor: Colors.grey,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailCard(
-                'Basic Information',
-                [
-                  _buildDetailRow(
-                      'Category', provider.getCategoryName(product.categoryId)),
-                  _buildDetailRow('Unit', provider.getUnitName(product.unitId)),
-                  if (product.sku != null) _buildDetailRow('SKU', product.sku),
-                  if (product.barcode != null)
-                    _buildDetailRow('Barcode', product.barcode),
-                ],
-              ),
-              if (product.description != null && product.description.isNotEmpty)
-                _buildDetailCard(
-                  'Description',
-                  [_buildDetailRow('', product.description)],
-                ),
-              _buildDetailCard(
-                'Stock Settings',
-                [
-                  _buildDetailRow(
-                      'Min Stock', product.minimumStock?.toString() ?? 'Not set'),
-                  _buildDetailRow(
-                      'Max Stock', product.maximumStock?.toString() ?? 'Not set'),
-                  _buildDetailRow('Reorder Point',
-                      product.reorderPoint?.toString() ?? 'Not set'),
-                ],
-              ),
-              _buildDetailCard(
-                'Current Stock',
-                [],
-                footer: currentStock.isEmpty
-                    ? const Text('No stock information available')
-                    : Column(
-                        children: currentStock
-                            .map((stock) => ListTile(
-                                  dense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(stock['warehouse_name']),
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      '${stock['quantity']} ${provider.getUnitName(product.unitId)}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ))
-                            .toList(),
-                      ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _handleProductAction('edit', product);
-            },
-            child: const Text('Edit Product'),
-          ),
-        ],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-    );
-  }
-
-  Widget _buildDetailCard(String title, List<Widget> content,
-      {Widget? footer}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            if (content.isNotEmpty) const Divider(),
-            ...content,
-            if (footer != null) ...[
-              if (content.isNotEmpty) const SizedBox(height: 8),
-              footer,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (label.isNotEmpty)
-            SizedBox(
-              width: 100,
-              child: Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
-      ),
+      builder: (context) => ProductDetailsSheet(product: product),
     );
   }
 }

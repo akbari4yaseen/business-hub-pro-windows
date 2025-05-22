@@ -428,6 +428,7 @@
   "noProductsFound": "No products found",
   "changeSearchCriteria": "Try changing your search criteria or add new products",
   "addProduct": "Add Product",
+  "editProduct": "Edit Product",
   "activate": "Activate",
   "deleteProduct": "Delete Product",
   "deleteConfirm": "Are you sure you want to delete {productName}?",
@@ -452,5 +453,17 @@
   "warehouse_deleted": "Warehouse deleted successfully",
   "no_items_in_warehouse": "No items in this warehouse",
   "minimum": "Minimum",
-   "notAvailable": "N/A"
+  "notAvailable": "N/A",
+  "noMovementsFound": "No movements found",
+  "movementType": "Movement Type",
+  "allTypes": "All Types",
+  "selectDateRange": "Select Date Range",
+  "from": "From",
+  "to": "To",
+  "reference": "Reference",
+  "movementDetails": "Movement Details",
+  "type": "Type",
+  "source": "Source",
+  "destination": "Destination",
+  "createdAt": "Created At"
 }
