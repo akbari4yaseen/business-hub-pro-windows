@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class StockAlertCard extends StatelessWidget {
   final String title;
@@ -47,7 +48,7 @@ class StockAlertCard extends StatelessWidget {
               final item = items[index];
               return ListTile(
                 title: Text(item['product_name']),
-                subtitle: Text(_buildSubtitle(item)),
+                subtitle: Text(_buildSubtitle(context, item)),
                 leading: Icon(icon, color: color),
                 onTap: () => _showDetailsDialog(context, item),
               );
@@ -58,25 +59,30 @@ class StockAlertCard extends StatelessWidget {
     );
   }
 
-  String _buildSubtitle(Map<String, dynamic> item) {
+  String _buildSubtitle(BuildContext context, Map<String, dynamic> item) {
     final List<String> details = [];
+    final loc = AppLocalizations.of(context)!;
 
-    if (item.containsKey('current_stock') && item.containsKey('minimum_stock')) {
-      details.add('Current: ${item['current_stock']} / Minimum: ${item['minimum_stock']}');
+    if (item.containsKey('current_stock') &&
+        item.containsKey('minimum_stock')) {
+      details.add(
+        '${loc.current}: ${item['current_stock']} / ${loc.minimum}: ${item['minimum_stock']}',
+      );
     }
 
     if (item.containsKey('warehouse_name')) {
-      details.add('Location: ${item['warehouse_name']}');
+      details.add('${loc.location}: ${item['warehouse_name']}');
     }
 
     if (item.containsKey('expiry_date')) {
-      details.add('Expires: ${item['expiry_date']}');
+      details.add('${loc.expires}: ${item['expiry_date']}');
     }
 
     return details.join('\n');
   }
 
   void _showDetailsDialog(BuildContext context, Map<String, dynamic> item) {
+    final loc = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -85,26 +91,29 @@ class StockAlertCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow('SKU', item['sku']),
-            _buildDetailRow('Category', item['category_name']),
-            _buildDetailRow('Current Stock', item['current_stock']?.toString()),
-            _buildDetailRow('Minimum Stock', item['minimum_stock']?.toString()),
-            _buildDetailRow('Location', item['warehouse_name']),
+            _buildDetailRow(context, loc.sku, item['sku']),
+            _buildDetailRow(context, loc.category, item['category_name']),
+            _buildDetailRow(
+                context, loc.currentStock, item['current_stock']?.toString()),
+            _buildDetailRow(
+                context, loc.minimumStock, item['minimum_stock']?.toString()),
+            _buildDetailRow(context, loc.location, item['warehouse_name']),
             if (item.containsKey('expiry_date'))
-              _buildDetailRow('Expiry Date', item['expiry_date']),
+              _buildDetailRow(context, loc.expiryDate, item['expiry_date']),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String? value) {
+  Widget _buildDetailRow(BuildContext context, String label, String? value) {
+    final loc = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -115,10 +124,10 @@ class StockAlertCard extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           Expanded(
-            child: Text(value ?? 'N/A'),
+            child: Text(value ?? loc.notAvailable),
           ),
         ],
       ),
     );
   }
-} 
+}

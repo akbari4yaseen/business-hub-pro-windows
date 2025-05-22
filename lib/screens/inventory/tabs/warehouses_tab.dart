@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/inventory_provider.dart';
-import '../../../models/warehouse.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../dialogs/add_warehouse_dialog.dart';
 import '../dialogs/edit_warehouse_dialog.dart';
-
 import '../dialogs/move_stock_dialog.dart';
+import '../../../providers/inventory_provider.dart';
+import '../../../models/warehouse.dart';
 
 class WarehousesTab extends StatefulWidget {
   const WarehousesTab({Key? key}) : super(key: key);
@@ -31,6 +31,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
@@ -44,14 +45,14 @@ class _WarehousesTabState extends State<WarehousesTab> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Error: ${provider.error}',
+                    '${loc.error}: ${provider.error}',
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.initialize(),
-                    child: const Text('Retry'),
+                    child: Text(loc.retry),
                   ),
                 ],
               ),
@@ -76,8 +77,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'No warehouses found',
+                  Text(
+                    loc.no_warehouses_found,
                     style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   ),
                   if (_searchQuery.isNotEmpty || _showEmpty)
@@ -86,12 +87,12 @@ class _WarehousesTabState extends State<WarehousesTab> {
                         _searchQuery = '';
                         _showEmpty = false;
                       }),
-                      child: const Text('Clear filters'),
+                      child: Text(loc.clear_filters),
                     ),
                   ElevatedButton.icon(
                     onPressed: () => provider.refreshWarehouses(),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh Warehouses'),
+                    label: Text(loc.refresh_warehouses),
                   ),
                 ],
               ),
@@ -106,8 +107,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
                   children: [
                     Expanded(
                       child: TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Search Warehouses',
+                        decoration: InputDecoration(
+                          labelText: loc.search_warehouses,
                           prefixIcon: Icon(Icons.search),
                         ),
                         onChanged: (value) =>
@@ -116,13 +117,13 @@ class _WarehousesTabState extends State<WarehousesTab> {
                     ),
                     const SizedBox(width: 16),
                     FilterChip(
-                      label: const Text('Show Empty'),
+                      label: Text(loc.show_empty),
                       selected: _showEmpty,
                       onSelected: (value) => setState(() => _showEmpty = value),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.refresh),
-                      tooltip: 'Refresh Warehouses',
+                      icon: Icon(Icons.refresh),
+                      tooltip: loc.refresh_warehouses,
                       onPressed: () => provider.refreshWarehouses(),
                     ),
                   ],
@@ -142,19 +143,19 @@ class _WarehousesTabState extends State<WarehousesTab> {
                       ),
                       child: ExpansionTile(
                         title: Text(warehouse.name),
-                        subtitle: Text('${items.length} items'),
+                        subtitle: Text('${items.length} ${loc.items}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              tooltip: 'Edit Warehouse',
+                              tooltip: loc.edit_warehouse,
                               onPressed: () =>
                                   _handleWarehouseAction('edit', warehouse),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete),
-                              tooltip: 'Delete Warehouse',
+                              tooltip: loc.delete_warehouse,
                               onPressed: items.isEmpty
                                   ? () => _handleWarehouseAction(
                                       'delete', warehouse)
@@ -181,12 +182,13 @@ class _WarehousesTabState extends State<WarehousesTab> {
   }
 
   List<Widget> _buildWarehouseItems(List<Map<String, dynamic>> items) {
+    final loc = AppLocalizations.of(context)!;
     if (items.isEmpty) {
       return [
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
-            'No items in this warehouse',
+            loc.no_items_in_warehouse,
             style: TextStyle(fontStyle: FontStyle.italic),
           ),
         ),
@@ -206,7 +208,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    'Quantity: ${item['quantity']} ${item['unit_name'] ?? ''}'),
+                    '${loc.quantity}: ${item['quantity']} ${item['unit_name'] ?? ''}'),
               ],
             ),
             trailing: IconButton(
@@ -233,7 +235,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
   Future<void> _handleWarehouseAction(
       String action, Warehouse warehouse) async {
     final provider = context.read<InventoryProvider>();
-
+    final loc = AppLocalizations.of(context)!;
     try {
       switch (action) {
         case 'edit':
@@ -250,21 +252,21 @@ class _WarehousesTabState extends State<WarehousesTab> {
           final confirm = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Delete Warehouse'),
+              title: Text(loc.delete_warehouse),
               content: Text(
-                'Are you sure you want to delete the warehouse "${warehouse.name}"?',
+                '${loc.delete_warehouse_confirm(warehouse.name)}',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
+                  child: Text(loc.cancel),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),
                   onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Delete'),
+                  child: Text(loc.delete),
                 ),
               ],
             ),
@@ -273,14 +275,14 @@ class _WarehousesTabState extends State<WarehousesTab> {
           if (confirm == true) {
             await provider.deleteWarehouse(warehouse.id!);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Warehouse deleted successfully')),
+              SnackBar(content: Text(loc.warehouse_deleted)),
             );
           }
           break;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('${loc.error}: $e')),
       );
     }
   }

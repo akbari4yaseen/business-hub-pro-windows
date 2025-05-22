@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../../providers/inventory_provider.dart';
 import '../add_product_screen.dart';
 import '../manage_units_screen.dart';
@@ -41,6 +43,8 @@ class _ProductsTabState extends State<ProductsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
@@ -79,7 +83,7 @@ class _ProductsTabState extends State<ProductsTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                 Text(
                   'Products',
                   style: TextStyle(
                     fontSize: 18,
@@ -491,18 +495,13 @@ class _ProductsTabState extends State<ProductsTab> {
                 'Stock Settings',
                 [
                   _buildDetailRow(
-                      'Min Stock', product.minStock?.toString() ?? 'Not set'),
+                      'Min Stock', product.minimumStock?.toString() ?? 'Not set'),
                   _buildDetailRow(
-                      'Max Stock', product.maxStock?.toString() ?? 'Not set'),
+                      'Max Stock', product.maximumStock?.toString() ?? 'Not set'),
                   _buildDetailRow('Reorder Point',
                       product.reorderPoint?.toString() ?? 'Not set'),
                 ],
               ),
-              if (product.notes != null && product.notes.isNotEmpty)
-                _buildDetailCard(
-                  'Notes',
-                  [_buildDetailRow('', product.notes)],
-                ),
               _buildDetailCard(
                 'Current Stock',
                 [],
