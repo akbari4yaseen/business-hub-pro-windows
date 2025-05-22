@@ -61,7 +61,7 @@ class InvoiceProvider with ChangeNotifier {
 
     try {
       // 1. Create the invoice in the database
-      final invoiceId = await _db.createInvoice(
+      await _db.createInvoice(
         accountId: invoice.accountId,
         invoiceNumber: invoice.invoiceNumber,
         date: invoice.date,
@@ -73,10 +73,7 @@ class InvoiceProvider with ChangeNotifier {
         items: invoice.items.map((item) => item.toMap()).toList(),
       );
 
-      // // 2. Update warehouse inventory for each item
-      // await _updateInventoryForInvoice(invoice.items, invoiceId);
-
-      // 3. Fetch updated invoices
+      // 2. Fetch updated invoices
       await loadInvoices();
     } catch (e) {
       _error = e.toString();
@@ -152,19 +149,6 @@ class InvoiceProvider with ChangeNotifier {
       // First update the invoice status
       await updateInvoice(updatedInvoice);
 
-      // Then update inventory with a stock movement for each item
-      // for (final item in invoice.items) {
-      //   // Create a stock movement (negative quantity because products are going out)
-      //   final movement = StockMovement(
-      //     productId: item.productId,
-      //     quantity: -item.quantity,
-      //     type: MovementType.stockOut,
-      //     reference: 'Invoice ${invoice.invoiceNumber}',
-      //     notes: 'Finalized invoice',
-      //   );
-
-      //   await _inventoryProvider.recordStockMovement(movement);
-      // }
       // // 2. Update warehouse inventory for each item
       await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
       await _db.finalizeInvoice(invoice.id!);

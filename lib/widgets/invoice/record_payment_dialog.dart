@@ -1,6 +1,9 @@
+// record_payment_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../models/invoice.dart';
 
 class RecordPaymentDialog extends StatefulWidget {
@@ -20,7 +23,7 @@ class RecordPaymentDialog extends StatefulWidget {
 class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  static final _currencyFormat = NumberFormat('#,##0.00');
+  static final _currencyFormat = NumberFormat('#,###.##');
 
   @override
   void initState() {
@@ -36,8 +39,10 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return AlertDialog(
-      title: const Text('Record Payment'),
+      title: Text(loc.recordPayment),
       content: Form(
         key: _formKey,
         child: Column(
@@ -45,12 +50,12 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Invoice: ${widget.invoice.invoiceNumber}',
+              '${loc.invoiceLabel}: ${widget.invoice.invoiceNumber}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Outstanding Balance: ${_currencyFormat.format(widget.invoice.balance)} ${widget.invoice.currency}',
+              '${loc.outstandingBalance}: ${_currencyFormat.format(widget.invoice.balance)} ${widget.invoice.currency}',
               style: TextStyle(
                 color: widget.invoice.isOverdue ? Colors.red : Colors.orange,
               ),
@@ -59,31 +64,32 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
             TextFormField(
               controller: _amountController,
               decoration: InputDecoration(
-                labelText: 'Payment Amount',
+                labelText: loc.paymentAmount,
                 suffixText: widget.invoice.currency,
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
               ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter payment amount';
+                  return loc.pleaseEnterPaymentAmount;
                 }
-                
+
                 final amount = double.tryParse(value.replaceAll(',', ''));
                 if (amount == null) {
-                  return 'Please enter a valid amount';
+                  return loc.enterValidAmount;
                 }
-                
+
                 if (amount <= 0) {
-                  return 'Amount must be greater than zero';
+                  return loc.amountGreaterThanZero;
                 }
-                
+
                 if (amount > widget.invoice.balance) {
-                  return 'Amount cannot exceed outstanding balance';
+                  return loc.amountExceedsBalance;
                 }
-                
+
                 return null;
               },
             ),
@@ -93,7 +99,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc.cancel),
         ),
         ElevatedButton(
           onPressed: () {
@@ -105,9 +111,9 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
               Navigator.of(context).pop();
             }
           },
-          child: const Text('Record Payment'),
+          child: Text(loc.recordPayment),
         ),
       ],
     );
   }
-} 
+}

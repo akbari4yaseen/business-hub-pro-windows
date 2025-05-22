@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../models/invoice.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'record_payment_dialog.dart';
-import '../../screens/invoice/invoice_detail_screen.dart';
 import 'package:provider/provider.dart';
+import '../../models/invoice.dart';
+import '../../utils/date_formatters.dart';
+import '../../utils/invoice.dart';
+import '../../screens/invoice/invoice_detail_screen.dart';
 import '../../providers/account_provider.dart';
 import '../../themes/app_theme.dart';
 
@@ -23,11 +27,12 @@ class InvoiceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     if (invoices.isEmpty) {
       return Center(
-        child: Text(
-          showOverdueWarning ? 'No overdue invoices' : 'No invoices found',
-        ),
+        child:
+            Text(showOverdueWarning ? loc.noOverdueInvoices : loc.noInvoices),
       );
     }
 
@@ -43,7 +48,7 @@ class InvoiceList extends StatelessWidget {
             onInvoiceFinalized: onInvoiceFinalized,
           );
         } catch (e) {
-          debugPrint('Error rendering invoice item at index $index: $e');
+          // debugPrint('Error rendering invoice item at index $index: $e');
           return const SizedBox.shrink();
         }
       },
@@ -59,8 +64,7 @@ class InvoiceListItem extends StatelessWidget {
   final Function(Invoice, double) onPaymentRecorded;
   final Function(Invoice) onInvoiceFinalized;
 
-  static final _dateFormat = DateFormat('MMM d, y');
-  static final _currencyFormat = NumberFormat('#,##0.00');
+  static final _currencyFormat = NumberFormat('#,###.##');
 
   const InvoiceListItem({
     Key? key,
@@ -105,6 +109,8 @@ class InvoiceListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return RepaintBoundary(
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -126,7 +132,7 @@ class InvoiceListItem extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
                       child: Text(
-                        'Customer: ' + customerName,
+                        '${loc.customerInvoice(customerName)}',
                         style: const TextStyle(
                             fontWeight: FontWeight.w500, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
@@ -157,7 +163,7 @@ class InvoiceListItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        invoice.status.toString().split('.').last,
+                        invoice.status.localizedName(loc),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -170,10 +176,11 @@ class InvoiceListItem extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Date: ${_dateFormat.format(invoice.date)}'),
+                    Text(
+                        '${loc.dateInvoice(formatLocalizedDate(context, invoice.date.toString()))}'),
                     if (invoice.dueDate != null)
                       Text(
-                        'Due: ${_dateFormat.format(invoice.dueDate!)}',
+                        '${loc.dueInvoice(formatLocalizedDate(context, invoice.dueDate.toString()))}',
                         style: TextStyle(
                           color: invoice.isOverdue ? Colors.red : null,
                           fontWeight:
@@ -188,14 +195,14 @@ class InvoiceListItem extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Total: ${_currencyFormat.format(invoice.total)} ${invoice.currency}',
+                        '${loc.totalInvoice(_currencyFormat.format(invoice.total))} ${invoice.currency}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (invoice.paidAmount != null && invoice.paidAmount! > 0)
                       Text(
-                        'Paid: ${_currencyFormat.format(invoice.paidAmount)} ${invoice.currency}',
+                        '${loc.paidInvoice(_currencyFormat.format(invoice.paidAmount))} ${invoice.currency}',
                         style: const TextStyle(color: Colors.green),
                       ),
                   ],
@@ -204,7 +211,7 @@ class InvoiceListItem extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Balance: ${_currencyFormat.format(invoice.balance)} ${invoice.currency}',
+                      '${loc.balanceInvoice(_currencyFormat.format(invoice.balance))} ${invoice.currency}',
                       style: TextStyle(
                         color: invoice.isOverdue ? Colors.red : Colors.orange,
                         fontWeight: FontWeight.bold,
@@ -227,7 +234,7 @@ class InvoiceListItem extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Overdue by ${DateTime.now().difference(invoice.dueDate!).inDays} days',
+                            '${loc.overdueByInvoice(DateTime.now().difference(invoice.dueDate!).inDays)}',
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontWeight: FontWeight.bold,
@@ -245,14 +252,14 @@ class InvoiceListItem extends StatelessWidget {
                     if (invoice.status == InvoiceStatus.draft)
                       TextButton(
                         onPressed: () => onInvoiceFinalized(invoice),
-                        child: const Text('Finalize'),
+                        child: Text(loc.finalize),
                       ),
                     if (invoice.status != InvoiceStatus.draft &&
                         invoice.status != InvoiceStatus.paid &&
                         invoice.status != InvoiceStatus.cancelled)
                       TextButton(
                         onPressed: () => _showRecordPaymentDialog(context),
-                        child: const Text('Record Payment'),
+                        child: Text(loc.recordPayment),
                       ),
                   ],
                 ),

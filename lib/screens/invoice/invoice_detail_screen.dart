@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../utils/date_formatters.dart';
+import '../../utils/invoice.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/inventory_provider.dart';
@@ -9,8 +12,8 @@ import '../../providers/info_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../widgets/invoice/record_payment_dialog.dart';
 import '../../widgets/invoice/print_invoice.dart';
-import 'create_invoice_screen.dart';
 import '../../themes/app_theme.dart';
+import 'create_invoice_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final Invoice invoice;
@@ -39,9 +42,10 @@ class InvoiceDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Invoice ${invoice.invoiceNumber}'),
+        title: Text('${loc.invoice} ${invoice.invoiceNumber}'),
         actions: [
           if (invoice.status == InvoiceStatus.draft) ...[
             IconButton(
@@ -55,12 +59,12 @@ class InvoiceDetailScreen extends StatelessWidget {
                   ),
                 );
               },
-              tooltip: 'Edit Invoice',
+              tooltip: loc.editInvoice,
             ),
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () => _showDeleteConfirmation(context),
-              tooltip: 'Delete Invoice',
+              tooltip: loc.deleteInvoice,
             ),
           ],
           if (invoice.status != InvoiceStatus.draft &&
@@ -82,12 +86,12 @@ class InvoiceDetailScreen extends StatelessWidget {
                   ),
                 );
               },
-              tooltip: 'Record Payment',
+              tooltip: loc.recordPayment,
             ),
           IconButton(
             icon: const Icon(Icons.print),
             onPressed: () => _printInvoice(context),
-            tooltip: 'Print Invoice',
+            tooltip: loc.printInvoice,
           ),
         ],
       ),
@@ -106,7 +110,7 @@ class InvoiceDetailScreen extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: Text(
-                    'Customer: ' + customerName,
+                    '${loc.customer}: $customerName',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -126,7 +130,7 @@ class InvoiceDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                invoice.status.toString().split('.').last.toUpperCase(),
+                invoice.status.localizedName(loc).toString().toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -142,8 +146,8 @@ class InvoiceDetailScreen extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Invoice Date',
+                    Text(
+                      loc.invoiceDate,
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
@@ -162,8 +166,8 @@ class InvoiceDetailScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'Due Date',
+                      Text(
+                        loc.dueDate,
                         style: TextStyle(
                           color: Colors.grey,
                           fontSize: 12,
@@ -185,8 +189,8 @@ class InvoiceDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Items
-            const Text(
-              'Items',
+            Text(
+              loc.items,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -249,9 +253,9 @@ class InvoiceDetailScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Subtotal'),
+                        Text(loc.subtotal),
                         Text(
-                          '${_currencyFormat.format(invoice.subtotal)} ${invoice.currency}',
+                          '\u200E${_currencyFormat.format(invoice.subtotal)} ${invoice.currency}',
                         ),
                       ],
                     ),
@@ -261,9 +265,9 @@ class InvoiceDetailScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Paid Amount'),
+                          Text(loc.paidAmount),
                           Text(
-                            '${_currencyFormat.format(invoice.paidAmount)} ${invoice.currency}',
+                            '\u200E${_currencyFormat.format(invoice.paidAmount)} ${invoice.currency}',
                             style: const TextStyle(color: Colors.green),
                           ),
                         ],
@@ -273,12 +277,12 @@ class InvoiceDetailScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Balance Due',
+                        Text(
+                          loc.balanceDue,
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '${_currencyFormat.format(invoice.balance)} ${invoice.currency}',
+                          '\u200E${_currencyFormat.format(invoice.balance)} ${invoice.currency}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: invoice.balance > 0
@@ -297,8 +301,8 @@ class InvoiceDetailScreen extends StatelessWidget {
 
             if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
               const SizedBox(height: 24),
-              const Text(
-                'Notes',
+              Text(
+                loc.note,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -329,20 +333,20 @@ class InvoiceDetailScreen extends StatelessWidget {
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Invoice'),
-        content: const Text(
-            'Are you sure you want to delete this invoice? This action cannot be undone.'),
+        title: Text(loc.deleteInvoice),
+        content: Text(loc.deleteInvoiceConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(loc.delete),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
@@ -355,13 +359,13 @@ class InvoiceDetailScreen extends StatelessWidget {
         if (context.mounted) {
           Navigator.of(context).pop(); // Return to previous screen
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice deleted successfully')),
+            SnackBar(content: Text(loc.invoiceDeleted)),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting invoice: $e')),
+            SnackBar(content: Text('${loc.errorDeletingInvoice}: $e')),
           );
         }
       }

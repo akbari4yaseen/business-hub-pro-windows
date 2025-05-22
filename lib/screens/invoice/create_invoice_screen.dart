@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../models/invoice.dart';
 import '../../utils/date_formatters.dart';
 import '../../widgets/journal/journal_form_widgets.dart';
 import '../../providers/settings_provider.dart';
 import '../../constants/currencies.dart';
 import '../../providers/invoice_provider.dart';
-import '../../providers/inventory_provider.dart';
 import '../../providers/account_provider.dart';
+import '../../widgets/invoice/invoice_item_form.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   final Invoice? invoice;
@@ -146,15 +147,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.invoice != null ? 'Edit Invoice' : 'Create Invoice'),
+        title:
+            Text(widget.invoice != null ? loc.editInvoice : loc.createInvoice),
         actions: [
           if (widget.invoice != null)
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () => _showDeleteConfirmation(context),
-              tooltip: 'Delete Invoice',
+              tooltip: loc.deleteInvoice,
             ),
           _isSubmitting
               ? const Center(
@@ -180,7 +183,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           padding: const EdgeInsets.all(16.0),
           children: [
             // Customer Account Selection
-            _buildAccountSelection(),
+            _buildAccountSelection(context),
             const SizedBox(height: 16),
 
             // Dates and Currency
@@ -190,8 +193,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Invoice Details',
+                    Text(
+                      loc.invoiceDetails,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -203,7 +206,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       children: [
                         Expanded(
                           child: ListTile(
-                            title: const Text('Invoice Date'),
+                            title: Text(loc.invoiceDate),
                             subtitle: Text(
                                 formatLocalizedDate(context, _date.toString())),
                             trailing: const Icon(Icons.calendar_today),
@@ -212,12 +215,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         ),
                         Expanded(
                           child: ListTile(
-                            title: const Text('Due Date'),
+                            title: Text(loc.dueDate),
                             subtitle: _dueDate != null
                                 ? Text(formatLocalizedDate(
                                     context, _dueDate.toString()))
-                                : const Text('Not set'),
-                            trailing: const Icon(Icons.calendar_today),
+                                : Text(loc.notSet),
+                            trailing: const Icon(Icons.calendar_month_outlined),
                             onTap: () => _selectDate(context, true),
                           ),
                         ),
@@ -228,8 +231,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     // Currency Selection
                     DropdownButtonFormField<String>(
                       value: _currency,
-                      decoration: const InputDecoration(
-                        labelText: 'Currency',
+                      decoration: InputDecoration(
+                        labelText: loc.currency,
                       ),
                       items: currencies
                           .map(
@@ -259,8 +262,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Items',
+                        Text(
+                          loc.items,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -269,17 +272,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         TextButton.icon(
                           onPressed: _addItem,
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Item'),
+                          label: Text(loc.addItem),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     if (_items.isEmpty)
-                      const Center(
+                      Center(
                         child: Padding(
                           padding: EdgeInsets.all(16.0),
-                          child: Text(
-                              'No items added yet. Press "Add Item" to begin.'),
+                          child: Text(loc.noItemsAdded),
                         ),
                       )
                     else
@@ -306,8 +308,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Additional Information',
+                    Text(
+                      loc.additionalInformation,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -316,8 +318,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes',
+                      decoration: InputDecoration(
+                        labelText: loc.notes,
                       ),
                       maxLines: 2,
                     ),
@@ -334,8 +336,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total',
+                    Text(
+                      loc.total,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -365,15 +367,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildAccountSelection() {
+  Widget _buildAccountSelection(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Customer',
+            Text(
+              loc.customer,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -385,17 +388,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 final customers = accountProvider.customers;
 
                 if (customers.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                          'No customers found. Please add a customer account first.'),
+                      child: Text(loc.noCustomersFound),
                     ),
                   );
                 }
 
                 return AccountField(
-                  label: 'Customer Account',
+                  label: loc.customerAccount,
                   accounts: customers,
                   initialValue: _selectedAccountId != null
                       ? TextEditingValue(
@@ -426,21 +428,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     try {
       final invoiceProvider = context.read<InvoiceProvider>();
+      final loc = AppLocalizations.of(context)!;
       final invoiceNumber = widget.invoice?.invoiceNumber ??
           await invoiceProvider.generateInvoiceNumber();
 
       for (final item in _items) {
         if (item.selectedProductId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Please select a product for all items')),
+            SnackBar(content: Text(loc.pleaseSelectAccount)),
           );
           return;
         }
         if (item.quantity <= 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Quantity must be greater than 0 for all items')),
+            SnackBar(content: Text(loc.quantityMustBeGreaterThanZero)),
           );
           return;
         }
@@ -489,20 +490,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Invoice'),
-        content: const Text(
-            'Are you sure you want to delete this invoice? This action cannot be undone.'),
+        title: Text(loc.deleteInvoice),
+        content: Text(loc.deleteInvoiceConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(loc.delete),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
@@ -517,350 +518,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (context.mounted) {
           Navigator.of(context).pop(); // Return to previous screen
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice deleted successfully')),
+            SnackBar(content: Text(loc.invoiceDeleted)),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting invoice: $e')),
+            SnackBar(content: Text('${loc.errorDeletingInvoice}: $e')),
           );
         }
       }
     }
-  }
-}
-
-class InvoiceItemFormData {
-  final quantityController = TextEditingController(text: '');
-  final unitPriceController = TextEditingController(text: '');
-  final descriptionController = TextEditingController();
-  int? selectedProductId;
-
-  double get quantity => double.tryParse(quantityController.text) ?? 0;
-  double get unitPrice =>
-      double.tryParse(unitPriceController.text.replaceAll(',', '')) ?? 0;
-  String get description => descriptionController.text;
-
-  void dispose() {
-    quantityController.dispose();
-    unitPriceController.dispose();
-    descriptionController.dispose();
-  }
-}
-
-class InvoiceItemForm extends StatefulWidget {
-  final InvoiceItemFormData formData;
-  final VoidCallback onRemove;
-  final VoidCallback onUpdate;
-
-  const InvoiceItemForm({
-    Key? key,
-    required this.formData,
-    required this.onRemove,
-    required this.onUpdate,
-  }) : super(key: key);
-
-  @override
-  State<InvoiceItemForm> createState() => _InvoiceItemFormState();
-}
-
-class _InvoiceItemFormState extends State<InvoiceItemForm> {
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            Consumer<InventoryProvider>(
-              builder: (context, provider, child) {
-                final products =
-                    provider.products.where((p) => p.id != null).toList();
-
-                if (products.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                        'No products available. Please add products to inventory first.'),
-                  );
-                }
-
-                return Column(
-                  children: [
-                    Autocomplete<Map<String, dynamic>>(
-                      initialValue: widget.formData.selectedProductId != null
-                          ? TextEditingValue(
-                              text: products
-                                  .firstWhere((p) =>
-                                      p.id == widget.formData.selectedProductId)
-                                  .name,
-                            )
-                          : null,
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) {
-                          return products.map((product) {
-                            final stock =
-                                provider.getCurrentStockForProduct(product.id!);
-                            final totalStock = stock.fold<double>(
-                                0,
-                                (sum, item) =>
-                                    sum + (item['quantity'] as double));
-                            return {
-                              'id': product.id,
-                              'name': product.name,
-                              'stock': totalStock,
-                            };
-                          }).toList();
-                        }
-                        return products.where((product) {
-                          return product.name
-                              .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase());
-                        }).map((product) {
-                          final stock =
-                              provider.getCurrentStockForProduct(product.id!);
-                          final totalStock = stock.fold<double>(
-                              0,
-                              (sum, item) =>
-                                  sum + (item['quantity'] as double));
-                          return {
-                            'id': product.id,
-                            'name': product.name,
-                            'stock': totalStock,
-                          };
-                        }).toList();
-                      },
-                      displayStringForOption: (option) => option['name'],
-                      onSelected: (option) {
-                        setState(() {
-                          widget.formData.selectedProductId = option['id'];
-                        });
-                        final product =
-                            products.firstWhere((p) => p.id == option['id']);
-
-                        // Set description if the product has one
-                        if (product.description.isNotEmpty) {
-                          widget.formData.descriptionController.text =
-                              product.description;
-                        }
-
-                        // Check if we have stock
-                        final stock =
-                            provider.getCurrentStockForProduct(product.id!);
-                        final totalStock = stock.fold<double>(0,
-                            (sum, item) => sum + (item['quantity'] as double));
-
-                        if (totalStock <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Warning: No stock available for ${product.name}'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
-                      },
-                      fieldViewBuilder: (context, textEditingController,
-                          focusNode, onFieldSubmitted) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextFormField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              decoration: const InputDecoration(
-                                labelText: 'Product',
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please select a product';
-                                }
-                                return null;
-                              },
-                            ),
-                            if (widget.formData.selectedProductId != null)
-                              _buildStockInfo(
-                                  provider, widget.formData.selectedProductId!),
-                          ],
-                        );
-                      },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 200),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, index) {
-                                  final option = options.elementAt(index);
-                                  return ListTile(
-                                    title: Text(option['name']),
-                                    subtitle: Text(
-                                      'Stock: ${option['stock'].toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: option['stock'] > 0
-                                            ? Colors.green.shade800
-                                            : Colors.red.shade800,
-                                      ),
-                                    ),
-                                    onTap: () => onSelected(option),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: widget.formData.quantityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}')),
-                    ],
-                    onChanged: (_) => widget.onUpdate(),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      final quantity = double.tryParse(value);
-                      if (quantity == null || quantity <= 0) {
-                        return 'Invalid quantity';
-                      }
-
-                      // Check if we have enough stock
-                      if (widget.formData.selectedProductId != null) {
-                        final provider = Provider.of<InventoryProvider>(context,
-                            listen: false);
-                        final stock = provider.getCurrentStockForProduct(
-                            widget.formData.selectedProductId!);
-                        final totalStock = stock.fold<double>(0,
-                            (sum, item) => sum + (item['quantity'] as double));
-
-                        if (quantity > totalStock) {
-                          return 'Not enough stock (${NumberFormat("#,###.##").format(totalStock)})';
-                        }
-                      }
-
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: widget.formData.unitPriceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Unit Price',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}')),
-                    ],
-                    onChanged: (_) => widget.onUpdate(),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      final price = double.tryParse(value.replaceAll(',', ''));
-                      if (price == null || price <= 0) {
-                        return 'Invalid price';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: widget.formData.descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: widget.onRemove,
-                icon: const Icon(Icons.delete, color: Colors.red),
-                label: const Text(
-                  'Remove',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStockInfo(InventoryProvider provider, int productId) {
-    final stock = provider.getCurrentStockForProduct(productId);
-
-    if (stock.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Text(
-          'No stock available',
-          style: TextStyle(
-              color: Colors.red.shade700, fontStyle: FontStyle.italic),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          const Text(
-            'Available Stock:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          ...stock.map((item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${item['warehouse_name']}'),
-                    Text(
-                      '${item['quantity']} ${item['unit_name'] ?? ''}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              )),
-          const Divider(),
-        ],
-      ),
-    );
   }
 }
