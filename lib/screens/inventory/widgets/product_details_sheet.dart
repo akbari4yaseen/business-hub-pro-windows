@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../add_product_screen.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../themes/app_theme.dart';
 
@@ -28,7 +27,7 @@ class ProductDetailsSheet extends StatelessWidget {
         children: [
           // Header
           Padding(
-              padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Expanded(
@@ -122,37 +121,6 @@ class ProductDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
-          // Bottom actions
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 3,
-                  offset: const Offset(0, -1),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(loc.close),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _handleProductAction(context, product);
-                  },
-                  child: Text(loc.editProduct),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -204,15 +172,6 @@ class ProductDetailsSheet extends StatelessWidget {
             child: Text(value),
           ),
         ],
-      ),
-    );
-  }
-
-  void _handleProductAction(BuildContext context, dynamic product) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddProductScreen(product: product),
       ),
     );
   }

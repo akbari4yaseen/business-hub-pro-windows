@@ -1,5 +1,6 @@
 {
-  "appTitle": "بیزنس‌هاب",
+  "appTitle": "بیزنس‌هاب پرو",
+  "appName": "بیزنس‌هاب پرو",
   "languageEnglish": "انگلیسی",
   "languageFarsi": "فارسی",
   "languagePashto": "پشتو",
@@ -87,7 +88,6 @@
   "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
   "enterPassword": "لطفا رمز عبور خود را وارد کنید.",
   "wrongPassword": "رمز عبور اشتباه است.",
-  "appName": "بیزنس‌هاب",
   "settings": "تنظیمات",
   "help": "راهنمایی",
   "about": "درباره",

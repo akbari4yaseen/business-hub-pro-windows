@@ -193,7 +193,7 @@ class _ProductsTabState extends State<ProductsTab> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: SwitchListTile(
-                    title: const Text('Show Inactive'),
+                    title: Text(loc.showInactive),
                     value: _showInactive,
                     onChanged: (value) => setState(() => _showInactive = value),
                     dense: true,
@@ -210,6 +210,8 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Widget _buildEmptyState(InventoryProvider provider) {
+    final loc = AppLocalizations.of(context)!;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -233,7 +235,7 @@ class _ProductsTabState extends State<ProductsTab> {
           ElevatedButton.icon(
             onPressed: () => provider.refreshProducts(),
             icon: const Icon(Icons.refresh),
-            label: const Text('Refresh Products'),
+            label: Text(loc.refreshProducts),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -257,6 +259,8 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Widget _buildProductCard(dynamic product, InventoryProvider provider) {
+    final loc = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -282,19 +286,19 @@ class _ProductsTabState extends State<ProductsTab> {
               children: [
                 Chip(
                   label: Text(provider.getCategoryName(product.categoryId)),
-                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                   labelStyle: const TextStyle(fontSize: 12),
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 const SizedBox(width: 8),
-                Text('Unit: ${provider.getUnitName(product.unitId)}'),
+                Text('${loc.unit}: ${provider.getUnitName(product.unitId)}'),
               ],
             ),
             if (product.sku != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('SKU: ${product.sku}'),
+                child: Text('${loc.sku}: ${product.sku}'),
               ),
           ],
         ),
@@ -302,23 +306,24 @@ class _ProductsTabState extends State<ProductsTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!product.isActive)
-              const Padding(
-                padding: EdgeInsets.only(right: 8.0),
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
                 child: Chip(
-                  label: Text('Inactive'),
+                  label: Text(loc.inactive),
                   backgroundColor: Colors.grey,
-                  labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+                  labelStyle:
+                      const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
             PopupMenuButton<String>(
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit, size: 18),
-                      SizedBox(width: 8),
-                      Text('Edit'),
+                      const Icon(Icons.edit, size: 18),
+                      const SizedBox(width: 8),
+                      Text(loc.edit),
                     ],
                   ),
                 ),
@@ -331,17 +336,18 @@ class _ProductsTabState extends State<ProductsTab> {
                         size: 18,
                       ),
                       SizedBox(width: 8),
-                      Text(product.isActive ? 'Deactivate' : 'Activate'),
+                      Text(product.isActive ? loc.deactivate : loc.activate),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, size: 18, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.red)),
+                      const Icon(Icons.delete, size: 18, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text(loc.delete,
+                          style: const TextStyle(color: Colors.red)),
                     ],
                   ),
                 ),
@@ -378,6 +384,7 @@ class _ProductsTabState extends State<ProductsTab> {
 
   void _handleProductAction(String action, dynamic product) async {
     final provider = context.read<InventoryProvider>();
+    final loc = AppLocalizations.of(context)!;
 
     switch (action) {
       case 'edit':
@@ -399,7 +406,7 @@ class _ProductsTabState extends State<ProductsTab> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'Product ${action == 'activate' ? 'activated' : 'deactivated'} successfully'),
+                  '${loc.product} ${action == 'activate' ? 'activated' : 'deactivated'} successfully'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -407,7 +414,7 @@ class _ProductsTabState extends State<ProductsTab> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'),
+              content: Text('${loc.error}: $e'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
             ),
@@ -419,12 +426,12 @@ class _ProductsTabState extends State<ProductsTab> {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Delete Product'),
+            title: Text(loc.deleteProduct),
             content: Text('Are you sure you want to delete ${product.name}?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+                child: Text(loc.cancel),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -432,7 +439,7 @@ class _ProductsTabState extends State<ProductsTab> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Delete'),
+                child: Text(loc.delete),
               ),
             ],
           ),
@@ -453,7 +460,7 @@ class _ProductsTabState extends State<ProductsTab> {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Error: $e'),
+                content: Text('${loc.error}: $e'),
                 backgroundColor: Colors.red,
                 behavior: SnackBarBehavior.floating,
               ),
