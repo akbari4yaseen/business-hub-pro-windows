@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import '../../providers/inventory_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/stock_movement.dart';
@@ -35,13 +37,17 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Stock Movement'),
+        title: Text(loc.newStockMovement),
         actions: [
           IconButton(
-              onPressed: _isSubmitting ? null : _saveStockMovement,
-              icon: Icon(Icons.save)),
+            onPressed: _isSubmitting ? null : _saveStockMovement,
+            icon: const Icon(Icons.save),
+            tooltip: loc.save,
+          ),
         ],
       ),
       backgroundColor: themeProvider.appBackgroundColor,
@@ -55,8 +61,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
               children: [
                 DropdownButtonFormField<MovementType>(
                   value: _selectedType,
-                  decoration: const InputDecoration(
-                    labelText: 'Movement Type',
+                  decoration: InputDecoration(
+                    labelText: loc.movementType,
                   ),
                   items: MovementType.values.map((type) {
                     return DropdownMenuItem(
@@ -75,17 +81,16 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                   builder: (context, provider, child) {
                     final products = provider.products;
                     if (products.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                            'No products available. Please add products to inventory first.'),
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(loc.selectProduct),
                       );
                     }
                     return DropdownButtonFormField<int>(
                       value: _selectedProductId,
-                      decoration: const InputDecoration(
-                        labelText: 'Product',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: loc.product,
+                        border: const OutlineInputBorder(),
                       ),
                       items: products.map((product) {
                         return DropdownMenuItem<int>(
@@ -100,7 +105,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                       },
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select a product';
+                          return loc.selectProduct;
                         }
                         return null;
                       },
@@ -114,9 +119,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                       final warehouses = provider.warehouses;
                       return DropdownButtonFormField<int>(
                         value: _selectedSourceWarehouseId,
-                        decoration: const InputDecoration(
-                          labelText: 'Source Warehouse',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: loc.sourceWarehouse,
+                          border: const OutlineInputBorder(),
                         ),
                         items: warehouses.map((warehouse) {
                           return DropdownMenuItem<int>(
@@ -130,9 +135,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockIn &&
-                              value == null) {
-                            return 'Please select a source warehouse';
+                          if (_selectedType != MovementType.stockIn && value == null) {
+                            return loc.selectSourceWarehouse;
                           }
                           return null;
                         },
@@ -146,9 +150,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                       final warehouses = provider.warehouses;
                       return DropdownButtonFormField<int>(
                         value: _selectedDestinationWarehouseId,
-                        decoration: const InputDecoration(
-                          labelText: 'Destination Warehouse',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: loc.destinationWarehouse,
+                          border: const OutlineInputBorder(),
                         ),
                         items: warehouses.map((warehouse) {
                           return DropdownMenuItem<int>(
@@ -162,9 +166,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockOut &&
-                              value == null) {
-                            return 'Please select a destination warehouse';
+                          if (_selectedType != MovementType.stockOut && value == null) {
+                            return loc.selectDestinationWarehouse;
                           }
                           return null;
                         },
@@ -174,38 +177,37 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _quantityController,
-                  decoration: const InputDecoration(
-                    labelText: 'Quantity',
+                  decoration: InputDecoration(
+                    labelText: loc.quantity,
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter quantity';
+                      return loc.enterQuantity;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
+                      return loc.enterValidNumber;
                     }
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: _referenceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Reference',
+                  decoration: InputDecoration(
+                    labelText: loc.reference,
                   ),
                 ),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
+                  decoration: InputDecoration(
+                    labelText: loc.notes,
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  title: const Text('Expiry Date'),
-                  subtitle:
-                      Text(_expiryDate?.toString().split(' ')[0] ?? 'Not set'),
+                  title: Text(loc.expiryDate),
+                  subtitle: Text(_expiryDate?.toString().split(' ')[0] ?? loc.notSet),
                   trailing: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
@@ -213,8 +215,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
-                        lastDate:
-                            DateTime.now().add(const Duration(days: 3650)),
+                        lastDate: DateTime.now().add(const Duration(days: 3650)),
                       );
                       if (date != null) {
                         setState(() {
@@ -233,10 +234,11 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
   }
 
   Future<void> _saveStockMovement() async {
+    final loc = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProductId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a product')),
+        SnackBar(content: Text(loc.selectProduct)),
       );
       return;
     }
@@ -250,9 +252,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
         type: _selectedType,
         sourceWarehouseId: _selectedSourceWarehouseId,
         destinationWarehouseId: _selectedDestinationWarehouseId,
-        reference: _referenceController.text.isEmpty
-            ? null
-            : _referenceController.text,
+        reference: _referenceController.text.isEmpty ? null : _referenceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         expiryDate: _expiryDate,
         createdAt: DateTime.now(),
@@ -265,9 +265,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
       debugPrint('Error recording stock movement: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Error recording stock movement: [${e.toString()}')),
+          SnackBar(content: Text('${loc.errorRecordingMovement}: $e')),
         );
       }
     } finally {

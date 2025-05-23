@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/category.dart' as inventory_models;
 
@@ -8,34 +9,40 @@ class ManageCategoriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Categories'),
-      ),
+      appBar: AppBar(title: Text(loc.manageCategories)),
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
-          if (provider.categories.isEmpty) {
-            return const Center(
-              child: Text('No categories found. Add your first category.'),
+          final categories = provider.categories;
+          if (categories.isEmpty) {
+            return Center(
+              child: Text(loc.noCategoriesFound),
             );
           }
+
           return ListView.builder(
-            itemCount: provider.categories.length,
+            itemCount: categories.length,
             itemBuilder: (context, index) {
-              final category = provider.categories[index];
+              final category = categories[index];
               return ListTile(
                 title: Text(category.name),
-                subtitle: category.description != null ? Text(category.description!) : null,
+                subtitle: category.description != null
+                    ? Text(category.description!)
+                    : null,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit),
-                      onPressed: () => _editCategory(context, category),
+                      onPressed: () =>
+                          _showCategoryDialog(context, category: category),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete),
-                      onPressed: () => _confirmDeleteCategory(context, category),
+                      onPressed: () =>
+                          _confirmDeleteCategory(context, category),
                     ),
                   ],
                 ),
@@ -45,30 +52,35 @@ class ManageCategoriesScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddCategoryDialog(context),
+        onPressed: () => _showCategoryDialog(context),
         child: const Icon(Icons.add),
-        tooltip: 'Add Category',
+        tooltip: loc.addCategory,
       ),
     );
   }
 
-  void _showAddCategoryDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
+  void _showCategoryDialog(BuildContext context,
+      {inventory_models.Category? category}) {
+    final loc = AppLocalizations.of(context)!;
+    final isEditing = category != null;
+    final nameController = TextEditingController(text: category?.name ?? '');
+    final descriptionController =
+        TextEditingController(text: category?.description ?? '');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Category'),
+        title: Text(isEditing ? loc.editCategory : loc.addCategory),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Category Name'),
+              decoration: InputDecoration(labelText: loc.categoryName),
             ),
             TextField(
               controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description (Optional)'),
+              decoration: InputDecoration(labelText: loc.descriptionOptional),
               maxLines: 2,
             ),
           ],
@@ -76,81 +88,49 @@ class ManageCategoriesScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           ElevatedButton(
             onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                final category = inventory_models.Category(
-                  name: nameController.text,
-                  description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                );
-                context.read<InventoryProvider>().addCategory(category);
-                Navigator.of(context).pop();
-              }
+              if (nameController.text.trim().isEmpty) return;
+
+              final newCategory = inventory_models.Category(
+                id: category?.id,
+                name: nameController.text.trim(),
+                description: descriptionController.text.trim().isEmpty
+                    ? null
+                    : descriptionController.text.trim(),
+              );
+
+              final provider = context.read<InventoryProvider>();
+              isEditing
+                  ? provider.updateCategory(newCategory)
+                  : provider.addCategory(newCategory);
+
+              Navigator.of(context).pop();
             },
-            child: const Text('Add'),
+            child: Text(isEditing ? loc.save : loc.add),
           ),
         ],
       ),
     );
   }
 
-  void _editCategory(BuildContext context, inventory_models.Category category) {
-    final nameController = TextEditingController(text: category.name);
-    final descriptionController = TextEditingController(text: category.description);
+  void _confirmDeleteCategory(
+      BuildContext context, inventory_models.Category category) {
+    final loc = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Category Name'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description (Optional)'),
-              maxLines: 2,
-            ),
-          ],
+        title: Text(loc.deleteCategory),
+        content: Text(
+          loc.confirmDeleteCategory(category.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                final updatedCategory = inventory_models.Category(
-                  id: category.id,
-                  name: nameController.text,
-                  description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                );
-                context.read<InventoryProvider>().updateCategory(updatedCategory);
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDeleteCategory(BuildContext context, inventory_models.Category category) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -158,10 +138,10 @@ class ManageCategoriesScreen extends StatelessWidget {
               context.read<InventoryProvider>().deleteCategory(category.id!);
               Navigator.of(context).pop();
             },
-            child: const Text('Delete'),
+            child: Text(loc.delete),
           ),
         ],
       ),
     );
   }
-} 
+}

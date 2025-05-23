@@ -1,51 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/unit.dart';
+import '../../widgets/unit_dialog.dart';
 
 class ManageUnitsScreen extends StatelessWidget {
   const ManageUnitsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Units'),
+        title: Text(loc.units),
       ),
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
           if (provider.units.isEmpty) {
-            return const Center(
-              child: Text('No units found. Add your first unit.'),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.inbox, size: 80, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text(
+                    loc.no_units,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                ],
+              ),
             );
           }
-          return ListView.builder(
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
             itemCount: provider.units.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final unit = provider.units[index];
-              return ListTile(
-                title: Text(unit.name),
-                subtitle: unit.description != null ? Text(unit.description!) : null,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (unit.symbol != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Text(
-                          unit.symbol!,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+              return Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  title: Text(unit.name,
+                      style: Theme.of(context).textTheme.titleMedium),
+                  subtitle:
+                      unit.description != null ? Text(unit.description!) : null,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showUnitDialog(context, unit: unit);
+                      } else if (value == 'delete') {
+                        _confirmDeleteUnit(context, unit);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit, size: 20),
+                            const SizedBox(width: 8),
+                            Text(loc.edit),
+                          ],
                         ),
                       ),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _editUnit(context, unit),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _confirmDeleteUnit(context, unit),
-                    ),
-                  ],
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.delete,
+                                size: 20, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(loc.delete),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  leading: unit.symbol != null
+                      ? CircleAvatar(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          child: Text(
+                            unit.symbol!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
               );
             },
@@ -53,135 +103,46 @@ class ManageUnitsScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddUnitDialog(context),
+        onPressed: () => _showUnitDialog(context),
         child: const Icon(Icons.add),
-        tooltip: 'Add Unit',
+        tooltip: loc.add_unit,
       ),
     );
   }
 
-  void _showAddUnitDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final symbolController = TextEditingController();
-    final descriptionController = TextEditingController();
+  void _showUnitDialog(BuildContext context, {Unit? unit}) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Unit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Unit Name'),
-            ),
-            TextField(
-              controller: symbolController,
-              decoration: const InputDecoration(labelText: 'Symbol (Optional)'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description (Optional)'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                final unit = Unit(
-                  name: nameController.text,
-                  symbol: symbolController.text.isNotEmpty ? symbolController.text : null,
-                  description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                );
-                context.read<InventoryProvider>().addUnit(unit);
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editUnit(BuildContext context, Unit unit) {
-    final nameController = TextEditingController(text: unit.name);
-    final symbolController = TextEditingController(text: unit.symbol);
-    final descriptionController = TextEditingController(text: unit.description);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Unit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Unit Name'),
-            ),
-            TextField(
-              controller: symbolController,
-              decoration: const InputDecoration(labelText: 'Symbol (Optional)'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description (Optional)'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                final updatedUnit = Unit(
-                  id: unit.id,
-                  name: nameController.text,
-                  symbol: symbolController.text.isNotEmpty ? symbolController.text : null,
-                  description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                );
-                context.read<InventoryProvider>().updateUnit(updatedUnit);
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) => UnitDialog(unit: unit),
     );
   }
 
   void _confirmDeleteUnit(BuildContext context, Unit unit) {
+    final loc = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Unit'),
-        content: Text('Are you sure you want to delete "${unit.name}"? This action cannot be undone.'),
+        title: Text(loc.delete_unit),
+        content: Text(loc.unit_delete_confirm(unit.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               context.read<InventoryProvider>().deleteUnit(unit.id!);
               Navigator.of(context).pop();
             },
-            child: const Text('Delete'),
+            child: Text(loc.delete),
           ),
         ],
       ),
     );
   }
-} 
+}
