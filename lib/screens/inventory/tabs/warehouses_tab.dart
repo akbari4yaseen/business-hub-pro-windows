@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../dialogs/add_warehouse_dialog.dart';
@@ -17,6 +18,7 @@ class WarehousesTab extends StatefulWidget {
 class _WarehousesTabState extends State<WarehousesTab> {
   String _searchQuery = '';
   bool _showEmpty = true;
+  static final NumberFormat numberFormatter = NumberFormat('#,###.##');
 
   Map<String, List<Map<String, dynamic>>> _groupStockByWarehouse(
       List<Map<String, dynamic>> stock) {
@@ -79,7 +81,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
                 children: [
                   Text(
                     loc.no_warehouses_found,
-                    style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 16),
                   ),
                   if (_searchQuery.isNotEmpty || _showEmpty)
                     TextButton(
@@ -143,7 +145,8 @@ class _WarehousesTabState extends State<WarehousesTab> {
                       ),
                       child: ExpansionTile(
                         title: Text(warehouse.name),
-                        subtitle: Text('${items.length} ${loc.items}'),
+                        subtitle: Text(
+                            '${numberFormatter.format(items.length)} ${loc.items}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -189,7 +192,6 @@ class _WarehousesTabState extends State<WarehousesTab> {
           padding: EdgeInsets.all(16.0),
           child: Text(
             loc.no_items_in_warehouse,
-            style: TextStyle(fontStyle: FontStyle.italic),
           ),
         ),
       ];
@@ -208,7 +210,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${loc.quantity}: ${item['quantity']} ${item['unit_name'] ?? ''}'),
+                    '${loc.quantity}: ${numberFormatter.format(item['quantity'])} ${item['unit_name'] ?? ''}'),
               ],
             ),
             trailing: IconButton(

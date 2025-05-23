@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
+import '../../../utils/date_formatters.dart';
 
 class StockList extends StatelessWidget {
   final List<Map<String, dynamic>> items;
+  static final NumberFormat numberFormatter = NumberFormat('#,###.##');
 
   const StockList({
     Key? key,
@@ -44,7 +47,7 @@ class StockList extends StatelessWidget {
                   const SizedBox(height: 4),
                   _buildInfoRow(
                     Icons.inventory,
-                    '${loc.stock}: ${item['quantity']} ${item['unit_name'] ?? ''}',
+                    '${loc.stock}: ${numberFormatter.format(item['quantity'])} ${item['unit_name'] ?? ''}',
                   ),
                   if (item['warehouse_name'] != null)
                     _buildInfoRow(
@@ -54,7 +57,7 @@ class StockList extends StatelessWidget {
                   if (item['expiry_date'] != null)
                     _buildInfoRow(
                       Icons.event,
-                      '${loc.expires}: ${item['expiry_date']}',
+                      '${loc.expires}: ${formatLocalizedDate(context, item['expiry_date'])}',
                     ),
                 ],
               ),
@@ -136,14 +139,16 @@ class StockList extends StatelessWidget {
                     _buildDetailRow(loc.sku, item['sku']),
                     _buildDetailRow(loc.category, item['category_name']),
                     _buildDetailRow(loc.unit, item['unit_name']),
-                    _buildDetailRow(loc.currentStock, '${item['quantity']}'),
-                    _buildDetailRow(
-                        loc.minimumStock, '${item['minimum_stock']}'),
-                    _buildDetailRow(
-                        loc.maximumStock, '${item['maximum_stock']}'),
+                    _buildDetailRow(loc.currentStock,
+                        '${numberFormatter.format(item['quantity'])}'),
+                    _buildDetailRow(loc.minimumStock,
+                        '${numberFormatter.format(item['minimum_stock'])}'),
+                    _buildDetailRow(loc.maximumStock,
+                        '${numberFormatter.format(item['maximum_stock'])}'),
                     _buildDetailRow(loc.location, item['warehouse_name']),
                     if (item['expiry_date'] != null)
-                      _buildDetailRow(loc.expiryDate, item['expiry_date']),
+                      _buildDetailRow(loc.expiryDate,
+                          formatLocalizedDate(context, item['expiry_date'])),
                     if (item['last_movement'] != null)
                       _buildDetailRow(loc.lastMovement, item['last_movement']),
                   ],

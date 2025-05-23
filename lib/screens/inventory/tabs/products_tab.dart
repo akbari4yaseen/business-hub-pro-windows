@@ -222,13 +222,13 @@ class _ProductsTabState extends State<ProductsTab> {
             color: Colors.grey,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No products found',
+          Text(
+            loc.noProductsFound,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Try changing your search criteria or add new products',
+          Text(
+            loc.changeSearchCriteria,
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -406,7 +406,7 @@ class _ProductsTabState extends State<ProductsTab> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '${loc.product} ${action == 'activate' ? 'activated' : 'deactivated'} successfully'),
+                  '${action == 'activate' ? loc.productActivated : loc.productDeleted}'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -427,7 +427,7 @@ class _ProductsTabState extends State<ProductsTab> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text(loc.deleteProduct),
-            content: Text('Are you sure you want to delete ${product.name}?'),
+            content: Text(loc.confirmDeleteProduct(product.name)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -451,8 +451,8 @@ class _ProductsTabState extends State<ProductsTab> {
 
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Product deleted successfully'),
+              SnackBar(
+                content: Text(loc.productDeleted),
                 behavior: SnackBarBehavior.floating,
               ),
             );

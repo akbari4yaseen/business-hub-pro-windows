@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
@@ -6,6 +7,7 @@ import '../../../themes/app_theme.dart';
 
 class ProductDetailsSheet extends StatelessWidget {
   final dynamic product;
+  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
 
   const ProductDetailsSheet({
     Key? key,
@@ -80,11 +82,11 @@ class ProductDetailsSheet extends StatelessWidget {
                     loc.stockSettings,
                     [
                       _buildDetailRow(loc.minStock,
-                          product.minimumStock?.toString() ?? loc.notSet),
+                          _numberFormatter.format(product.minimumStock)),
                       _buildDetailRow(loc.maxStock,
-                          product.maximumStock?.toString() ?? loc.notSet),
+                          _numberFormatter.format(product.maximumStock)),
                       _buildDetailRow(loc.reorderPoint,
-                          product.reorderPoint?.toString() ?? loc.notSet),
+                          _numberFormatter.format(product.reorderPoint)),
                     ],
                   ),
                   _buildDetailCard(
@@ -108,7 +110,7 @@ class ProductDetailsSheet extends StatelessWidget {
                                               BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          '${stock['quantity']} ${provider.getUnitName(product.unitId)}',
+                                          '${_numberFormatter.format(stock['quantity'])} ${provider.getUnitName(product.unitId)}',
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold),
                                         ),

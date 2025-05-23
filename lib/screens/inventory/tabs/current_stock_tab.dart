@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../../../providers/inventory_provider.dart';
 import '../widgets/stock_alert_card.dart';
 import '../widgets/stock_list.dart';
 import '../widgets/search_filter_bar.dart';
+import '../../../providers/inventory_provider.dart';
 
 class CurrentStockTab extends StatefulWidget {
   const CurrentStockTab({Key? key}) : super(key: key);

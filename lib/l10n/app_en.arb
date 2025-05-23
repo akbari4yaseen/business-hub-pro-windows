@@ -292,8 +292,8 @@
   "onlineBackupOverdueMessage": "Your last online backup was more than 7 days ago. Please back up your data online.",
   "offlineBackupOverdueTitle": "Offline Backup Overdue",
   "offlineBackupOverdueMessage": "Your last offline backup was more than 7 days ago. Please back up your data locally.",
-  "accountInactiveTitle": "The account “{name}” is inactive",
-  "accountInactiveMessage": "The account “{name}” has had no transactions in the last {days} days.",
+  "accountInactiveTitle": "The account \"{name}\" is inactive",
+  "accountInactiveMessage": "The account \"{name}\" has had no transactions in the last {days} days.",
   "inactivityDays": "The number of days an account has no transaction",
   "periodicReports": "Periodic Reports",
   "periodicReportsDesc": "View credit/debit balances over time",
@@ -465,5 +465,13 @@
   "type": "Type",
   "source": "Source",
   "destination": "Destination",
-  "createdAt": "Created At"
+  "createdAt": "Created At",
+  "productActivated": "Product activated successfully",
+  "productDeactivated": "Product deactivated successfully",
+  "productDeleted": "Product deleted successfully",
+  "confirmDeleteProduct": "Are you sure you want to delete {productName}?",
+  "movementType_stockIn": "Stock In",
+  "movementType_stockOut": "Stock Out",
+  "movementType_transfer": "Transfer",
+  "movementType_adjustment": "Adjustment"
 }

@@ -1,4 +1,6 @@
+import 'package:BusinessHubPro/utils/inventory.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -23,6 +25,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
   MovementType? _selectedType;
   DateTime? _startDate;
   DateTime? _endDate;
+  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +90,6 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
                             loc.noMovementsFound,
                             style: TextStyle(
                               fontSize: 16,
-                              fontStyle: FontStyle.italic,
                             ),
                           ),
                         ),
@@ -135,7 +137,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
             ...MovementType.values.map(
               (type) => DropdownMenuItem<MovementType>(
                 value: type,
-                child: Text(type.toString().split('.').last),
+                child: Text(type.localized(context)),
               ),
             ),
           ],
@@ -232,7 +234,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${movement.type.toString().split('.').last} - ${movement.quantity} $unitName',
+              '${movement.type.localized(context)} - ${_numberFormatter.format(movement.quantity)} $unitName',
               style: TextStyle(color: color, fontWeight: FontWeight.bold),
             ),
             Text('${loc.from}: $sourceLocation'),
@@ -362,10 +364,9 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildDetailRow(loc.product, product.name),
-                    _buildDetailRow(
-                        loc.type, movement.type.toString().split('.').last),
-                    _buildDetailRow(
-                        loc.quantity, '${movement.quantity} $unitName'),
+                    _buildDetailRow(loc.type, movement.type.localized(context)),
+                    _buildDetailRow(loc.quantity,
+                        '${_numberFormatter.format(movement.quantity)} $unitName'),
                     _buildDetailRow(loc.source, sourceLocation),
                     _buildDetailRow(loc.description, destinationLocation),
                     if (movement.reference != null)

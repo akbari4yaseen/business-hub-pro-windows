@@ -468,5 +468,13 @@
   "type": "ډول",
   "source": "سرچینه",
   "destination": "مقصد",
-  "createdAt": "د جوړېدو نېټه"
+  "createdAt": "د جوړېدو نېټه",
+  "productActivated": "محصول په بریالیتوب سره فعال شو",
+  "productDeactivated": "محصول په بریالیتوب سره غیر فعال شو",
+  "productDeleted": "محصول په بریالیتوب سره حذف شو",
+  "confirmDeleteProduct": "تاسو ډاډه یاست چې غواړئ {productName} حذف کړئ؟",
+  "movementType_stockIn": "راتګ",
+  "movementType_stockOut": "وتل",
+  "movementType_transfer": "انتقال",
+  "movementType_adjustment": "تنظیم"
 }

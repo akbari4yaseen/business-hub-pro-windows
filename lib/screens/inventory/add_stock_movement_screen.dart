@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/inventory_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/stock_movement.dart';
+import '../../utils/inventory.dart';
 
 class AddStockMovementScreen extends StatefulWidget {
   const AddStockMovementScreen({Key? key}) : super(key: key);
@@ -32,10 +34,17 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Stock Movement'),
+        actions: [
+          IconButton(
+              onPressed: _isSubmitting ? null : _saveStockMovement,
+              icon: Icon(Icons.save)),
+        ],
       ),
+      backgroundColor: themeProvider.appBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -52,7 +61,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                   items: MovementType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
-                      child: Text(type.toString().split('.').last),
+                      child: Text(type.localized(context)),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -61,6 +70,7 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                     });
                   },
                 ),
+                const SizedBox(height: 16),
                 Consumer<InventoryProvider>(
                   builder: (context, provider, child) {
                     final products = provider.products;
@@ -217,28 +227,6 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
               ],
             ),
           ),
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _saveStockMovement,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Add'),
-            ),
-          ],
         ),
       ),
     );
