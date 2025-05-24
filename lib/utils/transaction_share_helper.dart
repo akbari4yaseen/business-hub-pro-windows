@@ -9,7 +9,9 @@ import '../providers/info_provider.dart';
 Future<void> shareJournalEntry(
     BuildContext context, Map<String, dynamic> journal) async {
   final loc = AppLocalizations.of(context)!;
-  final info = Provider.of<InfoProvider>(context, listen: false).info;
+  final infoProvider = Provider.of<InfoProvider>(context, listen: false);
+  await infoProvider.loadInfo(); // Ensure info is loaded
+  final info = infoProvider.info;
   final appName = info.name ?? loc.appName;
 
   // Extract and sanitize fields

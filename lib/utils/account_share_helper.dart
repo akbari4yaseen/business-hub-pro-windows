@@ -9,7 +9,7 @@ import 'date_time_picker_helper.dart';
 import '../providers/info_provider.dart';
 
 /// Builds a localized, formatted message summarizing an account's balances
-String buildShareMessage(BuildContext context, Map<String, dynamic> account) {
+Future<String> buildShareMessage(BuildContext context, Map<String, dynamic> account) async {
   final loc = AppLocalizations.of(context)!;
   final now = DateTime.now();
   final formattedDate = formatLocalizedDateTime(context, now);
@@ -22,7 +22,9 @@ String buildShareMessage(BuildContext context, Map<String, dynamic> account) {
     return '•  ${NumberFormat('#,###.##').format(balance)} $currency';
   }).join('\n');
 
-  final info = Provider.of<InfoProvider>(context, listen: false).info;
+  final infoProvider = Provider.of<InfoProvider>(context, listen: false);
+  await infoProvider.loadInfo(); // Ensure info is loaded
+  final info = infoProvider.info;
   final appName = info.name ?? loc.appName;
 
   final header = loc.shareMessageHeader(account['name']);
@@ -48,7 +50,7 @@ Future<void> shareAccountBalances(
   Map<String, dynamic> account, {
   bool viaWhatsApp = false,
 }) async {
-  final message = buildShareMessage(context, account);
+  final message = await buildShareMessage(context, account);
 
   if (viaWhatsApp) {
     final phone = account['phone'] ?? '';

@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../../database/account_db.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../providers/info_provider.dart';
+import '../../../providers/account_provider.dart';
 
 /// Utility to generate and print transactions PDF for an account.
 class PrintTransactions {
@@ -20,11 +21,19 @@ class PrintTransactions {
     Map<String, dynamic> account, {
     List<Map<String, dynamic>>? transactions,
   }) async {
-    // Fetch app info and account data
-    final info = Provider.of<InfoProvider>(context, listen: false).info;
+    // Fetch app info and account data - MAKE SURE it's loaded before proceeding
+    final infoProvider = Provider.of<InfoProvider>(context, listen: false);
+    await infoProvider.loadInfo(); // Explicitly wait for info to load
+    final info = infoProvider.info;
+
+    final accountProvider =
+        Provider.of<AccountProvider>(context, listen: false);
     final accountId = account['id'];
-    final accountName = account['name'] ?? '';
-    final balances = (account['balances'] as Map<String, dynamic>?) ?? {};
+
+    // Get latest account data from provider if available
+    final latestAccount = accountProvider.getAccount(accountId) ?? account;
+    final accountName = latestAccount['name'] ?? '';
+    final balances = (latestAccount['balances'] as Map<String, dynamic>?) ?? {};
 
     // Use passed-in transactions, or fetch all if null
     final txs = transactions ??
