@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../providers/account_provider.dart';
 import 'create_invoice_screen.dart';
 
 import '../../providers/invoice_provider.dart';
@@ -28,6 +29,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
     Future.microtask(() {
       if (mounted) {
         context.read<InvoiceProvider>().initialize();
+        context.read<AccountProvider>().initialize();
       }
     });
   }

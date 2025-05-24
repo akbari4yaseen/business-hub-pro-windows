@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
 
-    // Check login status and redirect if not logged in
+  
     Future.microtask(() async {
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
             days: days,
           );
 
-      context.read<AccountProvider>().initialize();
       context.read<InventoryProvider>().initialize();
     });
   }

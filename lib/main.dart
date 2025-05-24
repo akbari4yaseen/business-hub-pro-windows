@@ -58,9 +58,12 @@ void main() async {
   // Initialize dates
   await initializeDateFormatting();
 
-  // 1) Load user settings
+  // 1) Load user settings and info
   final settingsProvider = SettingsProvider();
+  final infoProvider = InfoProvider();
+
   await settingsProvider.initializeSettings();
+  await infoProvider.loadInfo();
 
   // 2) Open your app database
   final db = await DatabaseHelper().database;
