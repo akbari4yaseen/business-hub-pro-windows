@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/warehouse.dart';
 
@@ -27,8 +28,9 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Add New Warehouse'),
+      title: Text(loc.addNewWarehouse),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -37,32 +39,32 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Warehouse Name',
+                decoration: InputDecoration(
+                  labelText: loc.warehouseName,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a warehouse name';
+                    return loc.enterWarehouseName;
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
+                decoration: InputDecoration(
+                  labelText: loc.address,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an address';
+                    return loc.enterAddress;
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
+                decoration: InputDecoration(
+                  labelText: loc.description,
                 ),
                 maxLines: 2,
               ),
@@ -73,23 +75,25 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc.cancel),
         ),
         ElevatedButton(
           onPressed: _isSubmitting ? null : _saveWarehouse,
-          child: _isSubmitting 
+          child: _isSubmitting
               ? const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
-                ) 
-              : const Text('Add'),
+                )
+              : Text(loc.add),
         ),
       ],
     );
   }
 
   Future<void> _saveWarehouse() async {
+    final loc = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -112,7 +116,7 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
       debugPrint('Error saving warehouse: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating warehouse: ${e.toString()}')),
+          SnackBar(content: Text(loc.errorCreatingWarehouse(e.toString()))),
         );
       }
     } finally {
@@ -123,4 +127,4 @@ class _AddWarehouseDialogState extends State<AddWarehouseDialog> {
       }
     }
   }
-} 
+}

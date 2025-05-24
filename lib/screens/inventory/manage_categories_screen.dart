@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/category.dart' as inventory_models;
+import '../../widgets/category_dialog.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
   const ManageCategoriesScreen({Key? key}) : super(key: key);
@@ -10,41 +11,81 @@ class ManageCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(loc.manageCategories)),
+      appBar: AppBar(
+        title: Text(loc.manageCategories),
+      ),
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
           final categories = provider.categories;
           if (categories.isEmpty) {
             return Center(
-              child: Text(loc.noCategoriesFound),
+              child: Text(
+                loc.noCategoriesFound,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
             );
           }
 
-          return ListView.builder(
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final category = categories[index];
-              return ListTile(
-                title: Text(category.name),
-                subtitle: category.description != null
-                    ? Text(category.description!)
-                    : null,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () =>
-                          _showCategoryDialog(context, category: category),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () =>
-                          _confirmDeleteCategory(context, category),
-                    ),
-                  ],
+              return Card(
+                child: ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    category.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  subtitle: category.description != null
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            category.description!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        )
+                      : null,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showCategoryDialog(context, category: category);
+                      } else if (value == 'delete') {
+                        _confirmDeleteCategory(context, category);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit, color: colorScheme.primary),
+                          title: Text(loc.edit),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete, color: colorScheme.error),
+                          title: Text(loc.delete),
+                        ),
+                      ),
+                    ],
+                    icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
+                  ),
                 ),
               );
             },
@@ -59,84 +100,40 @@ class ManageCategoriesScreen extends StatelessWidget {
     );
   }
 
-  void _showCategoryDialog(BuildContext context,
-      {inventory_models.Category? category}) {
-    final loc = AppLocalizations.of(context)!;
-    final isEditing = category != null;
-    final nameController = TextEditingController(text: category?.name ?? '');
-    final descriptionController =
-        TextEditingController(text: category?.description ?? '');
-
-    showDialog(
+  Future<void> _showCategoryDialog(BuildContext context,
+      {inventory_models.Category? category}) async {
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEditing ? loc.editCategory : loc.addCategory),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: loc.categoryName),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: InputDecoration(labelText: loc.descriptionOptional),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(loc.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) return;
-
-              final newCategory = inventory_models.Category(
-                id: category?.id,
-                name: nameController.text.trim(),
-                description: descriptionController.text.trim().isEmpty
-                    ? null
-                    : descriptionController.text.trim(),
-              );
-
-              final provider = context.read<InventoryProvider>();
-              isEditing
-                  ? provider.updateCategory(newCategory)
-                  : provider.addCategory(newCategory);
-
-              Navigator.of(context).pop();
-            },
-            child: Text(isEditing ? loc.save : loc.add),
-          ),
-        ],
-      ),
+      builder: (context) => CategoryDialog(category: category),
     );
   }
 
   void _confirmDeleteCategory(
       BuildContext context, inventory_models.Category category) {
     final loc = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(loc.deleteCategory),
-        content: Text(
-          loc.confirmDeleteCategory(category.name),
-        ),
+        content: Text(loc.confirmDeleteCategory(category.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(loc.cancel),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+            ),
             onPressed: () {
               context.read<InventoryProvider>().deleteCategory(category.id!);
               Navigator.of(context).pop();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(loc.categoryDeleted)),
+              );
             },
             child: Text(loc.delete),
           ),

@@ -94,8 +94,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final productId = await _db.insertProduct(product);
-      debugPrint('Added product with ID: $productId');
+      await _db.insertProduct(product);
 
       // Refresh data after adding
       await refreshData();
@@ -114,7 +113,6 @@ class InventoryProvider with ChangeNotifier {
       notifyListeners();
 
       await _db.updateProduct(product);
-      debugPrint('Updated product with ID: ${product.id}');
 
       // Refresh data after updating
       await refreshData();
@@ -209,8 +207,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final categoryId = await _db.insertCategory(category);
-      debugPrint('Added category with ID: $categoryId');
+      await _db.insertCategory(category);
 
       // Refresh data after adding
       await _refreshCategories();
@@ -228,8 +225,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _db.updateCategory(category);
-      debugPrint('Updated category with ID: ${category.id}');
+      _db.updateCategory(category);
 
       // Refresh data after updating
       await _refreshCategories();
@@ -247,8 +243,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _db.deleteCategory(categoryId);
-      debugPrint('Deleted category with ID: $categoryId');
+      _db.deleteCategory(categoryId);
 
       // Refresh data after deleting
       await _refreshCategories();
@@ -267,8 +262,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final unitId = await _db.insertUnit(unit);
-      debugPrint('Added unit with ID: $unitId');
+      await _db.insertUnit(unit);
 
       // Refresh data after adding
       await _refreshUnits();
@@ -286,8 +280,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _db.updateUnit(unit);
-      debugPrint('Updated unit with ID: ${unit.id}');
+      _db.updateUnit(unit);
 
       // Refresh data after updating
       await _refreshUnits();
@@ -305,8 +298,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await _db.deleteUnit(unitId);
-      debugPrint('Deleted unit with ID: $unitId');
+      _db.deleteUnit(unitId);
 
       // Refresh data after deleting
       await _refreshUnits();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/warehouse.dart';
 
@@ -39,8 +40,9 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Edit Warehouse'),
+      title: Text(loc.editWarehouse),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -49,13 +51,13 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Enter warehouse name',
+                decoration: InputDecoration(
+                  labelText: loc.name,
+                  hintText: loc.enterWarehouseName,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
+                    return loc.enterName;
                   }
                   return null;
                 },
@@ -63,13 +65,13 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  hintText: 'Enter warehouse address',
+                decoration: InputDecoration(
+                  labelText: loc.address,
+                  hintText: loc.enterAddress,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an address';
+                    return loc.enterAddress;
                   }
                   return null;
                 },
@@ -77,9 +79,9 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Enter warehouse description (optional)',
+                decoration: InputDecoration(
+                  labelText: loc.description,
+                  hintText: loc.enterWarehouseDescriptionOptional,
                 ),
                 maxLines: 3,
               ),
@@ -90,7 +92,7 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc.cancel),
         ),
         ElevatedButton(
           onPressed: () async {
@@ -108,9 +110,9 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
               }
             }
           },
-          child: const Text('Save'),
+          child: Text(loc.save),
         ),
       ],
     );
   }
-} 
+}

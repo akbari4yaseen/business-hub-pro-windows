@@ -262,7 +262,6 @@ class _ProductsTabState extends State<ProductsTab> {
     final loc = AppLocalizations.of(context)!;
 
     return Card(
-      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: product.isActive

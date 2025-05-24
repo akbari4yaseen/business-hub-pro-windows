@@ -85,11 +85,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Product' : 'Add New Product'),
+        title: Text(_isEditing ? loc.editProduct : loc.addNewProduct),
         actions: [
-          IconButton(onPressed: _handleSubmit, icon: Icon(Icons.save)),
+          IconButton(onPressed: _handleSubmit, icon: const Icon(Icons.save)),
         ],
       ),
       backgroundColor: themeProvider.appBackgroundColor,
@@ -103,28 +105,29 @@ class _AddProductScreenState extends State<AddProductScreen> {
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Product Name',
+                  decoration: InputDecoration(
+                    labelText: loc.productName,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a product name';
+                      return loc.pleaseEnterProductName;
                     }
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
+                  decoration: InputDecoration(
+                    labelText: loc.description,
                   ),
                   maxLines: 2,
                 ),
+                const SizedBox(height: 16),
                 Consumer<InventoryProvider>(
                   builder: (context, provider, child) {
                     return DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
+                      decoration: InputDecoration(
+                        labelText: loc.category,
                       ),
                       value: _selectedCategoryId,
                       items: provider.categories.map((category) {
@@ -135,7 +138,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       }).toList(),
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select a category';
+                          return loc.pleaseSelectCategory;
                         }
                         return null;
                       },
@@ -151,8 +154,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 Consumer<InventoryProvider>(
                   builder: (context, provider, child) {
                     return DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
-                        labelText: 'Unit',
+                      decoration: InputDecoration(
+                        labelText: loc.unit,
                       ),
                       value: _selectedUnitId,
                       items: provider.units.map((unit) {
@@ -163,7 +166,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       }).toList(),
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select a unit';
+                          return loc.pleaseSelectUnit;
                         }
                         return null;
                       },
@@ -178,28 +181,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _minimumStockController,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum Stock',
+                  decoration: InputDecoration(
+                    labelText: loc.minimumStock,
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter minimum stock';
+                      return loc.pleaseEnterMinimumStock;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
+                      return loc.pleaseEnterValidNumber;
                     }
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: _barcodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Barcode (Optional)',
+                  decoration: InputDecoration(
+                    labelText: loc.barcodeOptional,
                   ),
                 ),
                 CheckboxListTile(
-                  title: const Text('Has Expiry Date'),
+                  title: Text(loc.hasExpiryDate),
                   value: _hasExpiryDate,
                   onChanged: (value) {
                     setState(() {

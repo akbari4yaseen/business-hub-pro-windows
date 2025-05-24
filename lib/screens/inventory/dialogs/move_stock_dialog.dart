@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
 
@@ -35,8 +36,10 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return AlertDialog(
-      title: const Text('Move Stock'),
+      title: Text(loc.moveStock),
       content: Form(
         key: _formKey,
         child: Consumer<InventoryProvider>(
@@ -49,8 +52,8 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
                 children: [
                   DropdownButtonFormField<String>(
                     value: _selectedWarehouse,
-                    decoration: const InputDecoration(
-                      labelText: 'Destination Warehouse',
+                    decoration: InputDecoration(
+                      labelText: loc.destinationWarehouse,
                     ),
                     items: warehouses
                         .map((w) => DropdownMenuItem(
@@ -65,7 +68,7 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
                     },
                     validator: (value) {
                       if (value == null) {
-                        return 'Please select a warehouse';
+                        return loc.pleaseSelectWarehouse;
                       }
                       return null;
                     },
@@ -73,17 +76,17 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _quantityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
+                    decoration: InputDecoration(
+                      labelText: loc.quantity,
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter a quantity';
+                        return loc.pleaseEnterQuantity;
                       }
                       final num? quantity = num.tryParse(value);
                       if (quantity == null || quantity <= 0) {
-                        return 'Enter a valid quantity';
+                        return loc.enterValidQuantity;
                       }
                       return null;
                     },
@@ -97,7 +100,7 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc.cancel),
         ),
         ElevatedButton(
           onPressed: () {
@@ -106,7 +109,7 @@ class _MoveStockDialogState extends State<MoveStockDialog> {
               Navigator.of(context).pop();
             }
           },
-          child: const Text('Move'),
+          child: Text(loc.move),
         ),
       ],
     );

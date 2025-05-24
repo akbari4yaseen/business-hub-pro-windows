@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../utils/date_formatters.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/stock_movement.dart';
@@ -135,7 +136,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockIn && value == null) {
+                          if (_selectedType != MovementType.stockIn &&
+                              value == null) {
                             return loc.selectSourceWarehouse;
                           }
                           return null;
@@ -166,7 +168,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                           });
                         },
                         validator: (value) {
-                          if (_selectedType != MovementType.stockOut && value == null) {
+                          if (_selectedType != MovementType.stockOut &&
+                              value == null) {
                             return loc.selectDestinationWarehouse;
                           }
                           return null;
@@ -207,7 +210,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                 const SizedBox(height: 16),
                 ListTile(
                   title: Text(loc.expiryDate),
-                  subtitle: Text(_expiryDate?.toString().split(' ')[0] ?? loc.notSet),
+                  subtitle: Text(_expiryDate != null
+                      ? formatLocalizedDate(context, _expiryDate.toString())
+                      : loc.notSet),
                   trailing: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: () async {
@@ -215,7 +220,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 3650)),
                       );
                       if (date != null) {
                         setState(() {
@@ -252,7 +258,9 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
         type: _selectedType,
         sourceWarehouseId: _selectedSourceWarehouseId,
         destinationWarehouseId: _selectedDestinationWarehouseId,
-        reference: _referenceController.text.isEmpty ? null : _referenceController.text,
+        reference: _referenceController.text.isEmpty
+            ? null
+            : _referenceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         expiryDate: _expiryDate,
         createdAt: DateTime.now(),
