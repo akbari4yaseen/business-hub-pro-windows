@@ -521,5 +521,6 @@
   "pleaseEnterValidNumber": "Please enter a valid number",
   "barcodeOptional": "Barcode (Optional)",
   "hasExpiryDate": "Has Expiry Date",
-  "categoryDeleted": "Category deleted successfully."
+  "categoryDeleted": "Category deleted successfully.",
+  "paymentForInvoice": "Payment for Invoice"
 }

@@ -108,7 +108,7 @@ class _BackupCardState extends State<BackupCard> {
     setState(() => _isOfflineBackingUp = true);
     final parentDir = dirname(selectedDir);
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    final backupName = 'BusinessHub__backup_${timestamp}.db';
+    final backupName = 'BusinessHubPro_backup_${timestamp}.db';
     final backupPath = join(parentDir, backupName);
 
     try {

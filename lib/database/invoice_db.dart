@@ -296,7 +296,11 @@ class InvoiceDBHelper {
     return result;
   }
 
-  Future<void> recordPayment(int invoiceId, double amount) async {
+  Future<void> recordPayment(
+    int invoiceId,
+    double amount, {
+    required String localizedDescription,
+  }) async {
     final db = await _db;
 
     return await db.transaction((txn) async {
@@ -358,7 +362,7 @@ class InvoiceDBHelper {
           'amount': amount,
           'currency': currency,
           'transaction_type': 'credit',
-          'description': 'Payment for Invoice $invoiceNumber',
+          'description': '${localizedDescription} $invoiceNumber',
           'transaction_id': invoiceId,
           'transaction_group': 'invoice_payment',
         },
@@ -366,7 +370,10 @@ class InvoiceDBHelper {
     });
   }
 
-  Future<void> finalizeInvoice(int invoiceId) async {
+  Future<void> finalizeInvoice(
+    int invoiceId, {
+    required String localizedDescription,
+  }) async {
     final db = await _db;
 
     return await db.transaction((txn) async {
@@ -415,7 +422,7 @@ class InvoiceDBHelper {
           'amount': totalAmount,
           'currency': currency,
           'transaction_type': 'debit',
-          'description': 'Invoice $invoiceNumber',
+          'description': '${localizedDescription} $invoiceNumber',
           'transaction_id': invoiceId,
           'transaction_group': 'invoice',
         },

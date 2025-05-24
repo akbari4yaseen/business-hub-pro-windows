@@ -127,14 +127,17 @@ class InvoiceProvider with ChangeNotifier {
   }
 
   // Record payment
-  Future<void> recordPayment(int invoiceId, double amount) async {
-    await _db.recordPayment(invoiceId, amount);
+  Future<void> recordPayment(
+      int invoiceId, double amount, String localizedDescription) async {
+    await _db.recordPayment(invoiceId, amount,
+        localizedDescription: localizedDescription);
     await loadInvoices();
     await loadOverdueInvoices();
   }
 
   // Finalize invoice and update inventory
-  Future<void> finalizeInvoice(Invoice invoice) async {
+  Future<void> finalizeInvoice(
+      Invoice invoice, String localizedDescription) async {
     if (invoice.status != InvoiceStatus.draft) {
       throw Exception('Only draft invoices can be finalized');
     }
@@ -151,7 +154,8 @@ class InvoiceProvider with ChangeNotifier {
 
       // // 2. Update warehouse inventory for each item
       await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
-      await _db.finalizeInvoice(invoice.id!);
+      await _db.finalizeInvoice(invoice.id!,
+          localizedDescription: localizedDescription);
       // Refresh data to reflect changes
       await loadInvoices();
       await loadOverdueInvoices();

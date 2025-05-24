@@ -31,14 +31,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final provider = Provider.of<InventoryProvider>(context, listen: false);
       provider.initialize();
       if (widget.product != null) {
-        _isEditing = true;
-        _nameController.text = widget.product!.name;
-        _descriptionController.text = widget.product!.description;
-        _selectedCategoryId = widget.product!.categoryId;
-        _selectedUnitId = widget.product!.unitId;
-        _minimumStockController.text = widget.product!.minimumStock.toString();
-        _barcodeController.text = widget.product!.barcode ?? '';
-        _hasExpiryDate = widget.product!.hasExpiryDate;
+        setState(() {
+          _isEditing = true;
+          _nameController.text = widget.product!.name;
+          _descriptionController.text = widget.product!.description;
+          _selectedCategoryId = widget.product!.categoryId;
+          _selectedUnitId = widget.product!.unitId;
+          _minimumStockController.text =
+              widget.product!.minimumStock.toString();
+          _barcodeController.text = widget.product!.barcode ?? '';
+          _hasExpiryDate = widget.product!.hasExpiryDate;
+        });
       }
     });
   }

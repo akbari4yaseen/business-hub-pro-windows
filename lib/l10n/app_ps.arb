@@ -524,5 +524,6 @@
   "pleaseEnterValidNumber": "مهرباني وکړئ یو معتبر عدد داخل کړئ",
   "barcodeOptional": "بارکوډ (اختیاري)",
   "hasExpiryDate": "د پای نیټې سره",
-  "categoryDeleted": "دسته‌بندی با موفقیت حذف شد."
+  "categoryDeleted": "کتگوری با موفقیت حذف شد.",
+  "paymentForInvoice": "د رسید لپاره پیسې"
 }

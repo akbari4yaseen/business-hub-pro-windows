@@ -106,7 +106,7 @@ class InvoiceDetailScreen extends StatelessWidget {
                 onPaymentRecorded: (inv, amount) {
                   context
                       .read<InvoiceProvider>()
-                      .recordPayment(inv.id!, amount);
+                      .recordPayment(inv.id!, amount, loc.paymentForInvoice);
                 },
               ),
             );

@@ -99,13 +99,14 @@ class _InvoiceScreenState extends State<InvoiceScreen>
     bool showOverdueWarning = false,
   }) {
     final provider = context.read<InvoiceProvider>();
-
+    final loc = AppLocalizations.of(context)!;
     return InvoiceList(
       invoices: invoices,
       showOverdueWarning: showOverdueWarning,
       onPaymentRecorded: (invoice, amount) async {
         try {
-          await provider.recordPayment(invoice.id!, amount);
+          await provider.recordPayment(
+              invoice.id!, amount, loc.paymentForInvoice);
         } catch (e) {
           _showErrorSnackbar(context, local.failedRecordPayment(e.toString()));
         }
@@ -131,7 +132,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
 
         if (confirmed == true) {
           try {
-            await provider.finalizeInvoice(invoice);
+            await provider.finalizeInvoice(invoice, loc.invoice);
           } catch (e) {
             _showErrorSnackbar(
                 context, local.failedFinalizeInvoice(e.toString()));

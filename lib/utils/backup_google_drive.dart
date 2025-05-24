@@ -87,7 +87,7 @@ class DriveBackupService {
       final media = drive.Media(file.openRead(), length);
 
       final backupName =
-          'BusinessHub_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db';
+          'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db';
       final meta = drive.File()
         ..name = backupName
         ..parents = [folderId];
