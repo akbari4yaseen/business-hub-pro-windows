@@ -19,6 +19,10 @@ class InventoryProvider with ChangeNotifier {
   List<Product> _allProducts = [];
   bool _isLoading = false;
   String? _error;
+  bool _isLoadingMovements = false;
+  bool _hasMoreMovements = true;
+  int _currentMovementsPage = 0;
+  static const int _movementsPageSize = 30;
 
   List<Map<String, dynamic>> get currentStock => _currentStock;
   List<Map<String, dynamic>> get lowStockProducts => _lowStockProducts;
@@ -29,6 +33,8 @@ class InventoryProvider with ChangeNotifier {
   List<StockMovement> get stockMovements => _stockMovements;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isLoadingMovements => _isLoadingMovements;
+  bool get hasMoreMovements => _hasMoreMovements;
 
   // Added method to get category name
   String getCategoryName(int categoryId) {
@@ -415,5 +421,35 @@ class InventoryProvider with ChangeNotifier {
   Future<void> refreshProducts() async {
     await _refreshProducts();
     notifyListeners();
+  }
+
+  // Load stock movements with pagination
+  Future<void> loadStockMovements({bool refresh = false}) async {
+    if (refresh) {
+      _currentMovementsPage = 0;
+      _stockMovements.clear();
+      _hasMoreMovements = true;
+    }
+
+    if (!_hasMoreMovements || _isLoadingMovements) return;
+
+    _isLoadingMovements = true;
+    notifyListeners();
+
+    try {
+      final newMovements = await _db.getStockMovements(
+        limit: _movementsPageSize,
+        offset: _currentMovementsPage * _movementsPageSize,
+      );
+      
+      _stockMovements.addAll(newMovements);
+      _currentMovementsPage++;
+      _hasMoreMovements = newMovements.length == _movementsPageSize;
+      
+      notifyListeners();
+    } finally {
+      _isLoadingMovements = false;
+      notifyListeners();
+    }
   }
 }

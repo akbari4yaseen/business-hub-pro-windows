@@ -525,5 +525,6 @@
   "barcodeOptional": "بارکوډ (اختیاري)",
   "hasExpiryDate": "د پای نیټې سره",
   "categoryDeleted": "کتگوری با موفقیت حذف شد.",
-  "paymentForInvoice": "د رسید لپاره پیسې"
+  "paymentForInvoice": "د رسید لپاره پیسې",
+  "status": "وضعبت"
 }

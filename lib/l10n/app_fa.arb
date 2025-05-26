@@ -522,5 +522,6 @@
   "barcodeOptional": "بارکد (اختیاری)",
   "hasExpiryDate": "دارای تاریخ انقضا",
   "categoryDeleted": "کتگوری با موفقیت حذف شد.",
-  "paymentForInvoice": "رسید برای فاکتور"
+  "paymentForInvoice": "رسید برای فاکتور",
+  "status": "وضعبت"
 }

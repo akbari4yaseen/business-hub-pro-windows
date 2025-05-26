@@ -6,7 +6,6 @@ import '../themes/app_theme.dart';
 
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
-import '../../providers/account_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../database/account_db.dart';
 import '../database/settings_db.dart';
@@ -30,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
 
-  
     Future.microtask(() async {
       final notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
@@ -44,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
             days: days,
           );
 
-      context.read<InventoryProvider>().initialize();
+      // context.read<InventoryProvider>().initialize();
     });
   }
 

@@ -43,7 +43,7 @@ class DbInit {
         amount DECIMAL(15,2) NOT NULL,
         currency VARCHAR(3) NOT NULL,
         transaction_type VARCHAR(8) NOT NULL,
-        description VARCHAR(256),
+        description TEXT,
         transaction_id INTEGER NOT NULL,
         transaction_group VARCHAR(16) NOT NULL,
         FOREIGN KEY (account_id) REFERENCES accounts(id)
@@ -166,6 +166,7 @@ class DbInit {
         reference TEXT,
         notes TEXT,
         expiry_date TEXT,
+        date DATETIME NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (product_id) REFERENCES products (id),

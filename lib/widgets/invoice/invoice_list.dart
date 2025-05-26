@@ -16,6 +16,9 @@ class InvoiceList extends StatelessWidget {
   final bool showOverdueWarning;
   final Function(Invoice, double) onPaymentRecorded;
   final Function(Invoice) onInvoiceFinalized;
+  final ScrollController scrollController;
+  final bool isLoading;
+  final bool hasMore;
 
   const InvoiceList({
     Key? key,
@@ -23,6 +26,9 @@ class InvoiceList extends StatelessWidget {
     this.showOverdueWarning = false,
     required this.onPaymentRecorded,
     required this.onInvoiceFinalized,
+    required this.scrollController,
+    required this.isLoading,
+    required this.hasMore,
   }) : super(key: key);
 
   @override
@@ -37,8 +43,16 @@ class InvoiceList extends StatelessWidget {
     }
 
     return ListView.builder(
-      itemCount: invoices.length,
+      controller: scrollController,
+      itemCount: invoices.length + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= invoices.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         try {
           final invoice = invoices[index];
           return InvoiceListItem(
@@ -176,11 +190,11 @@ class InvoiceListItem extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                        '${loc.dateInvoice(formatLocalizedDate(context, invoice.date.toString()))}'),
+                    Text(formatLocalizedDate(context, invoice.date.toString())),
                     if (invoice.dueDate != null)
                       Text(
-                        '${loc.dueInvoice(formatLocalizedDate(context, invoice.dueDate.toString()))}',
+                        formatLocalizedDate(
+                            context, invoice.dueDate.toString()),
                         style: TextStyle(
                           color: invoice.isOverdue ? Colors.red : null,
                           fontWeight:

@@ -224,7 +224,7 @@ class _AddJournalScreenState extends State<AddJournalScreen> {
               TextFormField(
                 controller: _descCtrl,
                 decoration: InputDecoration(labelText: loc.description),
-                maxLength: 256,
+                maxLength: 512,
                 minLines: 2,
                 maxLines: 5,
               ),

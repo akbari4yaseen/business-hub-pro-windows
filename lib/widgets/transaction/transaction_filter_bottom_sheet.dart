@@ -45,7 +45,7 @@ class TransactionFilterBottomSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(loc.filter,
-                        style: Theme.of(context).textTheme.titleMedium),
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
                     // Transaction Type FilterChips
                     Text(loc.transactionType,

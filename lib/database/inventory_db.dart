@@ -91,6 +91,7 @@ class InventoryDB {
           'type': movement.type.toString().split('.').last,
           'reference': movement.reference,
           'notes': movement.notes,
+          'date': movement.date?.toIso8601String(),
           'expiry_date': movement.expiryDate?.toIso8601String(),
           'created_at': movement.createdAt.toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
@@ -148,13 +149,41 @@ class InventoryDB {
     });
   }
 
-  Future<List<StockMovement>> getStockMovements() async {
+  Future<List<StockMovement>> getStockMovements({
+    int? limit,
+    int? offset,
+  }) async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'stock_movements',
-      orderBy: 'created_at DESC',
-    );
-    return List.generate(maps.length, (i) => StockMovement.fromMap(maps[i]));
+    final args = <dynamic>[];
+
+    // Add pagination parameters
+    if (limit != null) {
+      args.add(limit);
+      if (offset != null) {
+        args.add(offset);
+      }
+    } else if (offset != null) {
+      args.add(offset);
+    }
+
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        sm.*,
+        p.name as product_name,
+        u.name as unit_name,
+        sw.name as source_warehouse_name,
+        dw.name as destination_warehouse_name
+      FROM stock_movements sm
+      JOIN products p ON sm.product_id = p.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      LEFT JOIN warehouses sw ON sm.source_warehouse_id = sw.id
+      LEFT JOIN warehouses dw ON sm.destination_warehouse_id = dw.id
+      ORDER BY sm.created_at DESC
+      ${limit != null ? 'LIMIT ?' : ''}
+      ${offset != null ? 'OFFSET ?' : ''}
+    ''', args);
+
+    return maps.map((map) => StockMovement.fromMap(map)).toList();
   }
 
   // Query operations

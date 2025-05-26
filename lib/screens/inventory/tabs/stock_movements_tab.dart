@@ -1,5 +1,6 @@
 import 'package:BusinessHubPro/utils/inventory.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,6 +11,7 @@ import '../../../utils/date_formatters.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
 import '../../../themes/app_theme.dart';
+import '../../../widgets/inventory/movement_details_sheet.dart';
 
 class StockMovementsTab extends StatefulWidget {
   const StockMovementsTab({Key? key}) : super(key: key);
@@ -19,13 +21,40 @@ class StockMovementsTab extends StatefulWidget {
 }
 
 class _StockMovementsTabState extends State<StockMovementsTab> {
+  final ScrollController _scrollController = ScrollController();
+  final NumberFormat _numberFormatter = NumberFormat('#,###.##');
+
   String _searchQuery = '';
   String? _selectedWarehouse;
   String? _selectedCategory;
   MovementType? _selectedType;
   DateTime? _startDate;
   DateTime? _endDate;
-  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
+  bool _isAtTop = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      context.read<InventoryProvider>().loadStockMovements();
+    }
+
+    final atTop = position.pixels <= 0;
+    if (atTop != _isAtTop) {
+      setState(() => _isAtTop = atTop);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,112 +62,88 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
 
     return Scaffold(
       body: Consumer<InventoryProvider>(
-        builder: (context, provider, child) {
-          final movements = provider.stockMovements.where((movement) {
-            // Get the product name from provider to search
-            final product = provider.products.firstWhere(
-              (p) => p.id == movement.productId,
-              orElse: () => throw Exception('Product not found for movement'),
-            );
+        builder: (context, provider, _) {
+          final filteredMovements = _filterMovements(provider);
 
-            final matchesSearch =
-                product.name.toLowerCase().contains(_searchQuery.toLowerCase());
-
-            // For warehouse and category filtering, we would need to join with product and location data
-            // Simplified version:
-            final matchesType =
-                _selectedType == null || movement.type == _selectedType;
-
-            final matchesDateRange = _isWithinDateRange(movement.createdAt);
-
-            return matchesSearch && matchesType && matchesDateRange;
-          }).toList();
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      SearchFilterBar(
-                        onSearchChanged: (query) =>
-                            setState(() => _searchQuery = query),
-                        onWarehouseChanged: (warehouse) =>
-                            setState(() => _selectedWarehouse = warehouse),
-                        onCategoryChanged: (category) =>
-                            setState(() => _selectedCategory = category),
-                        warehouses:
-                            provider.warehouses.map((w) => w.name).toList(),
-                        categories:
-                            provider.categories.map((c) => c.name).toList(),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTypeFilter(),
-                      const SizedBox(height: 8),
-                      _buildDateRangeFilter(),
-                    ],
-                  ),
+          return RefreshIndicator(
+            onRefresh: () => provider.loadStockMovements(refresh: true),
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(child: _buildFilters(provider, loc)),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: filteredMovements.isEmpty
+                      ? _buildEmptyState(loc)
+                      : _buildMovementList(
+                          context, provider, filteredMovements),
                 ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.all(16.0),
-                sliver: movements.isEmpty
-                    ? SliverFillRemaining(
-                        child: Center(
-                          child: Text(
-                            loc.noMovementsFound,
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => _buildMovementCard(
-                              context, provider, movements[index]),
-                          childCount: movements.length,
-                        ),
-                      ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMovementDialog(context),
-        heroTag: "stock_movement_fab",
-        child: const Icon(Icons.add),
+      floatingActionButton: _buildFAB(),
+    );
+  }
+
+  List<StockMovement> _filterMovements(InventoryProvider provider) {
+    return provider.stockMovements.where((movement) {
+      final product = provider.products.firstWhere(
+        (p) => p.id == movement.productId,
+        orElse: () => throw Exception('Product not found'),
+      );
+
+      final matchesSearch =
+          product.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesType =
+          _selectedType == null || movement.type == _selectedType;
+      final matchesDate = _isWithinDateRange(movement.date!);
+
+      return matchesSearch && matchesType && matchesDate;
+    }).toList();
+  }
+
+  Widget _buildFilters(InventoryProvider provider, AppLocalizations loc) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          SearchFilterBar(
+            onSearchChanged: (query) => setState(() => _searchQuery = query),
+            onWarehouseChanged: (w) => setState(() => _selectedWarehouse = w),
+            onCategoryChanged: (c) => setState(() => _selectedCategory = c),
+            warehouses: provider.warehouses.map((w) => w.name).toList(),
+            categories: provider.categories.map((c) => c.name).toList(),
+          ),
+          const SizedBox(height: 8),
+          _buildTypeFilter(loc),
+          const SizedBox(height: 8),
+          _buildDateRangeFilter(loc),
+        ],
       ),
     );
   }
 
-  Widget _buildTypeFilter() {
-    final loc = AppLocalizations.of(context)!;
+  Widget _buildTypeFilter(AppLocalizations loc) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: DropdownButtonFormField<MovementType>(
           isDense: true,
           decoration: InputDecoration(
             labelText: loc.movementType,
             hintText: loc.allTypes,
-            border: OutlineInputBorder(),
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            border: const OutlineInputBorder(),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           ),
           value: _selectedType,
           items: [
-            DropdownMenuItem<MovementType>(
-              value: null,
-              child: Text(loc.allTypes),
-            ),
+            DropdownMenuItem(value: null, child: Text(loc.allTypes)),
             ...MovementType.values.map(
-              (type) => DropdownMenuItem<MovementType>(
-                value: type,
-                child: Text(type.localized(context)),
-              ),
+              (type) => DropdownMenuItem(
+                  value: type, child: Text(type.localized(context))),
             ),
           ],
           onChanged: (value) => setState(() => _selectedType = value),
@@ -147,17 +152,17 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     );
   }
 
-  Widget _buildDateRangeFilter() {
+  Widget _buildDateRangeFilter(AppLocalizations loc) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: Row(
           children: [
             Expanded(
               child: TextButton.icon(
-                onPressed: () => _selectDateRange(context),
                 icon: const Icon(Icons.date_range),
-                label: Text(_getDateRangeText()),
+                label: Text(_getDateRangeText(loc)),
+                onPressed: () => _selectDateRange(context),
               ),
             ),
             if (_startDate != null || _endDate != null)
@@ -171,6 +176,90 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyState(AppLocalizations loc) {
+    return SliverFillRemaining(
+      child: Center(
+        child: Text(loc.noMovementsFound, style: const TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+
+  Widget _buildMovementList(BuildContext context, InventoryProvider provider,
+      List<StockMovement> movements) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index == movements.length) {
+            return provider.isLoadingMovements
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : const SizedBox.shrink();
+          }
+
+          return _buildMovementCard(context, provider, movements[index]);
+        },
+        childCount: movements.length + 1,
+      ),
+    );
+  }
+
+  Widget _buildFAB() {
+    return FloatingActionButton(
+      heroTag: "stock_movement_fab",
+      mini: !_isAtTop,
+      onPressed: () {
+        _isAtTop
+            ? _showAddMovementDialog(context)
+            : _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+              );
+      },
+      child: FaIcon(
+        _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+        size: 18,
+      ),
+    );
+  }
+
+  bool _isWithinDateRange(DateTime date) {
+    if (_startDate == null || _endDate == null) return true;
+    return date.isAfter(_startDate!.subtract(const Duration(days: 1))) &&
+        date.isBefore(_endDate!.add(const Duration(days: 1)));
+  }
+
+  String _getDateRangeText(AppLocalizations loc) {
+    if (_startDate == null && _endDate == null) return loc.selectDateRange;
+    return '${formatLocalizedDate(context, _startDate.toString())} - ${formatLocalizedDate(context, _endDate.toString())}';
+  }
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+    }
+  }
+
+  void _showAddMovementDialog(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddStockMovementScreen()),
     );
   }
 
@@ -240,56 +329,13 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
             Text('${loc.from}: $sourceLocation'),
             Text('${loc.to}: $destinationLocation'),
             Text(
-                '${loc.date}: ${formatLocalizedDateTime(context, movement.createdAt.toString())}'),
+                '${formatLocalizedDateTime(context, movement.date.toString())}'),
             if (movement.reference != null)
               Text('${loc.reference}: ${movement.reference}'),
           ],
         ),
         onTap: () => _showMovementDetails(context, provider, movement),
       ),
-    );
-  }
-
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: _startDate != null && _endDate != null
-          ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : null,
-    );
-    if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-    }
-  }
-
-  String _getDateRangeText() {
-    final loc = AppLocalizations.of(context)!;
-    if (_startDate == null && _endDate == null) {
-      return loc.selectDateRange;
-    }
-    return '${formatLocalizedDate(context, _startDate.toString())} - ${formatLocalizedDate(context, _endDate.toString())}';
-  }
-
-  bool _isWithinDateRange(DateTime date) {
-    if (_startDate == null || _endDate == null) return true;
-    try {
-      return date.isAfter(_startDate!.subtract(const Duration(days: 1))) &&
-          date.isBefore(_endDate!.add(const Duration(days: 1)));
-    } catch (e) {
-      // debugPrint('Error parsing date: $e');
-      return true;
-    }
-  }
-
-  void _showAddMovementDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddStockMovementScreen()),
     );
   }
 
@@ -326,87 +372,13 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    loc.movementDetails,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailRow(loc.product, product.name),
-                    _buildDetailRow(loc.type, movement.type.localized(context)),
-                    _buildDetailRow(loc.quantity,
-                        '${_numberFormatter.format(movement.quantity)} $unitName'),
-                    _buildDetailRow(loc.source, sourceLocation),
-                    _buildDetailRow(loc.description, destinationLocation),
-                    if (movement.reference != null)
-                      _buildDetailRow(loc.reference, movement.reference!),
-                    if (movement.notes != null)
-                      _buildDetailRow(loc.notes, movement.notes!),
-                    if (movement.expiryDate != null)
-                      _buildDetailRow(
-                          loc.expiryDate,
-                          formatLocalizedDate(
-                              context, movement.expiryDate.toString())),
-                    _buildDetailRow(
-                        loc.createdAt,
-                        formatLocalizedDateTime(
-                            context, movement.createdAt.toString())),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
+      builder: (context) => MovementDetailsSheet(
+        movement: movement,
+        product: product,
+        sourceLocation: sourceLocation,
+        destinationLocation: destinationLocation,
+        unitName: unitName,
+        numberFormatter: _numberFormatter,
       ),
     );
   }

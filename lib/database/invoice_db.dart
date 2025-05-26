@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
+import 'package:flutter/foundation.dart';
 
 class InvoiceDBHelper {
   static final InvoiceDBHelper _instance = InvoiceDBHelper._internal();
@@ -17,7 +18,9 @@ class InvoiceDBHelper {
     DateTime? endDate,
     int? accountId,
     bool includeItems = false,
+    String? searchQuery,
   }) async {
+    debugPrint('Getting invoices from database...');
     final db = await _db;
     final where = <String>[];
     final args = <dynamic>[];
@@ -42,28 +45,114 @@ class InvoiceDBHelper {
       args.add(accountId);
     }
 
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      where.add('(LOWER(i.invoice_number) LIKE ? OR LOWER(a.name) LIKE ?)');
+      final query = '%${searchQuery.toLowerCase()}%';
+      args.addAll([query, query]);
+    }
+
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
+    debugPrint('WHERE clause: $whereClause');
+    debugPrint('Query args: $args');
 
-    final invoices = await db.rawQuery('''
-      SELECT 
-        i.*,
-        a.name as account_name,
-        (
-          SELECT SUM(quantity * unit_price)
-          FROM invoice_items
-          WHERE invoice_id = i.id
-        ) as total_amount
-      FROM invoices i
-      JOIN accounts a ON i.account_id = a.id
-      $whereClause
-      ORDER BY i.date DESC
-    ''', args);
+    // Add pagination parameters
+    if (limit != null) {
+      args.add(limit);
+      if (offset != null) {
+        args.add(offset);
+      }
+    } else if (offset != null) {
+      args.add(offset);
+    }
 
-    if (!includeItems) return invoices;
+    try {
+      debugPrint('Executing main invoice query...');
+      final invoices = await db.rawQuery('''
+        SELECT 
+          i.*,
+          a.name as account_name,
+          CAST(COALESCE(
+            (SELECT SUM(quantity * unit_price)
+            FROM invoice_items
+            WHERE invoice_id = i.id),
+            0
+          ) AS REAL) as total_amount
+        FROM invoices i
+        JOIN accounts a ON i.account_id = a.id
+        $whereClause
+        ORDER BY i.date DESC
+        ${limit != null ? 'LIMIT ?' : ''}
+        ${offset != null ? 'OFFSET ?' : ''}
+      ''', args);
 
-    // If items are requested, fetch them for each invoice
-    final result = <Map<String, dynamic>>[];
-    for (final invoice in invoices) {
+      debugPrint('Found ${invoices.length} invoices');
+
+      if (!includeItems) return invoices;
+
+      // If items are requested, fetch them for each invoice in a single query
+      debugPrint('Fetching items for invoices...');
+      final invoiceIds = invoices.map((i) => i['id'] as int).toList();
+      if (invoiceIds.isEmpty) return invoices;
+
+      final items = await db.rawQuery('''
+        SELECT 
+          ii.*,
+          p.name as product_name,
+          u.name as unit_name
+        FROM invoice_items ii
+        JOIN products p ON ii.product_id = p.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE ii.invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')})
+      ''', invoiceIds);
+
+      // Group items by invoice_id
+      final itemsByInvoice = <int, List<Map<String, dynamic>>>{};
+      for (final item in items) {
+        final invoiceId = item['invoice_id'] as int;
+        itemsByInvoice.putIfAbsent(invoiceId, () => []).add(item);
+      }
+
+      // Combine invoices with their items
+      final result = invoices.map((invoice) {
+        final invoiceId = invoice['id'] as int;
+        return {
+          ...invoice,
+          'items': itemsByInvoice[invoiceId] ?? [],
+        };
+      }).toList();
+
+      debugPrint('Successfully fetched all invoice data');
+      return result;
+    } catch (e) {
+      debugPrint('Error in getInvoices: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getInvoiceById(int id,
+      {bool includeItems = true}) async {
+    final db = await _db;
+    try {
+      final invoices = await db.rawQuery('''
+        SELECT 
+          i.*,
+          a.name as account_name,
+          COALESCE(
+            (SELECT SUM(quantity * unit_price)
+            FROM invoice_items
+            WHERE invoice_id = i.id),
+            0
+          ) as total_amount
+        FROM invoices i
+        JOIN accounts a ON i.account_id = a.id
+        WHERE i.id = ?
+      ''', [id]);
+
+      if (invoices.isEmpty) return null;
+      final invoice = invoices.first;
+
+      if (!includeItems) return invoice;
+
       final items = await db.rawQuery('''
         SELECT 
           ii.*,
@@ -73,65 +162,32 @@ class InvoiceDBHelper {
         JOIN products p ON ii.product_id = p.id
         LEFT JOIN units u ON p.unit_id = u.id
         WHERE ii.invoice_id = ?
-      ''', [invoice['id']]);
+      ''', [id]);
 
-      result.add({
+      return {
         ...invoice,
         'items': items,
-      });
+      };
+    } catch (e) {
+      debugPrint('Error in getInvoiceById: $e');
+      rethrow;
     }
-
-    return result;
-  }
-
-  Future<Map<String, dynamic>?> getInvoiceById(int id,
-      {bool includeItems = true}) async {
-    final db = await _db;
-    final invoices = await db.rawQuery('''
-      SELECT 
-        i.*,
-        a.name as account_name,
-        (
-          SELECT SUM(quantity * unit_price)
-          FROM invoice_items
-          WHERE invoice_id = i.id
-        ) as total_amount
-      FROM invoices i
-      JOIN accounts a ON i.account_id = a.id
-      WHERE i.id = ?
-    ''', [id]);
-
-    if (invoices.isEmpty) return null;
-    final invoice = invoices.first;
-
-    if (!includeItems) return invoice;
-
-    final items = await db.rawQuery('''
-      SELECT 
-        ii.*,
-        p.name as product_name,
-        u.name as unit_name
-      FROM invoice_items ii
-      JOIN products p ON ii.product_id = p.id
-      LEFT JOIN units u ON p.unit_id = u.id
-      WHERE ii.invoice_id = ?
-    ''', [id]);
-
-    return {
-      ...invoice,
-      'items': items,
-    };
   }
 
   Future<String> generateInvoiceNumber() async {
     final db = await _db;
-    final year = DateTime.now().year;
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE ?',
-      ['INV-$year-%'],
-    );
-    final count = (result.first['count'] as int) + 1;
-    return 'INV-$year-${count.toString().padLeft(4, '0')}';
+    try {
+      final year = DateTime.now().year;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE ?',
+        ['INV-$year-%'],
+      );
+      final count = (result.first['count'] as int) + 1;
+      return 'INV-$year-${count.toString().padLeft(4, '0')}';
+    } catch (e) {
+      debugPrint('Error generating invoice number: $e');
+      rethrow;
+    }
   }
 
   Future<int> createInvoice({
@@ -146,40 +202,48 @@ class InvoiceDBHelper {
     required List<Map<String, dynamic>> items,
   }) async {
     final db = await _db;
-    return await db.transaction((txn) async {
-      final invoiceId = await txn.insert(
-        'invoices',
-        {
-          'account_id': accountId,
-          'invoice_number': invoiceNumber,
-          'date': date.toIso8601String(),
-          'currency': currency,
-          'notes': notes,
-          'status': status,
-          'paid_amount': paidAmount ?? 0.0,
-          'due_date': dueDate?.toIso8601String(),
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-      );
-
-      for (final item in items) {
-        await txn.insert(
-          'invoice_items',
+    try {
+      return await db.transaction((txn) async {
+        final invoiceId = await txn.insert(
+          'invoices',
           {
-            'invoice_id': invoiceId,
-            'product_id': item['product_id'],
-            'quantity': item['quantity'],
-            'unit_price': item['unit_price'],
-            'description': item['description'],
+            'account_id': accountId,
+            'invoice_number': invoiceNumber,
+            'date': date.toIso8601String(),
+            'currency': currency,
+            'notes': notes,
+            'status': status,
+            'paid_amount': paidAmount ?? 0.0,
+            'due_date': dueDate?.toIso8601String(),
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           },
         );
-      }
 
-      return invoiceId;
-    });
+        // Batch insert items
+        final batch = txn.batch();
+        for (final item in items) {
+          batch.insert(
+            'invoice_items',
+            {
+              'invoice_id': invoiceId,
+              'product_id': item['product_id'],
+              'quantity': item['quantity'],
+              'unit_price': item['unit_price'],
+              'description': item['description'],
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+          );
+        }
+        await batch.commit();
+
+        return invoiceId;
+      });
+    } catch (e) {
+      debugPrint('Error creating invoice: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateInvoice({
@@ -194,88 +258,117 @@ class InvoiceDBHelper {
     List<Map<String, dynamic>>? items,
   }) async {
     final db = await _db;
-    await db.transaction((txn) async {
-      final updates = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+    try {
+      await db.transaction((txn) async {
+        final updates = <String, dynamic>{
+          'updated_at': DateTime.now().toIso8601String(),
+        };
 
-      if (accountId != null) updates['account_id'] = accountId;
-      if (date != null) updates['date'] = date.toIso8601String();
-      if (currency != null) updates['currency'] = currency;
-      if (notes != null) updates['notes'] = notes;
-      if (status != null) updates['status'] = status;
-      if (paidAmount != null) updates['paid_amount'] = paidAmount;
-      if (dueDate != null) updates['due_date'] = dueDate.toIso8601String();
+        if (accountId != null) updates['account_id'] = accountId;
+        if (date != null) updates['date'] = date.toIso8601String();
+        if (currency != null) updates['currency'] = currency;
+        if (notes != null) updates['notes'] = notes;
+        if (status != null) updates['status'] = status;
+        if (paidAmount != null) updates['paid_amount'] = paidAmount;
+        if (dueDate != null) updates['due_date'] = dueDate.toIso8601String();
 
-      await txn.update(
-        'invoices',
-        updates,
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+        await txn.update(
+          'invoices',
+          updates,
+          where: 'id = ?',
+          whereArgs: [id],
+        );
 
-      if (items != null) {
-        // Delete existing items
+        if (items != null) {
+          // Delete existing items
+          await txn.delete(
+            'invoice_items',
+            where: 'invoice_id = ?',
+            whereArgs: [id],
+          );
+
+          // Batch insert new items
+          final batch = txn.batch();
+          for (final item in items) {
+            batch.insert(
+              'invoice_items',
+              {
+                'invoice_id': id,
+                'product_id': item['product_id'],
+                'quantity': item['quantity'],
+                'unit_price': item['unit_price'],
+                'description': item['description'],
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              },
+            );
+          }
+          await batch.commit();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error updating invoice: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteInvoice(int id) async {
+    final db = await _db;
+    try {
+      await db.transaction((txn) async {
+        // Delete items first due to foreign key constraint
         await txn.delete(
           'invoice_items',
           where: 'invoice_id = ?',
           whereArgs: [id],
         );
 
-        // Insert new items
-        for (final item in items) {
-          await txn.insert(
-            'invoice_items',
-            {
-              'invoice_id': id,
-              'product_id': item['product_id'],
-              'quantity': item['quantity'],
-              'unit_price': item['unit_price'],
-              'description': item['description'],
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            },
-          );
-        }
-      }
-    });
-  }
-
-  Future<void> deleteInvoice(int id) async {
-    final db = await _db;
-    await db.delete(
-      'invoices',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+        // Then delete the invoice
+        await txn.delete(
+          'invoices',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      });
+    } catch (e) {
+      debugPrint('Error deleting invoice: $e');
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getOverdueInvoices(
       {bool includeItems = true}) async {
-    final db = await _db;
-    final now = DateTime.now().toIso8601String();
+    debugPrint('Getting overdue invoices...');
+    try {
+      final db = await _db;
+      final now = DateTime.now().toIso8601String();
 
-    final invoices = await db.rawQuery('''
-      SELECT 
-        i.*,
-        a.name as account_name,
-        (
-          SELECT SUM(quantity * unit_price)
-          FROM invoice_items
-          WHERE invoice_id = i.id
-        ) as total_amount
-      FROM invoices i
-      JOIN accounts a ON i.account_id = a.id
-      WHERE i.due_date < ? 
-        AND i.status != 'paid'
-        AND i.status != 'cancelled'
-      ORDER BY i.due_date ASC
-    ''', [now]);
+      final invoices = await db.rawQuery('''
+        SELECT 
+          i.*,
+          a.name as account_name,
+          CAST(COALESCE(
+            (SELECT SUM(quantity * unit_price)
+            FROM invoice_items
+            WHERE invoice_id = i.id),
+            0
+          ) AS REAL) as total_amount
+        FROM invoices i
+        JOIN accounts a ON i.account_id = a.id
+        WHERE i.due_date < ? 
+          AND i.status != 'paid'
+          AND i.status != 'cancelled'
+        ORDER BY i.due_date ASC
+      ''', [now]);
 
-    if (!includeItems) return invoices;
+      debugPrint('Found ${invoices.length} overdue invoices');
 
-    final result = <Map<String, dynamic>>[];
-    for (final invoice in invoices) {
+      if (!includeItems) return invoices;
+
+      // Fetch all items in a single query
+      final invoiceIds = invoices.map((i) => i['id'] as int).toList();
+      if (invoiceIds.isEmpty) return invoices;
+
       final items = await db.rawQuery('''
         SELECT 
           ii.*,
@@ -284,16 +377,31 @@ class InvoiceDBHelper {
         FROM invoice_items ii
         JOIN products p ON ii.product_id = p.id
         LEFT JOIN units u ON p.unit_id = u.id
-        WHERE ii.invoice_id = ?
-      ''', [invoice['id']]);
+        WHERE ii.invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')})
+      ''', invoiceIds);
 
-      result.add({
-        ...invoice,
-        'items': items,
-      });
+      // Group items by invoice_id
+      final itemsByInvoice = <int, List<Map<String, dynamic>>>{};
+      for (final item in items) {
+        final invoiceId = item['invoice_id'] as int;
+        itemsByInvoice.putIfAbsent(invoiceId, () => []).add(item);
+      }
+
+      // Combine invoices with their items
+      final result = invoices.map((invoice) {
+        final invoiceId = invoice['id'] as int;
+        return {
+          ...invoice,
+          'items': itemsByInvoice[invoiceId] ?? [],
+        };
+      }).toList();
+
+      debugPrint('Successfully fetched all overdue invoice data');
+      return result;
+    } catch (e) {
+      debugPrint('Error in getOverdueInvoices: $e');
+      rethrow;
     }
-
-    return result;
   }
 
   Future<void> recordPayment(
@@ -302,72 +410,76 @@ class InvoiceDBHelper {
     required String localizedDescription,
   }) async {
     final db = await _db;
+    try {
+      await db.transaction((txn) async {
+        // Get current invoice
+        final invoiceResult = await txn.query(
+          'invoices',
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
 
-    return await db.transaction((txn) async {
-      // Get current invoice
-      final invoiceResult = await txn.query(
-        'invoices',
-        where: 'id = ?',
-        whereArgs: [invoiceId],
-      );
+        if (invoiceResult.isEmpty) {
+          throw Exception('Invoice not found');
+        }
 
-      if (invoiceResult.isEmpty) {
-        throw Exception('Invoice not found');
-      }
+        final invoice = invoiceResult.first;
+        final currentPaidAmount = invoice['paid_amount'] as double? ?? 0.0;
+        final newPaidAmount = currentPaidAmount + amount;
+        final accountId = invoice['account_id'] as int;
+        final currency = invoice['currency'] as String;
+        final invoiceNumber = invoice['invoice_number'] as String;
 
-      final invoice = invoiceResult.first;
-      final currentPaidAmount = invoice['paid_amount'] as double? ?? 0.0;
-      final newPaidAmount = currentPaidAmount + amount;
-      final accountId = invoice['account_id'] as int;
-      final currency = invoice['currency'] as String;
-      final invoiceNumber = invoice['invoice_number'] as String;
+        // Get total amount
+        final totalResult = await txn.rawQuery('''
+          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
+          FROM invoice_items 
+          WHERE invoice_id = ?
+        ''', [invoiceId]);
 
-      // Get total amount
-      final totalResult = await txn.rawQuery('''
-        SELECT SUM(quantity * unit_price) as total 
-        FROM invoice_items 
-        WHERE invoice_id = ?
-      ''', [invoiceId]);
+        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
 
-      final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        // Determine new status
+        String newStatus;
+        if (newPaidAmount >= totalAmount) {
+          newStatus = 'paid';
+        } else if (newPaidAmount > 0) {
+          newStatus = 'partiallyPaid';
+        } else {
+          newStatus = 'finalized';
+        }
 
-      // Determine new status
-      String newStatus;
-      if (newPaidAmount >= totalAmount) {
-        newStatus = 'paid';
-      } else if (newPaidAmount > 0) {
-        newStatus = 'partiallyPaid';
-      } else {
-        newStatus = 'finalized';
-      }
+        // Update the invoice
+        await txn.update(
+          'invoices',
+          {
+            'paid_amount': newPaidAmount,
+            'status': newStatus,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
 
-      // Update the invoice
-      await txn.update(
-        'invoices',
-        {
-          'paid_amount': newPaidAmount,
-          'status': newStatus,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        where: 'id = ?',
-        whereArgs: [invoiceId],
-      );
-
-      // Record payment in account_details
-      await txn.insert(
-        'account_details',
-        {
-          'date': DateTime.now().toIso8601String(),
-          'account_id': accountId,
-          'amount': amount,
-          'currency': currency,
-          'transaction_type': 'credit',
-          'description': '${localizedDescription} $invoiceNumber',
-          'transaction_id': invoiceId,
-          'transaction_group': 'invoice_payment',
-        },
-      );
-    });
+        // Record payment in account_details
+        await txn.insert(
+          'account_details',
+          {
+            'date': DateTime.now().toIso8601String(),
+            'account_id': accountId,
+            'amount': amount,
+            'currency': currency,
+            'transaction_type': 'credit',
+            'description': '${localizedDescription} $invoiceNumber',
+            'transaction_id': invoiceId,
+            'transaction_group': 'invoice_payment',
+          },
+        );
+      });
+    } catch (e) {
+      debugPrint('Error recording payment: $e');
+      rethrow;
+    }
   }
 
   Future<void> finalizeInvoice(
@@ -375,88 +487,117 @@ class InvoiceDBHelper {
     required String localizedDescription,
   }) async {
     final db = await _db;
+    try {
+      await db.transaction((txn) async {
+        // Get invoice details
+        final invoiceResult = await txn.query(
+          'invoices',
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
 
-    return await db.transaction((txn) async {
-      // Get invoice details
-      final invoiceResult = await txn.query(
-        'invoices',
-        where: 'id = ?',
-        whereArgs: [invoiceId],
-      );
+        if (invoiceResult.isEmpty) {
+          throw Exception('Invoice not found');
+        }
 
-      if (invoiceResult.isEmpty) {
-        throw Exception('Invoice not found');
-      }
+        final invoice = invoiceResult.first;
+        final accountId = invoice['account_id'] as int;
+        final currency = invoice['currency'] as String;
+        final invoiceNumber = invoice['invoice_number'] as String;
 
-      final invoice = invoiceResult.first;
-      final accountId = invoice['account_id'] as int;
-      final currency = invoice['currency'] as String;
-      final invoiceNumber = invoice['invoice_number'] as String;
+        // Get total amount
+        final totalResult = await txn.rawQuery('''
+          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
+          FROM invoice_items 
+          WHERE invoice_id = ?
+        ''', [invoiceId]);
 
-      // Get total amount
-      final totalResult = await txn.rawQuery('''
-        SELECT SUM(quantity * unit_price) as total 
-        FROM invoice_items 
-        WHERE invoice_id = ?
-      ''', [invoiceId]);
+        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
 
-      final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        // Update invoice status
+        await txn.update(
+          'invoices',
+          {
+            'status': 'finalized',
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
 
-      // Update invoice status
-      await txn.update(
-        'invoices',
-        {
-          'status': 'finalized',
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        where: 'id = ?',
-        whereArgs: [invoiceId],
-      );
-
-      // Record invoice amount in account_details
-      await txn.insert(
-        'account_details',
-        {
-          'date': DateTime.now().toIso8601String(),
-          'account_id': accountId,
-          'amount': totalAmount,
-          'currency': currency,
-          'transaction_type': 'debit',
-          'description': '${localizedDescription} $invoiceNumber',
-          'transaction_id': invoiceId,
-          'transaction_group': 'invoice',
-        },
-      );
-    });
+        // Record invoice amount in account_details
+        await txn.insert(
+          'account_details',
+          {
+            'date': DateTime.now().toIso8601String(),
+            'account_id': accountId,
+            'amount': totalAmount,
+            'currency': currency,
+            'transaction_type': 'debit',
+            'description': '${localizedDescription} $invoiceNumber',
+            'transaction_id': invoiceId,
+            'transaction_group': 'invoice',
+          },
+        );
+      });
+    } catch (e) {
+      debugPrint('Error finalizing invoice: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateStockQuantity(int stockId, double newQuantity,
       int warehouse_id, int productId, String invoiceNumber) async {
     final db = await _db;
+    try {
+      await db.transaction((txn) async {
+        // Update the stock record
+        await txn.update(
+          'current_stock',
+          {'quantity': newQuantity},
+          where: 'id = ?',
+          whereArgs: [stockId],
+        );
 
-    // Update the stock record
-    await db.update(
-      'current_stock',
-      {'quantity': newQuantity},
-      where: 'id = ?',
-      whereArgs: [stockId],
+        // Insert a stock movement record for tracking
+        // await txn.insert(
+        //   'stock_movements',
+        //   {
+        //     'product_id': productId,
+        //     'source_warehouse_id': warehouse_id,
+        //     'destination_warehouse_id': null,
+        //     'quantity': newQuantity,
+        //     'type': 'SALE',
+        //     'reference': invoiceNumber,
+        //     'notes': '',
+        //     'expiry_date': null,
+        //     'date': DateTime.now().toIso8601String(),
+        //     'created_at': DateTime.now().toIso8601String(),
+        //     'updated_at': DateTime.now().toIso8601String(),
+        //   },
+        // );
+      });
+    } catch (e) {
+      debugPrint('Error updating stock quantity: $e');
+      rethrow;
+    }
+  }
+
+  // Add search method
+  Future<List<Map<String, dynamic>>> searchInvoices({
+    required String query,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? accountId,
+  }) async {
+    return getInvoices(
+      searchQuery: query,
+      status: status,
+      startDate: startDate,
+      endDate: endDate,
+      accountId: accountId,
+      includeItems: true,
     );
-
-    // Insert a stock movement record for tracking
-    // await db.insert(
-    //   'stock_movements',
-    //   {
-    //     'product_id': productId,
-    //     'source_warehouse_id': warehouse_id,
-    //     'destination_warehouse_id': 'N/A',
-    //     'quantity': newQuantity,
-    //     'type': 'SALE',
-    //     'reference': invoiceId,
-    //     'notes': '',
-    //     'expiry_date': '',
-    //     'created_at': DateTime.now().toIso8601String(),
-    //     'updated_at': DateTime.now().toIso8601String(),
-    //   },
-    // );
   }
 }

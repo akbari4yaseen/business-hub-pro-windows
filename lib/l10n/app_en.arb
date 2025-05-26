@@ -522,5 +522,6 @@
   "barcodeOptional": "Barcode (Optional)",
   "hasExpiryDate": "Has Expiry Date",
   "categoryDeleted": "Category deleted successfully.",
-  "paymentForInvoice": "Payment for Invoice"
+  "paymentForInvoice": "Payment for Invoice",
+  "status": "Status"
 }

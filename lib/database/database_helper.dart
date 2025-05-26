@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'db_export_import.dart';
 import 'db_init.dart';
+import 'package:flutter/foundation.dart';
 
 class DatabaseHelper {
   static const _databaseName = 'BusinessHubPro.db';
@@ -18,16 +19,43 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final path = join(await getDatabasesPath(), _databaseName);
-    return await openDatabase(
-      path,
-      version: 1,
-      onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
-      onCreate: (db, version) async {
-        await DbInit.createTables(db);
-        await DbInit.seedDefaults(db);
-      },
-    );
+    debugPrint('Initializing database...');
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, _databaseName);
+      debugPrint('Database path: $path');
+
+      final db = await openDatabase(
+        path,
+        version: 1,
+        onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
+        onCreate: (db, version) async {
+          debugPrint('Creating database tables...');
+          await DbInit.createTables(db);
+          await DbInit.seedDefaults(db);
+          debugPrint('Database tables created successfully');
+        },
+        onOpen: (Database db) async {
+          debugPrint('Database opened');
+          await db.execute('PRAGMA foreign_keys = ON');
+        },
+      );
+      
+      debugPrint('Database initialized successfully');
+      return db;
+    } catch (e) {
+      debugPrint('Error initializing database: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> close() async {
+    if (_database != null) {
+      debugPrint('Closing database connection...');
+      await _database!.close();
+      _database = null;
+      debugPrint('Database connection closed');
+    }
   }
 
   // Expose export/import utilities

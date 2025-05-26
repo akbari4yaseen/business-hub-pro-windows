@@ -22,10 +22,17 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
   final _referenceController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _expiryDate;
+  DateTime? _selectedDate;
   int? _selectedProductId;
   int? _selectedSourceWarehouseId;
   int? _selectedDestinationWarehouseId;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -194,6 +201,36 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: loc.date,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 3650)),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  controller: TextEditingController(
+                    text: _selectedDate != null
+                        ? formatLocalizedDate(context, _selectedDate.toString())
+                        : loc.notSet,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _referenceController,
                   decoration: InputDecoration(
@@ -208,27 +245,32 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                ListTile(
-                  title: Text(loc.expiryDate),
-                  subtitle: Text(_expiryDate != null
-                      ? formatLocalizedDate(context, _expiryDate.toString())
-                      : loc.notSet),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate:
-                            DateTime.now().add(const Duration(days: 3650)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _expiryDate = date;
-                        });
-                      }
-                    },
+                TextFormField(
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: loc.expiryDate,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 3650)),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _expiryDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  controller: TextEditingController(
+                    text: _expiryDate != null
+                        ? formatLocalizedDate(context, _expiryDate.toString())
+                        : loc.notSet,
                   ),
                 ),
               ],
@@ -263,7 +305,8 @@ class _AddStockMovementScreenState extends State<AddStockMovementScreen> {
             : _referenceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         expiryDate: _expiryDate,
-        createdAt: DateTime.now(),
+        date: _selectedDate,
+        createdAt: _selectedDate ?? DateTime.now(),
       );
       await context.read<InventoryProvider>().recordStockMovement(movement);
       if (mounted) {
