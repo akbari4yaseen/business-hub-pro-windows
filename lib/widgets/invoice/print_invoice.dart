@@ -21,7 +21,9 @@ Future<void> printInvoice({
   required InventoryProvider inventoryProvider,
   required AccountProvider accountProvider,
 }) async {
+  await infoProvider.loadInfo();
   final info = infoProvider.info;
+
   final customer = accountProvider.customers.firstWhere(
     (c) => c['id'] == invoice.accountId,
     orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
