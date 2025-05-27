@@ -4,6 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'dart:io';
 
 import 'providers/theme_provider.dart';
 import 'providers/bottom_navigation_provider.dart';
@@ -45,15 +47,13 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // // Optimize for performance and rendering
-  // WidgetsBinding.instance.renderView.automaticSystemUiAdjustment = false;
-  // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-  //     overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
-
-  // // Reduce GPU pressure
-  // debugPaintSizeEnabled = false;
-  // debugRepaintRainbowEnabled = false;
-  // debugRepaintTextRainbowEnabled = false;
+  // Initialize sqflite_ffi for Windows
+  if (Platform.isWindows) {
+    // Initialize FFI
+    sqfliteFfiInit();
+    // Change the default factory
+    databaseFactory = databaseFactoryFfi;
+  }
 
   // Initialize dates
   await initializeDateFormatting();

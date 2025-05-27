@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:path/path.dart' as path;
 
 class DbExportImport {
   /// Export (backup) the database
@@ -10,6 +11,15 @@ class DbExportImport {
       await _closeOpenDb();
       final sourceFile = File(dbPath);
       if (!await sourceFile.exists()) return false;
+
+      // For Windows, ensure the destination directory exists
+      if (Platform.isWindows) {
+        final destDir = path.dirname(destinationPath);
+        if (!await Directory(destDir).exists()) {
+          await Directory(destDir).create(recursive: true);
+        }
+      }
+
       await sourceFile.copy(destinationPath);
       return true;
     } catch (e) {
@@ -27,6 +37,15 @@ class DbExportImport {
     try {
       final dbPath = await getPath();
       final dbFile = File(dbPath);
+
+      // For Windows, ensure the target directory exists
+      if (Platform.isWindows) {
+        final targetDir = path.dirname(dbPath);
+        if (!await Directory(targetDir).exists()) {
+          await Directory(targetDir).create(recursive: true);
+        }
+      }
+
       // Close and delete existing
       await _closeOpenDb();
       if (await dbFile.exists()) await dbFile.delete();

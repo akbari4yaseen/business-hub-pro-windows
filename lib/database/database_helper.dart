@@ -1,8 +1,10 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'db_export_import.dart';
 import 'db_init.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class DatabaseHelper {
   static const _databaseName = 'BusinessHubPro.db';
@@ -19,14 +21,19 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    debugPrint('Initializing database...');
     try {
-      final dbPath = await getDatabasesPath();
-      final path = join(dbPath, _databaseName);
-      debugPrint('Database path: $path');
+      String dbPath;
+      if (Platform.isWindows) {
+        // For Windows, use the application documents directory
+        final appDir = await getApplicationDocumentsDirectory();
+        dbPath = join(appDir.path, _databaseName);
+      } else {
+        // For other platforms, use the default database path
+        dbPath = join(await getDatabasesPath(), _databaseName);
+      }
 
       final db = await openDatabase(
-        path,
+        dbPath,
         version: 1,
         onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, version) async {
@@ -40,8 +47,7 @@ class DatabaseHelper {
           await db.execute('PRAGMA foreign_keys = ON');
         },
       );
-      
-      debugPrint('Database initialized successfully');
+
       return db;
     } catch (e) {
       debugPrint('Error initializing database: $e');
@@ -51,7 +57,6 @@ class DatabaseHelper {
 
   Future<void> close() async {
     if (_database != null) {
-      debugPrint('Closing database connection...');
       await _database!.close();
       _database = null;
       debugPrint('Database connection closed');
@@ -72,6 +77,10 @@ class DatabaseHelper {
 
   /// Helper to get the database file path
   Future<String> getDatabasePath() async {
+    if (Platform.isWindows) {
+      final appDir = await getApplicationDocumentsDirectory();
+      return join(appDir.path, _databaseName);
+    }
     return join(await getDatabasesPath(), _databaseName);
   }
 

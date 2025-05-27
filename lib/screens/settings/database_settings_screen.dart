@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,7 +11,7 @@ import '../../database/settings_db.dart';
 import '../../utils/backup_google_drive.dart';
 import '../../utils/date_formatters.dart';
 
-/// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.
+/// Requests appropriate permissions based on platform
 Future<bool> ensureStoragePermission() async {
   if (Platform.isAndroid) {
     final perm = Permission.manageExternalStorage;
@@ -19,6 +20,9 @@ Future<bool> ensureStoragePermission() async {
     if (status.isGranted) return true;
     if (status.isPermanentlyDenied) openAppSettings();
     return false;
+  } else if (Platform.isWindows) {
+    // Windows doesn't need explicit storage permissions
+    return true;
   }
   return true;
 }
@@ -59,7 +63,7 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     if (offlineStr != null) {
       try {
         offlineDate = DateTime.parse(offlineStr);
-      } catch (_) {/* ignore */}
+      } catch (_) {/* ignore parse errors */}
     }
 
     setState(() {
@@ -100,18 +104,31 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
       return;
     }
 
-    final selectedDir = await FilePicker.platform.getDirectoryPath();
-    if (selectedDir == null) {
-      _showSnackbar(context, loc.exportCanceledNoDirectory);
+    String? backupPath;
+    if (Platform.isWindows) {
+      // For Windows, use the Documents folder
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory(join(documentsDir.path, 'BusinessHubPro', 'Backups'));
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+      }
+      backupPath = join(backupDir.path, 
+        'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db');
+    } else {
+      // For other platforms, use FilePicker
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: loc.selectBackupLocation,
+        fileName: 'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db',
+      );
+      backupPath = result;
+    }
+
+    if (backupPath == null) {
+      _showSnackbar(context, loc.backupCanceledNoLocation);
       return;
     }
 
     setState(() => _isOfflineBackingUp = true);
-    final parentDir = dirname(selectedDir);
-    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    final backupName = 'BusinessHubPro_backup_${timestamp}.db';
-    final backupPath = join(parentDir, backupName);
-
     try {
       final success = await DatabaseHelper().exportTo(backupPath);
       if (success) {

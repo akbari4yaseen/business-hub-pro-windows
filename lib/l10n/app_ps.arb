@@ -526,5 +526,7 @@
   "hasExpiryDate": "د پای نیټې سره",
   "categoryDeleted": "کتگوری با موفقیت حذف شد.",
   "paymentForInvoice": "د رسید لپاره پیسې",
-  "status": "وضعبت"
+  "status": "وضعبت",
+  "backupCanceledNoLocation": "بیک اپ لغوه شو. موقعیت نه دی ټاکل شوی",
+  "selectBackupLocation": "د بیک اپ موقعیت وټاکئ"
 }

@@ -523,5 +523,7 @@
   "hasExpiryDate": "Has Expiry Date",
   "categoryDeleted": "Category deleted successfully.",
   "paymentForInvoice": "Payment for Invoice",
-  "status": "Status"
+  "status": "Status",
+  "backupCanceledNoLocation": "Backup Canceled. No Location",
+  "selectBackupLocation": "Select Backup Location"
 }

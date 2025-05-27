@@ -229,81 +229,95 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLoginCard(AppLocalizations loc, ThemeData theme) {
     final settingsProvider =
         Provider.of<SettingsProvider>(context, listen: false);
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: loc.passwordLabel,
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: IconButton(
-                    key: ValueKey(_obscurePassword),
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                errorText: _errorMessage,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                filled: true,
-                fillColor: theme.inputDecorationTheme.fillColor,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(loc.loginButton,
-                        style: const TextStyle(fontSize: 16)),
-              ),
-            ),
-            if (_canCheckBiometrics && settingsProvider.useFingerprint)
-              const SizedBox(height: 16),
-            if (_canCheckBiometrics && settingsProvider.useFingerprint)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.fingerprint),
-                  label: Text(loc.useFingerprint),
-                  onPressed: _isLoading ? null : _authenticateWithBiometrics,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(
-                      color: Theme.of(context).primaryColor,
+
+    final isDesktop = Theme.of(context).platform == TargetPlatform.windows ||
+        Theme.of(context).platform == TargetPlatform.macOS ||
+        Theme.of(context).platform == TargetPlatform.linux;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: isDesktop ? 400 : double.infinity,
+        ),
+        child: Card(
+          elevation: 4,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: loc.passwordLabel,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: IconButton(
+                        key: ValueKey(_obscurePassword),
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
+                    errorText: _errorMessage,
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
+                    filled: true,
+                    fillColor: theme.inputDecorationTheme.fillColor,
                   ),
                 ),
-              ),
-          ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(loc.loginButton,
+                            style: const TextStyle(fontSize: 16)),
+                  ),
+                ),
+                if (_canCheckBiometrics && settingsProvider.useFingerprint)
+                  const SizedBox(height: 16),
+                if (_canCheckBiometrics && settingsProvider.useFingerprint)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.fingerprint),
+                      label: Text(loc.useFingerprint),
+                      onPressed:
+                          _isLoading ? null : _authenticateWithBiometrics,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
