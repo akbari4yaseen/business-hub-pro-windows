@@ -26,6 +26,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
     'expense': Colors.red,
     'company': Colors.brown,
     'owner': Colors.lime,
+    'employee': Colors.yellow,
   };
 
   @override

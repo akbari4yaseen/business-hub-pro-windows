@@ -135,7 +135,7 @@ class ReportsDBHelper {
       COUNT(a.id) AS count
     FROM accounts a
     WHERE a.account_type IN (
-      'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company'
+      'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company', 'employee'
     )
     GROUP BY a.account_type
   ''';

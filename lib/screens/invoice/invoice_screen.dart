@@ -13,8 +13,7 @@ import '../../widgets/invoice/invoice_list.dart';
 import '../../models/invoice.dart';
 
 class InvoiceScreen extends StatefulWidget {
-  final VoidCallback openDrawer;
-  const InvoiceScreen({Key? key, required this.openDrawer}) : super(key: key);
+  const InvoiceScreen({Key? key}) : super(key: key);
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -181,10 +180,6 @@ class _InvoiceScreenState extends State<InvoiceScreen>
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.openDrawer,
-        ),
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,

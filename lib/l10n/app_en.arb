@@ -18,6 +18,7 @@
   "accountName": "Account Name",
   "accountType": "Account Type",
   "customer": "Customer",
+  "employee": "Employee",
   "supplier": "Supplier",
   "exchanger": "Exchanger",
   "system": "System",
@@ -525,5 +526,7 @@
   "paymentForInvoice": "Payment for Invoice",
   "status": "Status",
   "backupCanceledNoLocation": "Backup Canceled. No Location",
-  "selectBackupLocation": "Select Backup Location"
+  "selectBackupLocation": "Select Backup Location",
+  "copyBalance": "Copy Balance",
+  "balanceCopied": "Balance copied to clipboard"
 }

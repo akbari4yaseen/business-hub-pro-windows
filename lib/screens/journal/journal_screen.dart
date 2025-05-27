@@ -17,8 +17,7 @@ import '../../utils/search_manager.dart';
 import '../../utils/transaction_share_helper.dart';
 
 class JournalScreen extends StatefulWidget {
-  final VoidCallback openDrawer;
-  const JournalScreen({Key? key, required this.openDrawer}) : super(key: key);
+  const JournalScreen({Key? key}) : super(key: key);
 
   @override
   _JournalScreenState createState() => _JournalScreenState();
@@ -240,8 +239,6 @@ class _JournalScreenState extends State<JournalScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-            icon: const Icon(Icons.menu), onPressed: widget.openDrawer),
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,

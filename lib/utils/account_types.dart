@@ -10,5 +10,6 @@ Map<String, String> getAccountTypes(AppLocalizations localizations) {
     'expense': localizations.expense,
     'owner': localizations.owner,
     'company': localizations.company,
+    'employee': localizations.employee,
   };
 }

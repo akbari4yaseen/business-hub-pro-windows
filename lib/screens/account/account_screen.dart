@@ -22,8 +22,7 @@ import '../../widgets/auth_widget.dart';
 import '../../utils/search_manager.dart';
 
 class AccountScreen extends StatefulWidget {
-  final VoidCallback openDrawer;
-  const AccountScreen({Key? key, required this.openDrawer}) : super(key: key);
+  const AccountScreen({Key? key}) : super(key: key);
 
   @override
   _AccountScreenState createState() => _AccountScreenState();
@@ -418,10 +417,6 @@ class _AccountScreenState extends State<AccountScreen>
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.openDrawer,
-        ),
         title: _isSearching
             ? CommonSearchBar(
                 controller: _searchController,
@@ -525,7 +520,7 @@ class _AccountScreenState extends State<AccountScreen>
         heroTag: 'accounts_add_fab',
         onPressed: _isAtTop ? _addAccount : _scrollToTop,
         tooltip: _isAtTop
-            ? loc.addAccount
+            ? AppLocalizations.of(context)!.addAccount
             : AppLocalizations.of(context)!.scrollToTop,
         mini: !_isAtTop,
         child: FaIcon(

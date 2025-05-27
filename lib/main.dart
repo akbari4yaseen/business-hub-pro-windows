@@ -16,7 +16,7 @@ import 'providers/inventory_provider.dart';
 import 'providers/invoice_provider.dart';
 import 'providers/account_provider.dart';
 
-import 'widgets/drawer_menu.dart';
+import 'widgets/windows_drawer_menu.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -31,7 +31,8 @@ import 'screens/notifications_screen.dart';
 import 'screens/reminders/reminders_screen.dart';
 import 'screens/inventory_screen.dart';
 import 'screens/invoice/invoice_screen.dart';
-
+import 'screens/help_screen.dart';
+import 'screens/about_screen.dart';
 import 'database/user_dao.dart';
 import 'database/database_helper.dart';
 
@@ -129,6 +130,8 @@ class MyApp extends StatelessWidget {
         '/reminders': (_) => RemindersScreen(),
         '/inventory': (_) => const InventoryScreen(),
         '/reports': (_) => const ReportsScreen(),
+        '/help': (_) => const HelpScreen(),
+        '/about': (_) => const AboutScreen(),
       },
 
       // Error handling for the entire app
@@ -215,53 +218,27 @@ class BottomNavigationApp extends StatefulWidget {
 }
 
 class _BottomNavigationAppState extends State<BottomNavigationApp> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  void _openDrawer() {
-    _scaffoldKey.currentState?.openDrawer();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final bottomNavProvider = Provider.of<BottomNavigationProvider>(context);
-    final localizations = AppLocalizations.of(context)!;
 
     final screens = <Widget>[
-      HomeScreen(openDrawer: _openDrawer),
-      JournalScreen(openDrawer: _openDrawer),
-      AccountScreen(openDrawer: _openDrawer),
-      InvoiceScreen(openDrawer: _openDrawer),
+      const HomeScreen(),
+      const JournalScreen(),
+      const AccountScreen(),
+      const InventoryScreen(),
+      const InvoiceScreen(),
     ];
 
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: const DrawerMenu(),
-      drawerEnableOpenDragGesture: false,
-      body: screens[bottomNavProvider.currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: bottomNavProvider.currentIndex,
-        onTap: (i) => bottomNavProvider.updateIndex(i),
-        backgroundColor: themeProvider.bottomNavBackgroundColor,
-        selectedItemColor: themeProvider.bottomNavSelectedItemColor,
-        unselectedItemColor: themeProvider.bottomNavUnselectedItemColor,
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard),
-            label: localizations.home,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.book_outlined),
-            label: localizations.journal,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.supervisor_account_outlined),
-            label: localizations.accounts,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.receipt_long_outlined),
-            label: localizations.invoices,
+      body: Row(
+        children: [
+          // Sidebar
+          const WindowsDrawerMenu(),
+
+          // Main content
+          Expanded(
+            child: screens[bottomNavProvider.currentIndex],
           ),
         ],
       ),

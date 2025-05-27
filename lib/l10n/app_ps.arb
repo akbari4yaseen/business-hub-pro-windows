@@ -1,6 +1,6 @@
 {
-  "appTitle": "بیزنس‌هاب پرو",
-  "appName": "بیزنس‌هاب پرو",
+  "appTitle": "بیزنس‌هاب",
+  "appName": "بیزنس‌هاب",
   "languageEnglish": "انګلیسي",
   "languageFarsi": "فارسي",
   "languagePashto": "پښتو",
@@ -19,6 +19,7 @@
   "accountName": "د حساب نوم",
   "accountType": "د حساب ډول",
   "customer": "پیرودونکی",
+  "employee": "کارمند",
   "supplier": "چمتو کوونکی",
   "exchanger": "صراف",
   "system": "سیستم",
@@ -528,5 +529,7 @@
   "paymentForInvoice": "د رسید لپاره پیسې",
   "status": "وضعبت",
   "backupCanceledNoLocation": "بیک اپ لغوه شو. موقعیت نه دی ټاکل شوی",
-  "selectBackupLocation": "د بیک اپ موقعیت وټاکئ"
+  "selectBackupLocation": "د بیک اپ موقعیت وټاکئ",
+  "copyBalance": "بیلانس نقل کړئ",
+  "balanceCopied": "بیلانس کلېپبورډ ته نقل شو"
 }

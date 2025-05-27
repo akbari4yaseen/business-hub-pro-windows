@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 import '../../themes/app_theme.dart';
+import '../../utils/account_share_helper.dart';
 
 import '../../../utils/utilities.dart';
 
@@ -23,6 +25,7 @@ class AccountTile extends StatelessWidget {
     'expense': Colors.red,
     'company': Colors.brown,
     'owner': Colors.lime,
+    'employee': Colors.yellow,
   };
 
   const AccountTile({
@@ -97,7 +100,25 @@ class AccountTile extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             PopupMenuButton<String>(
-              onSelected: onActionSelected,
+              onSelected: (value) async {
+                if (value == 'copy_balance') {
+                  final message = await buildShareMessage(context, account);
+                  if (message.isNotEmpty) {
+                    await Clipboard.setData(ClipboardData(text: message));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text(AppLocalizations.of(context)!.balanceCopied),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  onActionSelected(value);
+                }
+              },
               icon: const Icon(Icons.more_vert),
               itemBuilder: (_) => _buildMenuItems(context),
             ),
@@ -136,6 +157,9 @@ class AccountTile extends StatelessWidget {
 
     items.add(_buildMenuItem(
         'whatsapp', FontAwesomeIcons.whatsapp, loc?.sendBalance ?? ''));
+
+    items.add(_buildMenuItem(
+        'copy_balance', FontAwesomeIcons.copy, loc?.copyBalance ?? ''));
 
     if (account['phone'] != null && (account['phone'] as String).isNotEmpty) {
       items.add(_buildMenuItem('call', FontAwesomeIcons.phone, loc!.call));

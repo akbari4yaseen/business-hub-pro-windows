@@ -1,6 +1,6 @@
 {
-  "appTitle": "بیزنس‌هاب پرو",
-  "appName": "بیزنس‌هاب پرو",
+  "appTitle": "بیزنس‌هاب",
+  "appName": "بیزنس‌هاب",
   "languageEnglish": "انگلیسی",
   "languageFarsi": "فارسی",
   "languagePashto": "پشتو",
@@ -19,6 +19,7 @@
   "accountName": "نام حساب",
   "accountType": "نوع حساب",
   "customer": "مشتری",
+  "employee": "کارمند",
   "supplier": "فراهم‌کننده",
   "exchanger": "صراف",
   "system": "سیستم",
@@ -525,5 +526,7 @@
   "paymentForInvoice": "رسید برای فاکتور",
   "status": "وضعبت",
   "backupCanceledNoLocation": "پشتیبان‌گیری لغو شد. موقعیت انتخاب نشده است",
-  "selectBackupLocation": "انتخاب مکان پشتیبان‌گیری"
+  "selectBackupLocation": "انتخاب مکان پشتیبان‌گیری",
+  "copyBalance": "کاپی بیلانس",
+  "balanceCopied": "بیلانس به کلیپ‌بورد کاپی شد"
 }

@@ -6,7 +6,6 @@ import '../themes/app_theme.dart';
 
 import '../providers/notification_provider.dart';
 import '../providers/bottom_navigation_provider.dart';
-import '../../providers/inventory_provider.dart';
 import '../database/account_db.dart';
 import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
@@ -14,8 +13,7 @@ import '../widgets/transaction/recent_transaction_list.dart';
 import '../widgets/account/account_type_chart.dart';
 
 class HomeScreen extends StatefulWidget {
-  final VoidCallback openDrawer;
-  const HomeScreen({Key? key, required this.openDrawer}) : super(key: key);
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -41,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             days: days,
           );
-
-      // context.read<InventoryProvider>().initialize();
     });
   }
 
@@ -89,10 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.appName),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.openDrawer,
-        ),
         actions: [
           _buildNotificationIcon(context),
         ],
@@ -102,11 +94,22 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AccountTypeChart(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Expanded(
+                  flex: 2,
+                  child: AccountTypeChart(),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: BackupCard(),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             ActionButtonsSection(actions: actions),
-            const SizedBox(height: 16),
-            const BackupCard(),
             const SizedBox(height: 16),
             RecentTransactionList(
               transactionsFuture: _transactionsFuture,
@@ -202,7 +205,7 @@ class _ActionButton extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          width: 70, // pick a width that fits your layout
+          width: 70,
           child: Text(
             label,
             style: const TextStyle(fontSize: 14),
