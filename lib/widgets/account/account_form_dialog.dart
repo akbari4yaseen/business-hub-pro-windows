@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../providers/theme_provider.dart';
-import '../../database/account_db.dart';
 import '../../utils/account_types.dart';
+import '../../themes/app_theme.dart';
 
-class AddAccountScreen extends StatefulWidget {
+class AccountFormDialog extends StatefulWidget {
   final Map<String, dynamic>? accountData;
-  const AddAccountScreen({Key? key, this.accountData}) : super(key: key);
+  final Function(Map<String, dynamic>) onSave;
+
+  const AccountFormDialog({
+    Key? key,
+    this.accountData,
+    required this.onSave,
+  }) : super(key: key);
 
   @override
-  State<AddAccountScreen> createState() => _AddAccountScreenState();
+  State<AccountFormDialog> createState() => _AccountFormDialogState();
 }
 
-class _AddAccountScreenState extends State<AddAccountScreen> {
+class _AccountFormDialogState extends State<AccountFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   String _selectedAccountType = 'customer';
-  final AccountDBHelper _dbHelper = AccountDBHelper();
 
   @override
   void initState() {
@@ -45,11 +48,10 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     super.dispose();
   }
 
-  Future<void> _saveAccount() async {
-    // Validate form before saving.
+  void _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final newAccount = {
+    final accountData = {
       'name': _nameController.text.trim(),
       'account_type': _selectedAccountType,
       'phone': _phoneController.text.trim(),
@@ -57,17 +59,15 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     };
 
     try {
-      if (widget.accountData == null) {
-        // Insert new account; update functionality can be added here if needed.
-        await _dbHelper.insertAccount(newAccount);
-      }
-      if (mounted) Navigator.pop(context, newAccount);
+      await widget.onSave(accountData);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.existsAccountError),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.existsAccountError),
+          ),
+        );
+      }
     }
   }
 
@@ -90,6 +90,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon != null ? Icon(icon) : null,
+        border: const OutlineInputBorder(),
       ),
       validator: validator,
     );
@@ -99,23 +100,38 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final accountTypes = getAccountTypes(localizations);
+    final isEdit = widget.accountData != null;
 
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.addAccount),
-        actions: [
-          IconButton(onPressed: _saveAccount, icon: Icon(Icons.save)),
-        ],
+    return Dialog(
+      backgroundColor: Theme.of(context).dialogBackgroundColor,
+      elevation: 24,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
       ),
-      backgroundColor: themeProvider.appBackgroundColor,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  Icon(
+                    isEdit ? Icons.edit : Icons.person_add,
+                    size: 24,
+                    color: AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    isEdit ? localizations.editAccount : localizations.addAccount,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               _buildTextField(
                 label: localizations.accountName,
                 controller: _nameController,
@@ -126,12 +142,13 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                     ? localizations.nameRequired
                     : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedAccountType,
                 decoration: InputDecoration(
                   labelText: localizations.accountType,
                   prefixIcon: const Icon(Icons.supervisor_account_outlined),
+                  border: const OutlineInputBorder(),
                 ),
                 items: accountTypes.entries
                     .map((entry) => DropdownMenuItem<String>(
@@ -145,7 +162,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildTextField(
                 label: localizations.phone,
                 controller: _phoneController,
@@ -163,18 +180,36 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildTextField(
                 label: localizations.address,
                 controller: _addressController,
                 icon: Icons.location_on,
                 maxLength: 128,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(localizations.cancel),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(localizations.save),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
+} 

@@ -5,8 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'transactions/transactions_screen.dart';
-import 'edit_account_screen.dart';
-import 'add_account_screen.dart';
+// import 'edit_account_screen.dart';
+// import 'add_account_screen.dart';
 import 'print_accounts.dart';
 
 import '../../database/account_db.dart';
@@ -20,6 +20,7 @@ import '../../widgets/account/account_list_view.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
 import '../../utils/search_manager.dart';
+import '../../widgets/account/account_form_dialog.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -100,6 +101,8 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Future<void> _loadAccounts() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _activeAccounts = [];
@@ -109,13 +112,25 @@ class _AccountScreenState extends State<AccountScreen>
       _activeHasMore = true;
       _deactivatedHasMore = true;
     });
-    await Future.wait([
-      _loadMoreActiveAccounts(reset: true),
-      _loadMoreDeactivatedAccounts(reset: true),
-    ]);
-    setState(() {
-      _isLoading = false;
-    });
+
+    try {
+      await Future.wait([
+        _loadMoreActiveAccounts(reset: true),
+        _loadMoreDeactivatedAccounts(reset: true),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadMoreActiveAccounts({bool reset = false}) async {
@@ -322,13 +337,33 @@ class _AccountScreenState extends State<AccountScreen>
         );
         break;
       case 'edit':
-        final updated = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EditAccountScreen(accountData: account),
+        if (!mounted) return;
+        
+        final result = await showDialog<Map<String, dynamic>>(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext dialogContext) => AccountFormDialog(
+            accountData: account,
+            onSave: (accountData) async {
+              try {
+                await AccountDBHelper().updateAccount(account['id'], accountData);
+                Navigator.of(dialogContext).pop(accountData);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(AppLocalizations.of(context)!.existsAccountError),
+                    ),
+                  );
+                }
+              }
+            },
           ),
         );
-        if (updated != null) _loadAccounts();
+        
+        if (result != null && mounted) {
+          await _loadAccounts();
+        }
         break;
       case 'deactivate':
         _confirmDeactivate(account);
@@ -534,8 +569,31 @@ class _AccountScreenState extends State<AccountScreen>
       duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
 
   void _addAccount() async {
-    final result = await Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const AddAccountScreen()));
-    if (result != null) _loadAccounts();
+    if (!mounted) return;
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) => AccountFormDialog(
+        onSave: (accountData) async {
+          try {
+            await AccountDBHelper().insertAccount(accountData);
+            Navigator.of(dialogContext).pop(accountData);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.existsAccountError),
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+    
+    if (result != null && mounted) {
+      await _loadAccounts();
+    }
   }
 }

@@ -88,109 +88,116 @@ class _AuthWidgetState extends State<AuthWidget> {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(Icons.lock_outline, size: 40, color: colors.primary),
-              const SizedBox(height: 12),
-              Text(loc.authTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text(widget.actionReason,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _authenticateWithPassword(),
-                  autofillHints: const [AutofillHints.password],
-                  decoration: InputDecoration(
-                    labelText: loc.passwordLabel,
-                    errorText: _errorMessage,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      gapPadding: 8.0,
-                    ),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? loc.enterPasswordError : null,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isAuthenticating
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: Text(loc.cancel),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.primary,
-                        side: BorderSide(color: colors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 400, // Adjust this value as needed for desktop
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(Icons.lock_outline, size: 40, color: colors.primary),
+                const SizedBox(height: 12),
+                Text(loc.authTitle,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(widget.actionReason,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 20),
+                Form(
+                  key: _formKey,
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _authenticateWithPassword(),
+                    autofillHints: const [AutofillHints.password],
+                    decoration: InputDecoration(
+                      labelText: loc.passwordLabel,
+                      errorText: _errorMessage,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        gapPadding: 8.0,
                       ),
                     ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? loc.enterPasswordError
+                        : null,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed:
-                          _isAuthenticating ? null : _authenticateWithPassword,
-                      child: _isAuthenticating
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(loc.confirm),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isAuthenticating
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: Text(loc.cancel),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.primary,
+                          side: BorderSide(color: colors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              if (settingsProvider.useFingerprint) const SizedBox(height: 16),
-              if (settingsProvider.useFingerprint)
-                Center(
-                  child: TextButton.icon(
-                    onPressed:
-                        _isAuthenticating ? null : _authenticateBiometric,
-                    icon: Icon(
-                      Icons.fingerprint,
-                      color: _isAuthenticating
-                          ? colors.onSurface.withValues(alpha: 0.4)
-                          : colors.primary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isAuthenticating
+                            ? null
+                            : _authenticateWithPassword,
+                        child: _isAuthenticating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(loc.confirm),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
-                    label: Text(
-                      loc.useFingerprint,
-                      style: TextStyle(
+                  ],
+                ),
+                if (settingsProvider.useFingerprint) const SizedBox(height: 16),
+                if (settingsProvider.useFingerprint)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed:
+                          _isAuthenticating ? null : _authenticateBiometric,
+                      icon: Icon(
+                        Icons.fingerprint,
                         color: _isAuthenticating
                             ? colors.onSurface.withValues(alpha: 0.4)
                             : colors.primary,
                       ),
+                      label: Text(
+                        loc.useFingerprint,
+                        style: TextStyle(
+                          color: _isAuthenticating
+                              ? colors.onSurface.withValues(alpha: 0.4)
+                              : colors.primary,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

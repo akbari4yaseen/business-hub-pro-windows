@@ -23,10 +23,19 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     try {
       String dbPath;
+
       if (Platform.isWindows) {
-        // For Windows, use the application documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        dbPath = join(appDir.path, _databaseName);
+        // Get the application documents directory
+        final appDocDir = await getApplicationDocumentsDirectory();
+
+        // Create BusinessHubPro directory inside it
+        final businessHubDir =
+            Directory(join(appDocDir.path, 'BusinessHubPro'));
+        if (!await businessHubDir.exists()) {
+          await businessHubDir.create(recursive: true);
+        }
+
+        dbPath = join(businessHubDir.path, _databaseName);
       } else {
         // For other platforms, use the default database path
         dbPath = join(await getDatabasesPath(), _databaseName);
@@ -37,13 +46,10 @@ class DatabaseHelper {
         version: 1,
         onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, version) async {
-          debugPrint('Creating database tables...');
           await DbInit.createTables(db);
           await DbInit.seedDefaults(db);
-          debugPrint('Database tables created successfully');
         },
         onOpen: (Database db) async {
-          debugPrint('Database opened');
           await db.execute('PRAGMA foreign_keys = ON');
         },
       );

@@ -6,29 +6,29 @@ import 'package:intl/intl.dart';
 import 'add_journal_screen.dart';
 import 'edit_journal_screen.dart';
 
-import '../../database/journal_db.dart';
 import '../../database/database_helper.dart';
+import '../../database/journal_db.dart';
+import '../../utils/search_manager.dart';
+import '../../utils/transaction_share_helper.dart';
+import '../../widgets/auth_widget.dart';
+import '../../widgets/journal/journal_details_widget.dart';
 import '../../widgets/journal/journal_filter_bottom_sheet.dart';
 import '../../widgets/journal/journal_list.dart';
 import '../../widgets/search_bar.dart';
-import '../../widgets/auth_widget.dart';
-import '../../widgets/journal/journal_details_widget.dart';
-import '../../utils/search_manager.dart';
-import '../../utils/transaction_share_helper.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({Key? key}) : super(key: key);
 
   @override
-  _JournalScreenState createState() => _JournalScreenState();
+  State<JournalScreen> createState() => _JournalScreenState();
 }
 
 class _JournalScreenState extends State<JournalScreen> {
   static const _pageSize = 30;
-  final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  final _amountFormatter = NumberFormat('#,###.##');
   late final SearchManager _searchManager;
 
   final List<Map<String, dynamic>> _journals = [];
@@ -50,6 +50,7 @@ class _JournalScreenState extends State<JournalScreen> {
     super.initState();
     _searchManager = SearchManager();
     _scrollController.addListener(_onScroll);
+
     _searchManager.searchStream.listen((searchState) {
       setState(() {
         _searchController.text = searchState.query;
@@ -107,28 +108,30 @@ class _JournalScreenState extends State<JournalScreen> {
       _journals.addAll(newBatch);
       _isLoading = false;
       _currentPage++;
-      if (newBatch.length < _pageSize) _hasMore = false;
+      _hasMore = newBatch.length == _pageSize;
     });
   }
 
   void _onScroll() {
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 200) _fetchNextPage();
-    final atTop = pos.pixels <= 0;
-    if (atTop != _isAtTop) setState(() => _isAtTop = atTop);
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      _fetchNextPage();
+    }
+
+    final atTop = position.pixels <= 0;
+    if (atTop != _isAtTop) {
+      setState(() => _isAtTop = atTop);
+    }
   }
 
   Future<void> _deleteJournal(int id) async {
-    try {
-      await JournalDBHelper().deleteJournal(id);
-      await _refreshJournals();
-    } catch (e) {
-      // debugPrint('Error deleting journal: $e');
-    }
+    await JournalDBHelper().deleteJournal(id);
+    await _refreshJournals();
   }
 
   void _confirmDelete(int id) {
     final loc = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (_) => AuthWidget(
@@ -142,16 +145,15 @@ class _JournalScreenState extends State<JournalScreen> {
               content: Text(loc.confirmDeleteJournal),
               actions: [
                 TextButton(
-                  onPressed: Navigator.of(context).pop,
+                  onPressed: () => Navigator.of(ctx).pop(),
                   child: Text(loc.cancel),
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(ctx).pop();
                     _deleteJournal(id);
                   },
-                  child: Text(loc.delete,
-                      style: const TextStyle(color: Colors.red)),
+                  child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -257,11 +259,13 @@ class _JournalScreenState extends State<JournalScreen> {
         actions: [
           if (!_isSearching) ...[
             IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () => setState(() => _isSearching = true)),
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+            ),
             IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showFilterModal),
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterModal,
+            ),
           ],
         ],
       ),
@@ -277,10 +281,9 @@ class _JournalScreenState extends State<JournalScreen> {
                 scrollController: _scrollController,
                 onDetails: _showDetails,
                 onEdit: (j) => Navigator.of(context)
-                    .push(MaterialPageRoute(
-                        builder: (_) => EditJournalScreen(journal: j)))
+                    .push(MaterialPageRoute(builder: (_) => EditJournalScreen(journal: j)))
                     .then((_) => _refreshJournals()),
-                onDelete: (id) => _confirmDelete(id),
+                onDelete: _confirmDelete,
                 amountFormatter: _amountFormatter,
               ),
             ),
@@ -288,18 +291,20 @@ class _JournalScreenState extends State<JournalScreen> {
         heroTag: 'journal_add_fab',
         mini: !_isAtTop,
         child: FaIcon(
-            _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
-            size: 18),
+          _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+          size: 18,
+        ),
         onPressed: () {
           if (_isAtTop) {
             Navigator.of(context)
-                .push(
-                    MaterialPageRoute(builder: (_) => const AddJournalScreen()))
+                .push(MaterialPageRoute(builder: (_) => const AddJournalScreen()))
                 .then((_) => _refreshJournals());
           } else {
-            _scrollController.animateTo(0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut);
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+            );
           }
         },
       ),
