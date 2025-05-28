@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../add_stock_movement_screen.dart';
+import '../add_stock_movement_dialog.dart';
 import '../widgets/search_filter_bar.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../providers/inventory_provider.dart';
@@ -72,7 +72,12 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
               slivers: [
                 SliverToBoxAdapter(child: _buildFilters(provider, loc)),
                 SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: 80,
+                  ),
                   sliver: filteredMovements.isEmpty
                       ? _buildEmptyState(loc)
                       : _buildMovementList(
@@ -257,9 +262,26 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
   }
 
   void _showAddMovementDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AddStockMovementScreen()),
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => AddStockMovementDialog(
+        onSave: (movement) async {
+          try {
+            await context
+                .read<InventoryProvider>()
+                .recordStockMovement(movement);
+            Navigator.of(dialogContext).pop();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(
+                        AppLocalizations.of(context)!.errorRecordingMovement)),
+              );
+            }
+          }
+        },
+      ),
     );
   }
 

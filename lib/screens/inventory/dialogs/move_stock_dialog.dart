@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
-import '../../../models/stock_movement.dart';
 
 class MoveStockDialog extends StatefulWidget {
   final Map<String, dynamic> stockItem;

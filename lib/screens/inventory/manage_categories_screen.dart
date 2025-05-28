@@ -32,10 +32,14 @@ class ManageCategoriesScreen extends StatelessWidget {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          return ListView.builder(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 80,
+            ),
             itemCount: categories.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final category = categories[index];
               return Card(

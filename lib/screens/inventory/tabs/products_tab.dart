@@ -247,7 +247,12 @@ class _ProductsTabState extends State<ProductsTab> {
   Widget _buildProductsList(
       List<dynamic> products, InventoryProvider provider) {
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 8,
+        bottom: 80,
+      ),
       itemCount: products.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
@@ -376,24 +381,30 @@ class _ProductsTabState extends State<ProductsTab> {
   void _showAddProductDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) => ProductFormDialog(
-        onSave: (product) async {
-          try {
-            final provider = context.read<InventoryProvider>();
-            if (product.id == null) {
-              await provider.addProduct(product);
-            } else {
-              await provider.updateProduct(product);
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => WillPopScope(
+        onWillPop: () async => false,
+        child: ProductFormDialog(
+          onSave: (product) async {
+            try {
+              final provider = context.read<InventoryProvider>();
+              if (product.id == null) {
+                await provider.addProduct(product);
+              } else {
+                await provider.updateProduct(product);
+              }
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(AppLocalizations.of(context)!.error)),
+                );
+              }
             }
-            Navigator.of(dialogContext).pop();
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.error)),
-              );
-            }
-          }
-        },
+          },
+        ),
       ),
     );
   }

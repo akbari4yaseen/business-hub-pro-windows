@@ -74,7 +74,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       );
 
       await widget.onSave(product);
-      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +81,9 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 

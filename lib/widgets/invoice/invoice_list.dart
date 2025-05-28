@@ -44,6 +44,12 @@ class InvoiceList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 80,
+      ),
       itemCount: invoices.length + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= invoices.length) {

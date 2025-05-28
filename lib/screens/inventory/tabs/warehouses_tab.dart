@@ -133,6 +133,12 @@ class _WarehousesTabState extends State<WarehousesTab> {
               ),
               Expanded(
                 child: ListView.builder(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 8,
+                    bottom: 80,
+                  ),
                   itemCount: filteredWarehouses.length,
                   itemBuilder: (context, index) {
                     final warehouse = filteredWarehouses[index];
