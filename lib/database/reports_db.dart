@@ -118,7 +118,7 @@ class ReportsDBHelper {
       FROM accounts a
       JOIN account_details ad ON a.id = ad.account_id
       WHERE a.account_type IN (
-        'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company'
+        'customer', 'supplier', 'exchanger', 'bank', 'income', 'expense', 'owner', 'company', 'employee'
       )
       GROUP BY a.account_type, ad.currency, ad.transaction_type
       ORDER BY a.account_type, ad.currency, ad.transaction_type

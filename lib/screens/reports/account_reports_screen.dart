@@ -25,6 +25,7 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
     'expense': AccountMeta(Icons.trending_down, Colors.red),
     'owner': AccountMeta(Icons.emoji_people, Colors.indigo),
     'company': AccountMeta(Icons.business, Colors.teal),
+    'employee': AccountMeta(Icons.business, Colors.yellow),
   };
 
   @override
@@ -173,6 +174,8 @@ class _AccountReportsScreenState extends State<AccountReportsScreen> {
         return loc.owner;
       case 'company':
         return loc.company;
+      case 'employee':
+        return loc.employee;
       default:
         return type;
     }

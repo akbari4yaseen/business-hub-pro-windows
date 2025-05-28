@@ -8,8 +8,6 @@ import 'print_transactions.dart';
 import '../../../database/account_db.dart';
 import '../../../database/journal_db.dart';
 import '../../../utils/account_share_helper.dart';
-import '../../journal/edit_journal_screen.dart';
-import '../../journal/add_journal_screen.dart';
 import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction/transaction_details_widget.dart';
@@ -22,6 +20,7 @@ import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
 import '../../../utils/transaction_share_helper.dart';
 import '../../../utils/transaction_helper.dart';
 import '../../../themes/app_theme.dart';
+import '../../../widgets/journal/journal_form_dialog.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -416,14 +415,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             size: 18),
         onPressed: () {
           if (_isAtTop) {
-            Navigator.of(context)
-                .push(MaterialPageRoute(
-                  builder: (_) => AddJournalScreen(
-                    initialAccountId: widget.account['id'],
-                    initialAccountName: widget.account['name'],
-                  ),
-                ))
-                .then((_) => _refreshTransactions());
+            _addJournal();
           } else {
             _scrollController.animateTo(0,
                 duration: const Duration(milliseconds: 200),
@@ -540,6 +532,43 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  Future<void> _addJournal() async {
+    if (!mounted) return;
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) => JournalFormDialog(
+        initialAccountId: widget.account['id'],
+        initialAccountName: widget.account['name'],
+        onSave: (journalData) async {
+          try {
+            await JournalDBHelper().insertJournal(
+              date: journalData['date'],
+              accountId: journalData['account_id'],
+              trackId: journalData['track_id'],
+              amount: journalData['amount'],
+              currency: journalData['currency'],
+              transactionType: journalData['transaction_type'],
+              description: journalData['description'],
+            );
+            Navigator.of(dialogContext).pop(journalData);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+              );
+            }
+          }
+        },
+      ),
+    );
+    
+    if (result != null && mounted) {
+      await _refreshTransactions();
+    }
+  }
+
   Future<void> _handleEdit(
       Map<String, dynamic> tx, AppLocalizations loc) async {
     if (tx['transaction_group'] != 'journal') return;
@@ -555,13 +584,37 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         }
         return;
       }
-      final edited = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EditJournalScreen(journal: journal),
+
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext dialogContext) => JournalFormDialog(
+          journal: journal,
+          onSave: (journalData) async {
+            try {
+              await JournalDBHelper().updateJournal(
+                id: journal['id'],
+                date: journalData['date'],
+                accountId: journalData['account_id'],
+                trackId: journalData['track_id'],
+                amount: journalData['amount'],
+                currency: journalData['currency'],
+                transactionType: journalData['transaction_type'],
+                description: journalData['description'],
+              );
+              Navigator.of(dialogContext).pop(journalData);
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(loc.transactionEditError)),
+                );
+              }
+            }
+          },
         ),
       );
-      if (edited == true) {
+
+      if (result != null && mounted) {
         await _refreshTransactions();
       }
     } catch (e) {

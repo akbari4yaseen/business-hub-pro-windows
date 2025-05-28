@@ -3,9 +3,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 
-import 'add_journal_screen.dart';
-import 'edit_journal_screen.dart';
-
 import '../../database/database_helper.dart';
 import '../../database/journal_db.dart';
 import '../../utils/search_manager.dart';
@@ -15,6 +12,7 @@ import '../../widgets/journal/journal_details_widget.dart';
 import '../../widgets/journal/journal_filter_bottom_sheet.dart';
 import '../../widgets/journal/journal_list.dart';
 import '../../widgets/search_bar.dart';
+import '../../widgets/journal/journal_form_dialog.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({Key? key}) : super(key: key);
@@ -235,6 +233,78 @@ class _JournalScreenState extends State<JournalScreen> {
     shareJournalEntry(context, journal);
   }
 
+  Future<void> _addJournal() async {
+    if (!mounted) return;
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) => JournalFormDialog(
+        onSave: (journalData) async {
+          try {
+            await JournalDBHelper().insertJournal(
+              date: journalData['date'],
+              accountId: journalData['account_id'],
+              trackId: journalData['track_id'],
+              amount: journalData['amount'],
+              currency: journalData['currency'],
+              transactionType: journalData['transaction_type'],
+              description: journalData['description'],
+            );
+            Navigator.of(dialogContext).pop(journalData);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+              );
+            }
+          }
+        },
+      ),
+    );
+    
+    if (result != null && mounted) {
+      await _refreshJournals();
+    }
+  }
+
+  Future<void> _editJournal(Map<String, dynamic> journal) async {
+    if (!mounted) return;
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) => JournalFormDialog(
+        journal: journal,
+        onSave: (journalData) async {
+          try {
+            await JournalDBHelper().updateJournal(
+              id: journal['id'],
+              date: journalData['date'],
+              accountId: journalData['account_id'],
+              trackId: journalData['track_id'],
+              amount: journalData['amount'],
+              currency: journalData['currency'],
+              transactionType: journalData['transaction_type'],
+              description: journalData['description'],
+            );
+            Navigator.of(dialogContext).pop(journalData);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+              );
+            }
+          }
+        },
+      ),
+    );
+    
+    if (result != null && mounted) {
+      await _refreshJournals();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -280,34 +350,27 @@ class _JournalScreenState extends State<JournalScreen> {
                 onShare: _shareJournal,
                 scrollController: _scrollController,
                 onDetails: _showDetails,
-                onEdit: (j) => Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => EditJournalScreen(journal: j)))
-                    .then((_) => _refreshJournals()),
+                onEdit: _editJournal,
                 onDelete: _confirmDelete,
                 amountFormatter: _amountFormatter,
               ),
             ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'journal_add_fab',
+        onPressed: _isAtTop ? _addJournal : _scrollToTop,
+        tooltip: _isAtTop ? loc.addJournal : loc.scrollToTop,
         mini: !_isAtTop,
         child: FaIcon(
           _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
           size: 18,
         ),
-        onPressed: () {
-          if (_isAtTop) {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const AddJournalScreen()))
-                .then((_) => _refreshJournals());
-          } else {
-            _scrollController.animateTo(
-              0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-            );
-          }
-        },
       ),
     );
   }
+
+  void _scrollToTop() => _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
 }
