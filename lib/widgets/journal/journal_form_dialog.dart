@@ -83,7 +83,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
       if (j == null) {
         setState(() {
           _transactionType = settingsProvider.defaultTransaction;
@@ -93,7 +94,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
           _customTrackName = AppLocalizations.of(context)!.track;
         });
       }
-      _dateCtrl.text = dFormatter.formatLocalizedDateTime(context, _selectedDate.toString());
+      _dateCtrl.text =
+          dFormatter.formatLocalizedDateTime(context, _selectedDate.toString());
     });
 
     _loadAccounts();
@@ -108,7 +110,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
         final match = accounts.firstWhere((a) => a['id'] == _selectedTrack,
             orElse: () => {});
         if (match.isNotEmpty) {
-          _customTrackName = getLocalizedSystemAccountName(context, match['name']);
+          _customTrackName =
+              getLocalizedSystemAccountName(context, match['name']);
         }
       }
     });
@@ -125,7 +128,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
   void _setDate(DateTime dt) {
     setState(() {
       _selectedDate = dt;
-      _dateCtrl.text = dFormatter.formatLocalizedDateTime(context, dt.toString());
+      _dateCtrl.text =
+          dFormatter.formatLocalizedDateTime(context, dt.toString());
     });
   }
 
@@ -148,7 +152,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
         );
       }
     }
@@ -162,6 +167,100 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
     super.dispose();
   }
 
+  Widget _buildFormFields(BuildContext context, AppLocalizations loc) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _dateCtrl,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: loc.date,
+            prefixIcon: const Icon(Icons.calendar_today),
+            border: const OutlineInputBorder(),
+          ),
+          onTap: _pickDateTime,
+        ),
+        const SizedBox(height: 16),
+        AccountField(
+          label: loc.selectAccount,
+          accounts: _accounts,
+          initialValue: TextEditingValue(
+            text: getLocalizedSystemAccountName(context, _accountName),
+          ),
+          onSelected: (id) {
+            setState(() {
+              _selectedAccount = id;
+              final acc = _accounts.firstWhere((a) => a['id'] == id);
+              _accountName = acc['name'] as String;
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _amountCtrl,
+          decoration: InputDecoration(
+            labelText: loc.amount,
+            border: const OutlineInputBorder(),
+            suffixIcon: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _currency,
+                items: currencies
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (v) => setState(() => _currency = v!),
+              ),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [NumberInputFormatter()],
+          maxLength: 15,
+          validator: (v) => v?.isEmpty == true ? loc.amountRequired : null,
+        ),
+        const SizedBox(height: 16),
+        JournalToggleButtons(
+          options: ['credit', 'debit'],
+          selected: _transactionType,
+          onChanged: (val) => setState(() => _transactionType = val),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _descCtrl,
+          decoration: InputDecoration(
+            labelText: loc.description,
+            border: const OutlineInputBorder(),
+          ),
+          maxLength: 512,
+          minLines: 2,
+          maxLines: 5,
+        ),
+        const SizedBox(height: 16),
+        TrackSelector(
+          accounts: _accounts,
+          selectedOption: _trackOption,
+          customTrackName: _customTrackName,
+          onOptionChanged: (opt, id) {
+            setState(() {
+              _trackOption = opt;
+              if (opt == 'track' && id != null) {
+                _selectedTrack = id;
+                final acc = _accounts.firstWhere((a) => a['id'] == id);
+                _customTrackName =
+                    getLocalizedSystemAccountName(context, acc['name']);
+              } else if (opt == 'treasure') {
+                _selectedTrack = 1;
+                _customTrackName = loc.treasure;
+              } else if (opt == 'noTreasure') {
+                _selectedTrack = 2;
+                _customTrackName = loc.noTreasure;
+              }
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -170,140 +269,64 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
 
     return Dialog(
       backgroundColor: themeProvider.appBackgroundColor,
-      elevation: 24,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    isEdit ? Icons.edit : Icons.add_circle,
-                    size: 24,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    isEdit ? loc.editJournal : loc.addJournal,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _dateCtrl,
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: loc.date,
-                  prefixIcon: const Icon(Icons.calendar_today),
-                  border: const OutlineInputBorder(),
-                ),
-                onTap: _pickDateTime,
-              ),
-              const SizedBox(height: 16),
-              AccountField(
-                label: loc.selectAccount,
-                accounts: _accounts,
-                initialValue: TextEditingValue(
-                  text: getLocalizedSystemAccountName(context, _accountName),
-                ),
-                onSelected: (id) => setState(() {
-                  _selectedAccount = id;
-                  final acc = _accounts.firstWhere((a) => a['id'] == id);
-                  _accountName = acc['name'] as String;
-                }),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _amountCtrl,
-                decoration: InputDecoration(
-                  labelText: loc.amount,
-                  border: const OutlineInputBorder(),
-                  suffixIcon: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _currency,
-                      items: currencies
-                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _currency = v!),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+              maxWidth: 500,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Icon(
+                          isEdit ? Icons.edit : Icons.add_circle,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          isEdit ? loc.editJournal : loc.addJournal,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [NumberInputFormatter()],
-                maxLength: 15,
-                validator: (v) => v?.isEmpty == true ? loc.amountRequired : null,
-              ),
-              const SizedBox(height: 16),
-              JournalToggleButtons(
-                options: ['credit', 'debit'],
-                selected: _transactionType,
-                onChanged: (val) => setState(() => _transactionType = val),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descCtrl,
-                decoration: InputDecoration(
-                  labelText: loc.description,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLength: 512,
-                minLines: 2,
-                maxLines: 5,
-              ),
-              const SizedBox(height: 16),
-              TrackSelector(
-                accounts: _accounts,
-                selectedOption: _trackOption,
-                customTrackName: _customTrackName,
-                onOptionChanged: (opt, id) {
-                  setState(() {
-                    _trackOption = opt;
-                    if (opt == 'track' && id != null) {
-                      _selectedTrack = id;
-                      final acc = _accounts.firstWhere((a) => a['id'] == id);
-                      _customTrackName = getLocalizedSystemAccountName(context, acc['name']);
-                    } else if (opt == 'treasure') {
-                      _selectedTrack = 1;
-                      _customTrackName = loc.treasure;
-                    } else if (opt == 'noTreasure') {
-                      _selectedTrack = 2;
-                      _customTrackName = loc.noTreasure;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(loc.cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _handleSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+                    const SizedBox(height: 24),
+
+                    // All your form fields here
+                    _buildFormFields(context, loc),
+
+                    const SizedBox(height: 24),
+
+                    // Actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(loc.cancel),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _handleSave,
+                          child: Text(loc.save),
+                        ),
+                      ],
                     ),
-                    child: Text(loc.save),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
-} 
+}

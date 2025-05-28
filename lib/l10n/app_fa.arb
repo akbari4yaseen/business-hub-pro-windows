@@ -528,5 +528,17 @@
   "backupCanceledNoLocation": "پشتیبان‌گیری لغو شد. موقعیت انتخاب نشده است",
   "selectBackupLocation": "انتخاب مکان پشتیبان‌گیری",
   "copyBalance": "کاپی بیلانس",
-  "balanceCopied": "بیلانس به کلیپ‌بورد کاپی شد"
+  "balanceCopied": "بیلانس به کلیپ‌بورد کاپی شد",
+  "productAdded": "جنس اضافه شد",
+  "productUpdated": "جنس به‌روزرسانی شد",
+  "movementRecorded": "جابجایی ثبت شد",
+  "movementUpdated": "جابجایی به‌روزرسانی شد",
+  "editStockMovement": "ویرایش جابجایی موجودی",
+  "categoryRequired": "دسته‌بندی الزامی است",
+  "unitRequired": "واحد الزامی است",
+  "minStockRequired": "حداقل موجودی الزامی است",
+  "invalidNumber": "عدد نامعتبر",
+  "reorderPointRequired": "نقطه سفارش مجدد الزامی است",
+  "brand": "برند",
+  "isActive": "فعال است"
 }

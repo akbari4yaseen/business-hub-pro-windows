@@ -531,5 +531,17 @@
   "backupCanceledNoLocation": "بیک اپ لغوه شو. موقعیت نه دی ټاکل شوی",
   "selectBackupLocation": "د بیک اپ موقعیت وټاکئ",
   "copyBalance": "بیلانس نقل کړئ",
-  "balanceCopied": "بیلانس کلېپبورډ ته نقل شو"
+  "balanceCopied": "بیلانس کلېپبورډ ته نقل شو",
+  "productAdded": "جنس اضافه شو",
+  "productUpdated": "جنس تازه شو",
+  "movementRecorded": "خوځښت ثبت شو",
+  "movementUpdated": "خوځښت تازه شو",
+  "editStockMovement": "د ذخیره خوځښت سمونه",
+  "categoryRequired": "وېشنیزه اړینه ده",
+  "unitRequired": "یونټ اړین دی",
+  "minStockRequired": "تر ټولو لږ ذخیره اړینه ده",
+  "invalidNumber": "ناسم شمېر",
+  "reorderPointRequired": "د بیا فرمایش نقطه اړینه ده",
+  "brand": "برنډ",
+  "isActive": "فعاله ده"
 }

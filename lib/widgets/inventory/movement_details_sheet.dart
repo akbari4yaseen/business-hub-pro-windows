@@ -120,6 +120,7 @@ class MovementDetailsSheet extends StatelessWidget {
               '$label:',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+
           ),
           Expanded(child: Text(value)),
         ],

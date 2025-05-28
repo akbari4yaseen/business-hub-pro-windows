@@ -528,5 +528,17 @@
   "backupCanceledNoLocation": "Backup Canceled. No Location",
   "selectBackupLocation": "Select Backup Location",
   "copyBalance": "Copy Balance",
-  "balanceCopied": "Balance copied to clipboard"
+  "balanceCopied": "Balance copied to clipboard",
+  "productAdded": "Product added",
+  "productUpdated": "Product updated",
+  "movementRecorded": "Movement recorded",
+  "movementUpdated": "Movement updated",
+  "editStockMovement": "Edit stock movement",
+  "categoryRequired": "Category is required",
+  "unitRequired": "Unit is required",
+  "minStockRequired": "Minimum stock is required",
+  "invalidNumber": "Invalid number",
+  "reorderPointRequired": "Reorder point is required",
+  "brand": "Brand",
+  "isActive": "Is active"
 }
