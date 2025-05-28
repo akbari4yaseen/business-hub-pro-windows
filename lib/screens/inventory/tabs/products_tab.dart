@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
-import '../../../providers/inventory_provider.dart';
-import '../add_product_screen.dart';
-import '../manage_units_screen.dart';
 import '../manage_categories_screen.dart';
+import '../manage_units_screen.dart';
+import '../../../providers/inventory_provider.dart';
 import '../widgets/product_details_sheet.dart';
 import '../../../themes/app_theme.dart';
+import '../dialogs/product_form_dialog.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({Key? key}) : super(key: key);
@@ -375,9 +374,27 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showAddProductDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddProductScreen()),
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => ProductFormDialog(
+        onSave: (product) async {
+          try {
+            final provider = context.read<InventoryProvider>();
+            if (product.id == null) {
+              await provider.addProduct(product);
+            } else {
+              await provider.updateProduct(product);
+            }
+            Navigator.of(dialogContext).pop();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLocalizations.of(context)!.error)),
+              );
+            }
+          }
+        },
+      ),
     );
   }
 
@@ -387,10 +404,23 @@ class _ProductsTabState extends State<ProductsTab> {
 
     switch (action) {
       case 'edit':
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => AddProductScreen(product: product)),
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) => ProductFormDialog(
+            product: product,
+            onSave: (updatedProduct) async {
+              try {
+                await provider.updateProduct(updatedProduct);
+                Navigator.of(dialogContext).pop();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.error)),
+                  );
+                }
+              }
+            },
+          ),
         );
         break;
 

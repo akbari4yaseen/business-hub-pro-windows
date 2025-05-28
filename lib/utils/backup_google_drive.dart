@@ -1,55 +1,53 @@
 import 'dart:io';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../../database/database_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// HTTP client that injects Google Sign-In auth headers.
-class GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> _headers;
-  final http.Client _inner = http.Client();
-  GoogleAuthClient(this._headers);
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest req) =>
-      _inner.send(req..headers.addAll(_headers));
-}
-
-/// Encapsulates all Drive backup logic.
 class DriveBackupService {
   static const _folderName = 'BusinessHubPro';
   static const _prefsFolderIdKey = 'drive_businesshub_folder_id';
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [drive.DriveApi.driveFileScope],
-    serverClientId:
-        '436609276204-ti9s0mr3k6f9s3oo9bi76d4ti7tohfuh.apps.googleusercontent.com',
-  );
+  static const _clientId =
+      '436609276204-ti9s0mr3k6f9s3oo9bi76d4ti7tohfuh.apps.googleusercontent.com'; // Web OAuth2 client ID
+  static const _clientSecret =
+      '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'; // Web OAuth2 client secret
+  static final _scopes = [drive.DriveApi.driveFileScope];
 
   drive.DriveApi? _driveApi;
 
-  /// Ensure we're signed in and have a Drive API client.
+  /// Manually authorizes and creates Drive API client
   Future<drive.DriveApi> _ensureDriveApi() async {
     if (_driveApi != null) return _driveApi!;
 
-    final account = await _googleSignIn.signIn();
-    if (account == null) throw Exception('Google sign-in aborted');
+    var id = ClientId(_clientId, _clientSecret);
 
-    final headers = await account.authHeaders;
-    _driveApi = drive.DriveApi(GoogleAuthClient(headers));
+    await obtainAccessCredentialsViaUserConsent(id, _scopes, http.Client(),
+        (url) {
+      print('Please go to the following URL and grant access:');
+      print('  => $url');
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }).then((credentials) {
+      final client = authenticatedClient(http.Client(), credentials);
+      _driveApi = drive.DriveApi(client);
+    }).catchError((e) {
+      print("Auth error: $e");
+      throw Exception('Google OAuth2 failed');
+    });
+
     return _driveApi!;
   }
 
-  /// Get the folder ID from prefs, or look it up / create it on Drive.
+  /// Get or create the BusinessHubPro folder
   Future<String> _getBusinessHubFolderId() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString(_prefsFolderIdKey);
     if (cached != null) return cached;
 
     final driveApi = await _ensureDriveApi();
-
-    // 1) Look for an existing folder
     final result = await driveApi.files.list(
       q: "mimeType='application/vnd.google-apps.folder' and name='$_folderName' and trashed=false",
       spaces: 'drive',
@@ -61,7 +59,6 @@ class DriveBackupService {
     if (result.files != null && result.files!.isNotEmpty) {
       folderId = result.files!.first.id!;
     } else {
-      // 2) Not found → create it
       final folderMeta = drive.File()
         ..name = _folderName
         ..mimeType = 'application/vnd.google-apps.folder';
@@ -73,7 +70,7 @@ class DriveBackupService {
     return folderId;
   }
 
-  /// Main entry: uploads the local DB into BusinessHubPro/
+  /// Uploads the DB file
   Future<bool> backupDatabase() async {
     try {
       final dbPath = await DatabaseHelper().getDatabasePath();
@@ -92,15 +89,9 @@ class DriveBackupService {
         ..name = backupName
         ..parents = [folderId];
 
-      await driveApi.files.create(
-        meta,
-        uploadMedia: media,
-        // resumable uploads are used automatically for larger files
-      );
-
+      await driveApi.files.create(meta, uploadMedia: media);
       return true;
     } catch (e) {
-      // you may wish to log `st` somewhere
       print('Backup error: $e');
       return false;
     }
