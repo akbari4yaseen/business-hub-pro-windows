@@ -7,6 +7,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../add_stock_movement_dialog.dart';
 import '../widgets/search_filter_bar.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
@@ -219,7 +220,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       mini: !_isAtTop,
       onPressed: () {
         _isAtTop
-            ? _showAddMovementDialog(context)
+            ? _showAddMovementDialog()
             : _scrollController.animateTo(
                 0,
                 duration: const Duration(milliseconds: 200),
@@ -261,28 +262,23 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     }
   }
 
-  void _showAddMovementDialog(BuildContext context) {
+  void _showAddMovementDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) => AddStockMovementDialog(
+      barrierDismissible: true,
+      builder: (context) => AddStockMovementDialog(
         onSave: (movement) async {
-          try {
-            await context
-                .read<InventoryProvider>()
-                .recordStockMovement(movement);
-            Navigator.of(dialogContext).pop();
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(
-                        AppLocalizations.of(context)!.errorRecordingMovement)),
-              );
-            }
-          }
+          final provider = Provider.of<InventoryProvider>(context, listen: false);
+          await provider.recordStockMovement(movement);
+          await provider.loadStockMovements(refresh: true);
         },
       ),
-    );
+    ).then((movement) {
+      if (movement != null) {
+        final provider = Provider.of<InventoryProvider>(context, listen: false);
+        provider.loadStockMovements(refresh: true);
+      }
+    });
   }
 
   Widget _buildMovementCard(BuildContext context, InventoryProvider provider,

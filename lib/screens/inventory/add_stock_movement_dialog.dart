@@ -76,7 +76,7 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
       );
       await widget.onSave(movement);
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(movement);
       }
     } catch (e) {
       debugPrint('Error recording stock movement: $e');
@@ -99,276 +99,279 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final loc = AppLocalizations.of(context)!;
 
-    return Dialog(
-      backgroundColor: themeProvider.appBackgroundColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
-              maxWidth: 500,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.add_circle,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          loc.newStockMovement,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Form Fields
-                    DropdownButtonFormField<MovementType>(
-                      value: _selectedType,
-                      decoration: InputDecoration(
-                        labelText: loc.movementType,
-                        border: const OutlineInputBorder(),
-                      ),
-                      items: MovementType.values.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type.localized(context)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedType = value!;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Consumer<InventoryProvider>(
-                      builder: (context, provider, child) {
-                        final products = provider.products;
-                        if (products.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(loc.selectProduct),
-                          );
-                        }
-                        return DropdownButtonFormField<int>(
-                          value: _selectedProductId,
-                          decoration: InputDecoration(
-                            labelText: loc.product,
-                            border: const OutlineInputBorder(),
+    return Theme(
+      data: themeProvider.currentTheme,
+      child: Dialog(
+        backgroundColor: themeProvider.appBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+                maxWidth: 500,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.add_circle,
+                            color: Theme.of(context).primaryColor,
                           ),
-                          items: products.map((product) {
-                            return DropdownMenuItem<int>(
-                              value: product.id,
-                              child: Text(product.name),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedProductId = value;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return loc.selectProduct;
-                            }
-                            return null;
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (_selectedType != MovementType.stockIn)
-                      Consumer<InventoryProvider>(
-                        builder: (context, provider, child) {
-                          final warehouses = provider.warehouses;
-                          return DropdownButtonFormField<int>(
-                            value: _selectedSourceWarehouseId,
-                            decoration: InputDecoration(
-                              labelText: loc.sourceWarehouse,
-                              border: const OutlineInputBorder(),
-                            ),
-                            items: warehouses.map((warehouse) {
-                              return DropdownMenuItem<int>(
-                                value: warehouse.id,
-                                child: Text(warehouse.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSourceWarehouseId = value;
-                              });
-                            },
-                            validator: (value) {
-                              if (_selectedType != MovementType.stockIn &&
-                                  value == null) {
-                                return loc.selectSourceWarehouse;
-                              }
-                              return null;
-                            },
-                          );
-                        },
+                          const SizedBox(width: 12),
+                          Text(
+                            loc.newStockMovement,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ],
                       ),
-                    const SizedBox(height: 16),
-                    if (_selectedType != MovementType.stockOut)
-                      Consumer<InventoryProvider>(
-                        builder: (context, provider, child) {
-                          final warehouses = provider.warehouses;
-                          return DropdownButtonFormField<int>(
-                            value: _selectedDestinationWarehouseId,
-                            decoration: InputDecoration(
-                              labelText: loc.destinationWarehouse,
-                              border: const OutlineInputBorder(),
-                            ),
-                            items: warehouses.map((warehouse) {
-                              return DropdownMenuItem<int>(
-                                value: warehouse.id,
-                                child: Text(warehouse.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedDestinationWarehouseId = value;
-                              });
-                            },
-                            validator: (value) {
-                              if (_selectedType != MovementType.stockOut &&
-                                  value == null) {
-                                return loc.selectDestinationWarehouse;
-                              }
-                              return null;
-                            },
-                          );
-                        },
-                      ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _quantityController,
-                      decoration: InputDecoration(
-                        labelText: loc.quantity,
-                        border: const OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return loc.enterQuantity;
-                        }
-                        if (double.tryParse(value) == null) {
-                          return loc.enterValidNumber;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: loc.date,
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: _selectedDate ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate:
-                                  DateTime.now().add(const Duration(days: 3650)),
-                            );
-                            if (date != null) {
-                              setState(() {
-                                _selectedDate = date;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      controller: TextEditingController(
-                        text: _selectedDate != null
-                            ? formatLocalizedDate(context, _selectedDate.toString())
-                            : loc.notSet,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _referenceController,
-                      decoration: InputDecoration(
-                        labelText: loc.reference,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _notesController,
-                      decoration: InputDecoration(
-                        labelText: loc.notes,
-                        border: const OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: loc.expiryDate,
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate:
-                                  DateTime.now().add(const Duration(days: 3650)),
-                            );
-                            if (date != null) {
-                              setState(() {
-                                _expiryDate = date;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      controller: TextEditingController(
-                        text: _expiryDate != null
-                            ? formatLocalizedDate(context, _expiryDate.toString())
-                            : loc.notSet,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(loc.cancel),
+                      // Form Fields
+                      DropdownButtonFormField<MovementType>(
+                        value: _selectedType,
+                        decoration: InputDecoration(
+                          labelText: loc.movementType,
+                          border: const OutlineInputBorder(),
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _isSubmitting ? null : _saveStockMovement,
-                          child: Text(loc.save),
+                        items: MovementType.values.map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(type.localized(context)),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedType = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Consumer<InventoryProvider>(
+                        builder: (context, provider, child) {
+                          final products = provider.products;
+                          if (products.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(loc.selectProduct),
+                            );
+                          }
+                          return DropdownButtonFormField<int>(
+                            value: _selectedProductId,
+                            decoration: InputDecoration(
+                              labelText: loc.product,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: products.map((product) {
+                              return DropdownMenuItem<int>(
+                                value: product.id,
+                                child: Text(product.name),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedProductId = value;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return loc.selectProduct;
+                              }
+                              return null;
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (_selectedType != MovementType.stockIn)
+                        Consumer<InventoryProvider>(
+                          builder: (context, provider, child) {
+                            final warehouses = provider.warehouses;
+                            return DropdownButtonFormField<int>(
+                              value: _selectedSourceWarehouseId,
+                              decoration: InputDecoration(
+                                labelText: loc.sourceWarehouse,
+                                border: const OutlineInputBorder(),
+                              ),
+                              items: warehouses.map((warehouse) {
+                                return DropdownMenuItem<int>(
+                                  value: warehouse.id,
+                                  child: Text(warehouse.name),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedSourceWarehouseId = value;
+                                });
+                              },
+                              validator: (value) {
+                                if (_selectedType != MovementType.stockIn &&
+                                    value == null) {
+                                  return loc.selectSourceWarehouse;
+                                }
+                                return null;
+                              },
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      if (_selectedType != MovementType.stockOut)
+                        Consumer<InventoryProvider>(
+                          builder: (context, provider, child) {
+                            final warehouses = provider.warehouses;
+                            return DropdownButtonFormField<int>(
+                              value: _selectedDestinationWarehouseId,
+                              decoration: InputDecoration(
+                                labelText: loc.destinationWarehouse,
+                                border: const OutlineInputBorder(),
+                              ),
+                              items: warehouses.map((warehouse) {
+                                return DropdownMenuItem<int>(
+                                  value: warehouse.id,
+                                  child: Text(warehouse.name),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedDestinationWarehouseId = value;
+                                });
+                              },
+                              validator: (value) {
+                                if (_selectedType != MovementType.stockOut &&
+                                    value == null) {
+                                  return loc.selectDestinationWarehouse;
+                                }
+                                return null;
+                              },
+                            );
+                          },
+                        ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _quantityController,
+                        decoration: InputDecoration(
+                          labelText: loc.quantity,
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return loc.enterQuantity;
+                          }
+                          if (double.tryParse(value) == null) {
+                            return loc.enterValidNumber;
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: loc.date,
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate:
+                                    DateTime.now().add(const Duration(days: 3650)),
+                              );
+                              if (date != null) {
+                                setState(() {
+                                  _selectedDate = date;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        controller: TextEditingController(
+                          text: _selectedDate != null
+                              ? formatLocalizedDate(context, _selectedDate.toString())
+                              : loc.notSet,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _referenceController,
+                        decoration: InputDecoration(
+                          labelText: loc.reference,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: InputDecoration(
+                          labelText: loc.notes,
+                          border: const OutlineInputBorder(),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: loc.expiryDate,
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime.now(),
+                                lastDate:
+                                    DateTime.now().add(const Duration(days: 3650)),
+                              );
+                              if (date != null) {
+                                setState(() {
+                                  _expiryDate = date;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        controller: TextEditingController(
+                          text: _expiryDate != null
+                              ? formatLocalizedDate(context, _expiryDate.toString())
+                              : loc.notSet,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Actions
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(loc.cancel),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _isSubmitting ? null : _saveStockMovement,
+                            child: Text(loc.save),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
