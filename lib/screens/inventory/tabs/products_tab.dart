@@ -514,9 +514,7 @@ class _ProductsTabState extends State<ProductsTab> {
   void _showProductDetails(dynamic product) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: ProductDetailsSheet(product: product),
-      ),
+      builder: (context) => ProductDetailsSheet(product: product),
     );
   }
 }

@@ -21,7 +21,6 @@ import 'widgets/windows_drawer_menu.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
-import 'screens/journal/add_journal_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -123,7 +122,6 @@ class MyApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const BottomNavigationApp(),
         '/accounts': (_) => const AccountScreen(),
-        '/journal/add': (_) => const AddJournalScreen(),
         '/settings': (_) => const SettingsScreen(),
         '/user_settings': (_) => const UserSettingsScreen(),
         '/company_info': (_) => const CompanyInfoScreen(),

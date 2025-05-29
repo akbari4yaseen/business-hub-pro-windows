@@ -94,64 +94,67 @@ class StockList extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16), // smaller edge padding
+        insetPadding: const EdgeInsets.all(16), // Responsive padding
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 500,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item['product_name'],
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item['product_name'],
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailRow(loc.sku, item['sku']),
-                      _buildDetailRow(loc.category, item['category_name']),
-                      _buildDetailRow(loc.unit, item['unit_name']),
-                      _buildDetailRow(loc.currentStock,
-                          '${numberFormatter.format(item['quantity'])}'),
-                      _buildDetailRow(loc.minimumStock,
-                          '${numberFormatter.format(item['minimum_stock'])}'),
-                      _buildDetailRow(loc.maximumStock,
-                          '${numberFormatter.format(item['maximum_stock'])}'),
-                      _buildDetailRow(loc.location, item['warehouse_name']),
-                      if (item['expiry_date'] != null)
-                        _buildDetailRow(loc.expiryDate,
-                            formatLocalizedDate(context, item['expiry_date'])),
-                      if (item['last_movement'] != null)
-                        _buildDetailRow(
-                            loc.lastMovement, item['last_movement']),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 8),
+
+                  // Content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailRow(loc.sku, item['sku']),
+                          _buildDetailRow(loc.category, item['category_name']),
+                          _buildDetailRow(loc.unit, item['unit_name']),
+                          _buildDetailRow(loc.currentStock,
+                              numberFormatter.format(item['quantity'])),
+                          _buildDetailRow(loc.minimumStock,
+                              numberFormatter.format(item['minimum_stock'])),
+                          _buildDetailRow(loc.maximumStock,
+                              numberFormatter.format(item['maximum_stock'])),
+                          _buildDetailRow(loc.location, item['warehouse_name']),
+                          if (item['expiry_date'] != null)
+                            _buildDetailRow(
+                                loc.expiryDate,
+                                formatLocalizedDate(
+                                    context, item['expiry_date'])),
+                          if (item['last_movement'] != null)
+                            _buildDetailRow(
+                                loc.lastMovement, item['last_movement']),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -164,12 +167,15 @@ class StockList extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Expanded(
-            child: Text(value ?? 'N/A'),
+            child: Text(value ?? '-'),
           ),
         ],
       ),

@@ -4,79 +4,69 @@ import 'package:intl/intl.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
 
-/// A reusable widget that displays journal entry details in a draggable bottom sheet.
+/// A reusable widget that displays journal entry details in a modal-friendly layout.
 class JournalDetailsWidget extends StatelessWidget {
   final Map<String, dynamic> journal;
+  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
 
-  const JournalDetailsWidget({Key? key, required this.journal})
-      : super(key: key);
+  const JournalDetailsWidget({Key? key, required this.journal}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with title and close button
-            Padding(
-              padding: const EdgeInsets.only(
-                  left: 12, right: 12, top: 12, bottom: 18),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    loc.journalDetails,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _detailItem(loc.description,
-                      journal['description'] ?? loc.noDescription),
-                  _detailItem(loc.date,
-                      formatLocalizedDateTime(context, journal['date'])),
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        loc.journalDetails,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Content
+                  _detailItem(loc.description, journal['description'] ?? loc.noDescription),
+                  _detailItem(loc.date, formatLocalizedDateTime(context, journal['date'])),
                   _detailItem(
                     loc.amount,
-                    '\u200E${NumberFormat('#,###.##').format(journal['amount'])} ${journal['currency']}',
+                    '\u200E${_numberFormatter.format(journal['amount'])} ${journal['currency']}',
                   ),
                   _detailItem(
                     loc.transactionType,
-                    journal['transaction_type'] == 'credit'
-                        ? loc.credit
-                        : loc.debit,
+                    journal['transaction_type'] == 'credit' ? loc.credit : loc.debit,
                   ),
                   _detailItem(
                     loc.account,
-                    getLocalizedSystemAccountName(
-                        context, journal['account_name']),
+                    getLocalizedSystemAccountName(context, journal['account_name']),
                   ),
                   _detailItem(
                     loc.track,
-                    getLocalizedSystemAccountName(
-                        context, journal['track_name']),
+                    getLocalizedSystemAccountName(context, journal['track_name']),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -84,15 +74,15 @@ class JournalDetailsWidget extends StatelessWidget {
 
   Widget _detailItem(String title, String content) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontFamily: 'VazirBold', color: Colors.grey),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             content,
             style: const TextStyle(fontSize: 15),

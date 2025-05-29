@@ -522,15 +522,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   void _showDetails(Map<String, dynamic> tx) {
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        child: TransactionDetailsSheet(transaction: tx),
-      ),
+      builder: (_) => TransactionDetailsSheet(transaction: tx),
     );
   }
 
   Future<void> _addJournal() async {
     if (!mounted) return;
-    
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
@@ -552,14 +550,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+                SnackBar(
+                    content:
+                        Text(AppLocalizations.of(context)!.errorSavingJournal)),
               );
             }
           }
         },
       ),
     );
-    
+
     if (result != null && mounted) {
       await _refreshTransactions();
     }
@@ -632,43 +632,51 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       builder: (_) => AuthWidget(
         actionReason: loc.deleteJournalAuthMessage,
         onAuthenticated: () {
-          // close the auth dialog
+          // Close the auth dialog
           Navigator.of(ctx).pop();
 
-          // Step 2: ask "are you sure?"
+          // Step 2: show confirmation dialog with constrained width
           showDialog(
             context: ctx,
-            builder: (confirmCtx) => AlertDialog(
-              title: Text(loc.confirmDelete),
-              content: Text(loc.confirmDeleteTransaction),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(confirmCtx),
-                  child: Text(loc.cancel),
+            builder: (confirmCtx) => Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: AlertDialog(
+                  title: Text(loc.confirmDelete),
+                  content: Text(loc.confirmDeleteTransaction),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(confirmCtx).pop(),
+                      child: Text(loc.cancel),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(confirmCtx).pop();
+                        try {
+                          if (tx['transaction_group'] == 'journal') {
+                            await JournalDBHelper()
+                                .deleteJournal(tx['transaction_id']);
+                            if (ctx.mounted) {
+                              await _refreshTransactions();
+                            }
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                  content: Text(loc.transactionDeleteError)),
+                            );
+                          }
+                        }
+                      },
+                      child: Text(
+                        loc.delete,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(confirmCtx);
-                    try {
-                      if (tx['transaction_group'] == 'journal') {
-                        await JournalDBHelper()
-                            .deleteJournal(tx['transaction_id']);
-                        await _refreshTransactions();
-                      }
-                    } catch (e) {
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text(loc.transactionDeleteError)),
-                        );
-                      }
-                    }
-                  },
-                  child: Text(
-                    loc.delete,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         },

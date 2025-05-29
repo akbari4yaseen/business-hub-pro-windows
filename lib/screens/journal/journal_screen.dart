@@ -138,22 +138,32 @@ class _JournalScreenState extends State<JournalScreen> {
           Navigator.of(context).pop();
           showDialog(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text(loc.confirmDelete),
-              content: Text(loc.confirmDeleteJournal),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text(loc.cancel),
+            builder: (ctx) => Center(
+              // Center so that constrained box is centered on screen
+              child: ConstrainedBox(
+                constraints:
+                    BoxConstraints(maxWidth: 420), // your max width here
+                child: AlertDialog(
+                  title: Text(loc.confirmDelete),
+                  content: Text(loc.confirmDeleteJournal),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(loc.cancel),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _deleteJournal(id);
+                      },
+                      child: Text(
+                        loc.delete,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    _deleteJournal(id);
-                  },
-                  child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
-                ),
-              ],
+              ),
             ),
           );
         },
@@ -164,9 +174,7 @@ class _JournalScreenState extends State<JournalScreen> {
   void _showDetails(Map<String, dynamic> journal) {
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        child: JournalDetailsWidget(journal: journal),
-      ),
+      builder: (_) => JournalDetailsWidget(journal: journal),
     );
   }
 
@@ -231,7 +239,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   Future<void> _addJournal() async {
     if (!mounted) return;
-    
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
@@ -251,14 +259,16 @@ class _JournalScreenState extends State<JournalScreen> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+                SnackBar(
+                    content:
+                        Text(AppLocalizations.of(context)!.errorSavingJournal)),
               );
             }
           }
         },
       ),
     );
-    
+
     if (result != null && mounted) {
       await _refreshJournals();
     }
@@ -266,7 +276,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   Future<void> _editJournal(Map<String, dynamic> journal) async {
     if (!mounted) return;
-    
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
@@ -288,14 +298,16 @@ class _JournalScreenState extends State<JournalScreen> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.errorSavingJournal)),
+                SnackBar(
+                    content:
+                        Text(AppLocalizations.of(context)!.errorSavingJournal)),
               );
             }
           }
         },
       ),
     );
-    
+
     if (result != null && mounted) {
       await _refreshJournals();
     }

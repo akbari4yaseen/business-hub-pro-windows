@@ -7,7 +7,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../add_stock_movement_dialog.dart';
 import '../widgets/search_filter_bar.dart';
-import '../../../providers/theme_provider.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
@@ -268,7 +267,8 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       barrierDismissible: true,
       builder: (context) => AddStockMovementDialog(
         onSave: (movement) async {
-          final provider = Provider.of<InventoryProvider>(context, listen: false);
+          final provider =
+              Provider.of<InventoryProvider>(context, listen: false);
           await provider.recordStockMovement(movement);
           await provider.loadStockMovements(refresh: true);
         },
@@ -386,15 +386,13 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: MovementDetailsSheet(
-          movement: movement,
-          product: product,
-          sourceLocation: sourceLocation,
-          destinationLocation: destinationLocation,
-          unitName: unitName,
-          numberFormatter: _numberFormatter,
-        ),
+      builder: (context) => MovementDetailsSheet(
+        movement: movement,
+        product: product,
+        sourceLocation: sourceLocation,
+        destinationLocation: destinationLocation,
+        unitName: unitName,
+        numberFormatter: _numberFormatter,
       ),
     );
   }
