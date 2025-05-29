@@ -162,11 +162,11 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   void _showDetails(Map<String, dynamic> journal) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => JournalDetailsWidget(journal: journal),
+      builder: (_) => Dialog(
+        child: JournalDetailsWidget(journal: journal),
+      ),
     );
   }
 
@@ -175,14 +175,10 @@ class _JournalScreenState extends State<JournalScreen> {
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setModal) => Material(
-          color: Theme.of(context).canvasColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        builder: (ctx2, setModal) => Dialog(
           child: JournalFilterBottomSheet(
             selectedType: tmpType,
             selectedCurrency: tmpCurrency,

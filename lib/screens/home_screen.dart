@@ -49,15 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Define all your actions here
     final actions = <_ActionData>[
-      _ActionData(
-        label: loc.newTransaction,
-        icon: Icons.add,
-        onPressed: () => Navigator.pushNamed(context, '/journal/add'),
-      ),
+      // _ActionData(
+      //   label: loc.newTransaction,
+      //   icon: Icons.add,
+      //   onPressed: () => Navigator.pushNamed(context, '/journal/add'),
+      // ),
       _ActionData(
         label: loc.accounts,
         icon: Icons.supervisor_account_outlined,
-        onPressed: () => nav.updateIndex(2),
+           onPressed: () => Navigator.pushNamed(context, '/accounts'),
       ),
       _ActionData(
         label: loc.reports,

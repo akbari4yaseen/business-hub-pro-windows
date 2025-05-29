@@ -288,13 +288,10 @@ class _AccountScreenState extends State<AccountScreen>
     var tmpType = _selectedAccountType;
     var tmpCurr = _selectedCurrency;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
-        builder: (c, setM) => Material(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        builder: (c, setM) => Dialog(
           child: FilterBottomSheet(
             selectedAccountType: tmpType,
             selectedCurrency: tmpCurr,

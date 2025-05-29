@@ -122,6 +122,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const BottomNavigationApp(),
+        '/accounts': (_) => const AccountScreen(),
         '/journal/add': (_) => const AddJournalScreen(),
         '/settings': (_) => const SettingsScreen(),
         '/user_settings': (_) => const UserSettingsScreen(),
@@ -228,6 +229,8 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
       const AccountScreen(),
       const InventoryScreen(),
       const InvoiceScreen(),
+      const ReportsScreen(),
+      const RemindersScreen(),
     ];
 
     return Scaffold(

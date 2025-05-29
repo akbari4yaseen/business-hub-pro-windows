@@ -156,14 +156,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     await _loadCurrencies();
     final typeList = ['all', 'credit', 'debit'];
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (c) => StatefulBuilder(
-        builder: (c2, setModal) => Material(
-          color: Theme.of(context).canvasColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        builder: (c2, setModal) => Dialog(
           child: TransactionFilterBottomSheet(
             selectedType: tmpType,
             selectedCurrency: tmpCurrency,
@@ -524,11 +520,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showDetails(Map<String, dynamic> tx) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => TransactionDetailsSheet(transaction: tx),
+      builder: (_) => Dialog(
+        child: TransactionDetailsSheet(transaction: tx),
+      ),
     );
   }
 

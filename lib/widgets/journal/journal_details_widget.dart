@@ -15,16 +15,14 @@ class JournalDetailsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.2,
-      maxChildSize: 0.8,
-      builder: (_, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).canvasColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-        ),
-        child: Stack(
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with title and close button
             Padding(
@@ -46,39 +44,36 @@ class JournalDetailsWidget extends StatelessWidget {
             ),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _detailItem(loc.description,
-                        journal['description'] ?? loc.noDescription),
-                    _detailItem(loc.date,
-                        formatLocalizedDateTime(context, journal['date'])),
-                    _detailItem(
-                      loc.amount,
-                      '\u200E${NumberFormat('#,###.##').format(journal['amount'])} ${journal['currency']}',
-                    ),
-                    _detailItem(
-                      loc.transactionType,
-                      journal['transaction_type'] == 'credit'
-                          ? loc.credit
-                          : loc.debit,
-                    ),
-                    _detailItem(
-                      loc.account,
-                      getLocalizedSystemAccountName(
-                          context, journal['account_name']),
-                    ),
-                    _detailItem(
-                      loc.track,
-                      getLocalizedSystemAccountName(
-                          context, journal['track_name']),
-                    ),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _detailItem(loc.description,
+                      journal['description'] ?? loc.noDescription),
+                  _detailItem(loc.date,
+                      formatLocalizedDateTime(context, journal['date'])),
+                  _detailItem(
+                    loc.amount,
+                    '\u200E${NumberFormat('#,###.##').format(journal['amount'])} ${journal['currency']}',
+                  ),
+                  _detailItem(
+                    loc.transactionType,
+                    journal['transaction_type'] == 'credit'
+                        ? loc.credit
+                        : loc.debit,
+                  ),
+                  _detailItem(
+                    loc.account,
+                    getLocalizedSystemAccountName(
+                        context, journal['account_name']),
+                  ),
+                  _detailItem(
+                    loc.track,
+                    getLocalizedSystemAccountName(
+                        context, journal['track_name']),
+                  ),
+                ],
               ),
             ),
           ],

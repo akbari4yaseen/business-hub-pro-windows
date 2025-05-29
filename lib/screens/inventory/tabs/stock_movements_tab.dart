@@ -384,19 +384,17 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
       destinationLocation = destWarehouse.name;
     }
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => MovementDetailsSheet(
-        movement: movement,
-        product: product,
-        sourceLocation: sourceLocation,
-        destinationLocation: destinationLocation,
-        unitName: unitName,
-        numberFormatter: _numberFormatter,
+      builder: (context) => Dialog(
+        child: MovementDetailsSheet(
+          movement: movement,
+          product: product,
+          sourceLocation: sourceLocation,
+          destinationLocation: destinationLocation,
+          unitName: unitName,
+          numberFormatter: _numberFormatter,
+        ),
       ),
     );
   }

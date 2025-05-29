@@ -61,7 +61,7 @@ class StockList extends StatelessWidget {
                     ),
                 ],
               ),
-              onTap: () => _showDetailsBottomSheet(context, item),
+              onTap: () => _showDetailsDialog(context, item),
             ),
           );
         },
@@ -88,74 +88,71 @@ class StockList extends StatelessWidget {
     );
   }
 
-  void _showDetailsBottomSheet(
-      BuildContext context, Map<String, dynamic> item) {
+  void _showDetailsDialog(BuildContext context, Map<String, dynamic> item) {
     final loc = AppLocalizations.of(context)!;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item['product_name'],
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16), // smaller edge padding
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 500,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['product_name'],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailRow(loc.sku, item['sku']),
-                    _buildDetailRow(loc.category, item['category_name']),
-                    _buildDetailRow(loc.unit, item['unit_name']),
-                    _buildDetailRow(loc.currentStock,
-                        '${numberFormatter.format(item['quantity'])}'),
-                    _buildDetailRow(loc.minimumStock,
-                        '${numberFormatter.format(item['minimum_stock'])}'),
-                    _buildDetailRow(loc.maximumStock,
-                        '${numberFormatter.format(item['maximum_stock'])}'),
-                    _buildDetailRow(loc.location, item['warehouse_name']),
-                    if (item['expiry_date'] != null)
-                      _buildDetailRow(loc.expiryDate,
-                          formatLocalizedDate(context, item['expiry_date'])),
-                    if (item['last_movement'] != null)
-                      _buildDetailRow(loc.lastMovement, item['last_movement']),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow(loc.sku, item['sku']),
+                      _buildDetailRow(loc.category, item['category_name']),
+                      _buildDetailRow(loc.unit, item['unit_name']),
+                      _buildDetailRow(loc.currentStock,
+                          '${numberFormatter.format(item['quantity'])}'),
+                      _buildDetailRow(loc.minimumStock,
+                          '${numberFormatter.format(item['minimum_stock'])}'),
+                      _buildDetailRow(loc.maximumStock,
+                          '${numberFormatter.format(item['maximum_stock'])}'),
+                      _buildDetailRow(loc.location, item['warehouse_name']),
+                      if (item['expiry_date'] != null)
+                        _buildDetailRow(loc.expiryDate,
+                            formatLocalizedDate(context, item['expiry_date'])),
+                      if (item['last_movement'] != null)
+                        _buildDetailRow(
+                            loc.lastMovement, item['last_movement']),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

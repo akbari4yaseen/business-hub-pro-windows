@@ -16,16 +16,14 @@ class TransactionDetailsSheet extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final NumberFormat _amountFormatter = NumberFormat('#,###.##');
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.2,
-      maxChildSize: 0.8,
-      builder: (_, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).canvasColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-        ),
-        child: Stack(
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
             Padding(
@@ -46,35 +44,32 @@ class TransactionDetailsSheet extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _detailItem(loc.description,
-                        transaction['description'] ?? loc.noDescription),
-                    _detailItem(
-                      loc.date,
-                      formatLocalizedDateTime(context, transaction['date']),
-                    ),
-                    _detailItem(
-                      loc.amount,
-                      '\u200E${_amountFormatter.format(transaction['amount'])} ${transaction['currency']}',
-                    ),
-                    _detailItem(
-                      loc.transactionType,
-                      transaction['transaction_type'] == 'credit'
-                          ? loc.credit
-                          : loc.debit,
-                    ),
-                    _detailItem(
-                      loc.balance,
-                      '\u200E${_amountFormatter.format(transaction['balance'])} ${transaction['currency']}',
-                    ),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _detailItem(loc.description,
+                      transaction['description'] ?? loc.noDescription),
+                  _detailItem(
+                    loc.date,
+                    formatLocalizedDateTime(context, transaction['date']),
+                  ),
+                  _detailItem(
+                    loc.amount,
+                    '\u200E${_amountFormatter.format(transaction['amount'])} ${transaction['currency']}',
+                  ),
+                  _detailItem(
+                    loc.transactionType,
+                    transaction['transaction_type'] == 'credit'
+                        ? loc.credit
+                        : loc.debit,
+                  ),
+                  _detailItem(
+                    loc.balance,
+                    '\u200E${_amountFormatter.format(transaction['balance'])} ${transaction['currency']}',
+                  ),
+                ],
               ),
             ),
           ],

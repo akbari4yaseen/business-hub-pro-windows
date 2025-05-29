@@ -178,18 +178,15 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Future<void> _showAddSheet({Reminder? existing}) async {
-    final newR = await showModalBottomSheet<Reminder>(
+    final newR = await showDialog<Reminder>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: AddReminderSheet(
-          reminder: existing,
-          onSave: (r) => Navigator.pop(context, r),
+      builder: (_) => Dialog(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: AddReminderSheet(
+            reminder: existing,
+            onSave: (r) => Navigator.pop(context, r),
+          ),
         ),
       ),
     );

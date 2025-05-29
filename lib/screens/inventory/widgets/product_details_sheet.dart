@@ -20,45 +20,49 @@ class ProductDetailsSheet extends StatelessWidget {
     final currentStock = provider.getCurrentStockForProduct(product.id);
     final loc = AppLocalizations.of(context)!;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (!product.isActive)
-                  Chip(
-                    label: Text(loc.inactive),
-                    backgroundColor: Colors.grey,
-                    labelStyle: const TextStyle(color: Colors.white),
-                  ),
-              ],
-            ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 500,
           ),
-
-          // Scrollable content
-          Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(16),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (!product.isActive)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Chip(
+                            label: Text(loc.inactive),
+                            backgroundColor: Colors.grey,
+                            labelStyle: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Content
                   _buildDetailCard(
                     loc.basicInfo,
                     [
@@ -91,21 +95,27 @@ class ProductDetailsSheet extends StatelessWidget {
                   ),
                   _buildDetailCard(
                     loc.currentStock,
-                    [],
-                    footer: currentStock.isEmpty
-                        ? Text(loc.noStockAvailable)
-                        : Column(
-                            children: currentStock
-                                .map((stock) => ListTile(
-                                      dense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(stock['warehouse_name']),
-                                      trailing: Container(
+                    currentStock.isEmpty
+                        ? [Text(loc.noStockAvailable)]
+                        : currentStock
+                            .map((stock) => Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          stock['warehouse_name'],
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                      Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: AppTheme.primaryColor
-                                              .withValues(alpha: 0.1),
+                                              .withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(4),
                                         ),
@@ -115,21 +125,21 @@ class ProductDetailsSheet extends StatelessWidget {
                                               fontWeight: FontWeight.bold),
                                         ),
                                       ),
-                                    ))
-                                .toList(),
-                          ),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
                   ),
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildDetailCard(String title, List<Widget> content,
-      {Widget? footer}) {
+  Widget _buildDetailCard(String title, List<Widget> content) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -146,10 +156,6 @@ class ProductDetailsSheet extends StatelessWidget {
             ),
             if (content.isNotEmpty) const Divider(),
             ...content,
-            if (footer != null) ...[
-              if (content.isNotEmpty) const SizedBox(height: 8),
-              footer,
-            ],
           ],
         ),
       ),

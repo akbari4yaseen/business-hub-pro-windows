@@ -512,13 +512,11 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showProductDetails(dynamic product) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      builder: (context) => Dialog(
+        child: ProductDetailsSheet(product: product),
       ),
-      builder: (context) => ProductDetailsSheet(product: product),
     );
   }
 }
