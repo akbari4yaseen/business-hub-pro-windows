@@ -173,7 +173,7 @@ class PrintTransactions {
 
           // --- TRANSACTIONS TABLE ---
           final txHeaders = [
-            loc.no,
+            loc.number,
             loc.date,
             loc.description,
             loc.debit,
@@ -223,12 +223,12 @@ class PrintTransactions {
                 cellStyle: pw.TextStyle(fontSize: 10),
                 cellAlignments: isRTL
                     ? {
-                        headersToUseTx.indexOf(loc.no): pw.Alignment.center,
+                        headersToUseTx.indexOf(loc.number): pw.Alignment.center,
                         headersToUseTx.indexOf(loc.description):
                             pw.Alignment.centerRight,
                       }
                     : {
-                        headersToUseTx.indexOf(loc.no): pw.Alignment.center,
+                        headersToUseTx.indexOf(loc.number): pw.Alignment.center,
                         headersToUseTx.indexOf(loc.description):
                             pw.Alignment.centerLeft,
                       },

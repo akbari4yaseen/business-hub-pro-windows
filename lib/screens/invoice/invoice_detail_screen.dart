@@ -94,7 +94,7 @@ class InvoiceDetailScreen extends StatelessWidget {
         ),
       ],
       if ([InvoiceStatus.finalized, InvoiceStatus.partiallyPaid]
-          .contains(invoice.status))
+          .contains(invoice.status)) ...[
         IconButton(
           icon: const Icon(Icons.payment),
           tooltip: loc.recordPayment,
@@ -112,12 +112,105 @@ class InvoiceDetailScreen extends StatelessWidget {
             );
           },
         ),
+        IconButton(
+          icon: const Icon(Icons.cancel),
+          tooltip: loc.cancelInvoice,
+          onPressed: () => _showCancelConfirmation(context),
+        ),
+      ],
       IconButton(
         icon: const Icon(Icons.print),
         tooltip: loc.printInvoice,
         onPressed: () => _printInvoice(context),
       ),
     ];
+  }
+
+  Future<void> _showCancelConfirmation(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.cancelInvoice),
+        content: Text(loc.cancelInvoiceConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.no),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.yes),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<InvoiceProvider>().cancelInvoice(
+              invoice.id!,
+              loc.invoiceCancelled,
+            );
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(loc.deleteInvoice),
+        content: Text(loc.deleteInvoiceConfirmation),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(loc.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<InvoiceProvider>().deleteInvoice(invoice.id!);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(loc.invoiceDeleted)));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('${loc.errorDeletingInvoice}: $e'),
+          ));
+        }
+      }
+    }
+  }
+
+  Future<void> _printInvoice(BuildContext context) async {
+    await printInvoice(
+      context: context,
+      invoice: invoice,
+      infoProvider: context.read<InfoProvider>(),
+      inventoryProvider: context.read<InventoryProvider>(),
+      accountProvider: context.read<AccountProvider>(),
+    );
   }
 
   Widget _buildCustomerName(BuildContext context, AppLocalizations loc) {
@@ -259,54 +352,6 @@ class InvoiceDetailScreen extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _printInvoice(BuildContext context) async {
-    await printInvoice(
-      context: context,
-      invoice: invoice,
-      infoProvider: context.read<InfoProvider>(),
-      inventoryProvider: context.read<InventoryProvider>(),
-      accountProvider: context.read<AccountProvider>(),
-    );
-  }
-
-  Future<void> _showDeleteConfirmation(BuildContext context) async {
-    final loc = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(loc.deleteInvoice),
-        content: Text(loc.deleteInvoiceConfirmation),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(loc.cancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(loc.delete),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await context.read<InvoiceProvider>().deleteInvoice(invoice.id!);
-        if (context.mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(loc.invoiceDeleted)));
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('${loc.errorDeletingInvoice}: $e'),
-          ));
-        }
-      }
-    }
   }
 
   TextStyle get _sectionTitleStyle =>

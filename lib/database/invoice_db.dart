@@ -600,4 +600,120 @@ class InvoiceDBHelper {
       includeItems: true,
     );
   }
+
+  Future<void> cancelInvoice(int invoiceId, {required String localizedDescription}) async {
+    final db = await _db;
+    try {
+      await db.transaction((txn) async {
+        // Get invoice details
+        final invoiceResult = await txn.query(
+          'invoices',
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
+
+        if (invoiceResult.isEmpty) {
+          throw Exception('Invoice not found');
+        }
+
+        final invoice = invoiceResult.first;
+        final accountId = invoice['account_id'] as int;
+        final currency = invoice['currency'] as String;
+        final invoiceNumber = invoice['invoice_number'] as String;
+        final status = invoice['status'] as String;
+
+        // Only allow cancellation of finalized or partially paid invoices
+        if (status != 'finalized' && status != 'partiallyPaid') {
+          throw Exception('Only finalized or partially paid invoices can be cancelled');
+        }
+
+        // Get total amount
+        final totalResult = await txn.rawQuery('''
+          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
+          FROM invoice_items 
+          WHERE invoice_id = ?
+        ''', [invoiceId]);
+
+        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+
+        // Update invoice status to cancelled
+        await txn.update(
+          'invoices',
+          {
+            'status': 'cancelled',
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
+
+        // If the invoice was finalized, remove the debit entry from account_details
+        if (status == 'finalized') {
+          await txn.delete(
+            'account_details',
+            where: 'transaction_id = ? AND transaction_group = ?',
+            whereArgs: [invoiceId, 'invoice'],
+          );
+        }
+
+        // If the invoice was partially paid, add a credit entry to account_details
+        if (status == 'partiallyPaid') {
+          final paidAmount = invoice['paid_amount'] as double? ?? 0.0;
+          if (paidAmount > 0) {
+            await txn.insert(
+              'account_details',
+              {
+                'date': DateTime.now().toIso8601String(),
+                'account_id': accountId,
+                'amount': paidAmount,
+                'currency': currency,
+                'transaction_type': 'credit',
+                'description': '${localizedDescription} $invoiceNumber (Cancellation)',
+                'transaction_id': invoiceId,
+                'transaction_group': 'invoice_cancellation',
+              },
+            );
+          }
+        }
+
+        // Get invoice items to revert stock
+        final items = await txn.query(
+          'invoice_items',
+          where: 'invoice_id = ?',
+          whereArgs: [invoiceId],
+        );
+
+        // Revert stock for each item
+        for (final item in items) {
+          final productId = item['product_id'] as int;
+          final quantity = item['quantity'] as double;
+
+          // Get current stock
+          final stockResult = await txn.query(
+            'current_stock',
+            where: 'product_id = ?',
+            whereArgs: [productId],
+          );
+
+          if (stockResult.isNotEmpty) {
+            final stock = stockResult.first;
+            final currentQuantity = stock['quantity'] as double;
+            final stockId = stock['id'] as int;
+            final warehouseId = stock['warehouse_id'] as int;
+
+            // Update stock quantity
+            await txn.update(
+              'current_stock',
+              {'quantity': currentQuantity + quantity},
+              where: 'id = ?',
+              whereArgs: [stockId],
+            );
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error cancelling invoice: $e');
+      rethrow;
+    }
+  }
 }

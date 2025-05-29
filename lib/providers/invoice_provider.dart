@@ -534,6 +534,48 @@ class InvoiceProvider with ChangeNotifier {
     await _inventoryProvider.initialize();
   }
 
+  // Cancel invoice
+  Future<void> cancelInvoice(int invoiceId, String localizedDescription) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Get the invoice first to check its status
+      final invoice = await getInvoice(invoiceId);
+      if (invoice == null) {
+        throw Exception('Invoice not found');
+      }
+
+      // Only allow cancellation of finalized or partially paid invoices
+      if (invoice.status != InvoiceStatus.finalized && 
+          invoice.status != InvoiceStatus.partiallyPaid) {
+        throw Exception('Only finalized or partially paid invoices can be cancelled');
+      }
+
+      // Cancel the invoice
+      await _db.cancelInvoice(invoiceId, localizedDescription: localizedDescription);
+
+      // Update cache if exists
+      if (_invoiceCache.containsKey(invoiceId)) {
+        final updatedInvoice = invoice.copyWith(
+          status: InvoiceStatus.cancelled,
+          updatedAt: DateTime.now(),
+        );
+        _invoiceCache[invoiceId] = updatedInvoice;
+      }
+
+      // Reset pagination and refresh data
+      await _refreshData();
+    } catch (e) {
+      debugPrint('Error cancelling invoice: $e');
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _searchDebounce?.cancel();

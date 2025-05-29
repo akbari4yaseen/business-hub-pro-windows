@@ -235,7 +235,7 @@
   "totalCount": "تعداد: {count}",
   "printed": "چاپ شده: {date}",
   "pageOf": "صفحه {page} از {total}",
-  "no": "شماره",
+  "number": "شماره",
   "remindersTitle": "یادآورها",
   "deleteReminderTitle": "حذف یادآور",
   "deleteReminderConfirmation": "آیا مطمئن هستید که می‌خواهید این یادآور را حذف کنید؟",
@@ -540,5 +540,10 @@
   "invalidNumber": "عدد نامعتبر",
   "reorderPointRequired": "نقطه سفارش مجدد الزامی است",
   "brand": "برند",
-  "isActive": "فعال است"
+  "isActive": "فعال است",
+  "cancelInvoice": "لغو فاکتور",
+  "cancelInvoiceConfirmation": "آیا از لغو این فاکتور اطمینان دارید؟ این کار موجودی کالا را برگردانده و از جزئیات حساب حذف می‌کند.",
+  "invoiceCancelled": "فاکتور لغو شد",
+  "yes": "بلی",
+  "no": "نخیر"
 }
