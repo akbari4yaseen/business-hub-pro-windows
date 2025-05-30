@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/account_provider.dart';
 import 'create_invoice_screen.dart';
-import '../../utils/date_formatters.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../widgets/search_bar.dart';
 
 import '../../providers/invoice_provider.dart';
@@ -64,109 +65,151 @@ class _InvoiceScreenState extends State<InvoiceScreen>
   void _showFilterModal() {
     final provider = context.read<InvoiceProvider>();
     String? tmpStatus = provider.selectedStatus;
-    DateTimeRange? tmpDateRange =
-        provider.selectedStartDate != null && provider.selectedEndDate != null
-            ? DateTimeRange(
-                start: provider.selectedStartDate!,
-                end: provider.selectedEndDate!,
-              )
-            : null;
+    DateTime? tmpStartDate = provider.selectedStartDate;
+    DateTime? tmpEndDate = provider.selectedEndDate;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setModal) => Material(
-          color: Theme.of(context).canvasColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.filter,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: tmpStatus,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.status,
+        builder: (context, setState) => Dialog(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.filter_list,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context)!.filter,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ],
                   ),
-                  items: [
-                    DropdownMenuItem(
-                      value: null,
-                      child: Text(AppLocalizations.of(context)!.all),
-                    ),
-                    ...InvoiceStatus.values.map((status) => DropdownMenuItem(
-                          value: status.toString().split('.').last,
-                          child: Text(status
-                              .localizedName(AppLocalizations.of(context)!)),
-                        )),
-                  ],
-                  onChanged: (value) => setModal(() => tmpStatus = value),
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime.now(),
-                      initialDateRange: tmpDateRange,
-                    );
-                    if (picked != null) setModal(() => tmpDateRange = picked);
-                  },
-                  child: InputDecorator(
+                  const SizedBox(height: 24),
+                  DropdownButtonFormField<String>(
+                    value: tmpStatus,
                     decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.selectDateRange,
+                      labelText: AppLocalizations.of(context)!.status,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          tmpDateRange != null
-                              ? '${formatLocalizedDate(context, tmpDateRange!.start.toString())} - ${formatLocalizedDate(context, tmpDateRange!.end.toString())}'
-                              : AppLocalizations.of(context)!.selectDateRange,
-                        ),
-                        const Icon(Icons.calendar_today, size: 20),
-                      ],
-                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(AppLocalizations.of(context)!.all),
+                      ),
+                      ...InvoiceStatus.values.map((status) => DropdownMenuItem(
+                            value: status.toString().split('.').last,
+                            child: Text(status
+                                .localizedName(AppLocalizations.of(context)!)),
+                          )),
+                    ],
+                    onChanged: (value) => setState(() => tmpStatus = value),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () {
-                          provider.resetFilters();
-                          Navigator.pop(context);
-                        },
-                        child: Text(AppLocalizations.of(context)!.reset),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.startDate,
+                            prefixIcon: const Icon(Icons.calendar_today),
+                          ),
+                          controller: TextEditingController(
+                            text: tmpStartDate != null
+                                ? dFormatter.formatLocalizedDate(
+                                    context, tmpStartDate.toString())
+                                : null,
+                          ),
+                          onTap: () async {
+                            final result = await pickLocalizedDate(
+                              context: context,
+                              initialDate: tmpStartDate ?? DateTime.now(),
+                            );
+                            if (result != null) {
+                              setState(() {
+                                tmpStartDate = result;
+                                // If end date is before start date, clear it
+                                if (tmpEndDate != null &&
+                                    tmpEndDate!.isBefore(tmpStartDate!)) {
+                                  tmpEndDate = null;
+                                }
+                              });
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          provider.applyFilters(
-                            status: tmpStatus,
-                            startDate: tmpDateRange?.start,
-                            endDate: tmpDateRange?.end,
-                          );
-                          Navigator.pop(context);
-                        },
-                        child: Text(AppLocalizations.of(context)!.applyFilters),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.endDate,
+                            prefixIcon:
+                                const Icon(Icons.calendar_month_outlined),
+                          ),
+                          controller: TextEditingController(
+                            text: tmpEndDate != null
+                                ? dFormatter.formatLocalizedDate(
+                                    context, tmpEndDate.toString())
+                                : null,
+                          ),
+                          onTap: () async {
+                            final result = await pickLocalizedDate(
+                              context: context,
+                              initialDate: tmpEndDate ??
+                                  (tmpStartDate ?? DateTime.now()),
+                            );
+                            if (result != null) {
+                              setState(() => tmpEndDate = result);
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            provider.resetFilters();
+                            Navigator.pop(context);
+                          },
+                          child: Text(AppLocalizations.of(context)!.reset),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Apply filters to match exact dates
+                            provider.applyFilters(
+                              status: tmpStatus,
+                              startDate: tmpStartDate,
+                              endDate: tmpEndDate,
+                            );
+                            Navigator.pop(context);
+                          },
+                          child:
+                              Text(AppLocalizations.of(context)!.applyFilters),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

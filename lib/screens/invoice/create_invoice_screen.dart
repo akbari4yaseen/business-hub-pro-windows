@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../models/invoice.dart';
-import '../../utils/date_formatters.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../widgets/journal/journal_form_widgets.dart';
 import '../../providers/settings_provider.dart';
 import '../../constants/currencies.dart';
@@ -27,6 +28,8 @@ class CreateInvoiceScreen extends StatefulWidget {
 class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final _dateController = TextEditingController();
+  final _dueDateController = TextEditingController();
   final List<InvoiceItemFormData> _items = [];
   DateTime _date = DateTime.now();
   DateTime? _dueDate;
@@ -56,6 +59,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       setState(() {
         _currency = settingsProvider.defaultCurrency;
       });
+      _dateController.text =
+          dFormatter.formatLocalizedDateTime(context, _date.toString());
+      if (_dueDate != null) {
+        _dueDateController.text =
+            dFormatter.formatLocalizedDateTime(context, _dueDate.toString());
+      }
     });
   }
 
@@ -95,6 +104,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _dateController.dispose();
+    _dueDateController.dispose();
     _totalNotifier.dispose();
     for (final item in _items) {
       item.dispose();
@@ -125,20 +136,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _selectDate(BuildContext context, bool isDueDate) async {
-    final DateTime? picked = await showDatePicker(
+    final result = await pickLocalizedDate(
       context: context,
-      initialDate: isDueDate ? _date : DateTime.now(),
-      firstDate: isDueDate ? _date : DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: isDueDate ? (_dueDate ?? _date) : _date,
     );
-    if (picked != null) {
+    if (result != null) {
       setState(() {
         if (isDueDate) {
-          _dueDate = picked;
+          _dueDate = result;
+          _dueDateController.text =
+              dFormatter.formatLocalizedDate(context, result.toString());
         } else {
-          _date = picked;
+          _date = result;
+          _dateController.text =
+              dFormatter.formatLocalizedDate(context, result.toString());
           if (_dueDate != null && _dueDate!.isBefore(_date)) {
             _dueDate = null;
+            _dueDateController.clear();
           }
         }
       });
@@ -160,207 +174,215 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               tooltip: loc.deleteInvoice,
             ),
           _isSubmitting
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 16.0),
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
                 )
               : IconButton(
                   onPressed: _items.isEmpty ? null : _submitForm,
-                  icon: Icon(Icons.save)),
+                  icon: const Icon(Icons.save),
+                ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 1000;
+
+          return Scrollbar(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        isWide
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                      child: _buildAccountSelection(context)),
+                                  const SizedBox(width: 24),
+                                  Expanded(child: _buildInvoiceMeta(loc)),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildAccountSelection(context),
+                                  const SizedBox(height: 16),
+                                  _buildInvoiceMeta(loc),
+                                ],
+                              ),
+                        const SizedBox(height: 24),
+                        _buildItemsCard(loc),
+                        const SizedBox(height: 24),
+                        _buildNotesCard(loc),
+                        const SizedBox(height: 24),
+                        _buildTotalCard(loc),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInvoiceMeta(AppLocalizations loc) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Customer Account Selection
-            _buildAccountSelection(context),
+            Text(loc.invoiceDetails,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-
-            // Dates and Currency
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.invoiceDetails,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _dateController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: loc.invoiceDate,
+                      prefixIcon: const Icon(Icons.calendar_today),
                     ),
-                    const SizedBox(height: 16),
-                    // Date Selection
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ListTile(
-                            title: Text(loc.invoiceDate),
-                            subtitle: Text(
-                                formatLocalizedDate(context, _date.toString())),
-                            trailing: const Icon(Icons.calendar_today),
-                            onTap: () => _selectDate(context, false),
-                          ),
-                        ),
-                        Expanded(
-                          child: ListTile(
-                            title: Text(loc.dueDate),
-                            subtitle: _dueDate != null
-                                ? Text(formatLocalizedDate(
-                                    context, _dueDate.toString()))
-                                : Text(loc.notSet),
-                            trailing: const Icon(Icons.calendar_month_outlined),
-                            onTap: () => _selectDate(context, true),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Currency Selection
-                    DropdownButtonFormField<String>(
-                      value: _currency,
-                      decoration: InputDecoration(
-                        labelText: loc.currency,
-                      ),
-                      items: currencies
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _currency = value;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+                    onTap: () => _selectDate(context, false),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _dueDateController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: loc.dueDate,
+                      prefixIcon: const Icon(Icons.calendar_month_outlined),
+                    ),
+                    onTap: () => _selectDate(context, true),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-
-            // Invoice Items
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          loc.items,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: _addItem,
-                          icon: const Icon(Icons.add),
-                          label: Text(loc.addItem),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_items.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text(loc.noItemsAdded),
-                        ),
-                      )
-                    else
-                      ..._items.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        return InvoiceItemForm(
-                          key: ObjectKey(item),
-                          formData: item,
-                          onRemove: () => _removeItem(index),
-                          onUpdate: _updateTotal,
-                        );
-                      }),
-                  ],
-                ),
-              ),
+            DropdownButtonFormField<String>(
+              value: _currency,
+              decoration: InputDecoration(labelText: loc.currency),
+              items: currencies
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _currency = value);
+              },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemsCard(AppLocalizations loc) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(loc.items,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                TextButton.icon(
+                  onPressed: _addItem,
+                  icon: const Icon(Icons.add),
+                  label: Text(loc.addItem),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_items.isEmpty)
+              Center(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(loc.noItemsAdded)))
+            else
+              ..._items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return InvoiceItemForm(
+                  key: ObjectKey(item),
+                  formData: item,
+                  onRemove: () => _removeItem(index),
+                  onUpdate: _updateTotal,
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesCard(AppLocalizations loc) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(loc.additionalInformation,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-
-            // Notes
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.additionalInformation,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _notesController,
-                      decoration: InputDecoration(
-                        labelText: loc.notes,
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-              ),
+            TextFormField(
+              controller: _notesController,
+              decoration: InputDecoration(labelText: loc.notes),
+              maxLines: 2,
             ),
-            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // Total
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.total,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    ValueListenableBuilder<double>(
-                      valueListenable: _totalNotifier,
-                      builder: (context, total, child) {
-                        return Text(
-                          '${_currencyFormat.format(total)} $_currency',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+  Widget _buildTotalCard(AppLocalizations loc) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(loc.total,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ValueListenableBuilder<double>(
+              valueListenable: _totalNotifier,
+              builder: (context, total, child) {
+                return Text(
+                  '${_currencyFormat.format(total)} $_currency',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
           ],
         ),
       ),

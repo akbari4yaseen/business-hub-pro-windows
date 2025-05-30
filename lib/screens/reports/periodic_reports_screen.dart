@@ -3,7 +3,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
-import '../../utils/date_formatters.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../themes/app_theme.dart';
 
 class PeriodicReportsScreen extends StatefulWidget {
@@ -116,13 +117,10 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
 
   Future<void> _pickDate(BuildContext ctx, bool isStart) async {
     final initial = DateTime.now();
-    final first = DateTime(2000);
-    final last = DateTime.now().add(const Duration(days: 2));
-    final date = await showDatePicker(
+   
+    final date = await pickLocalizedDate(
       context: ctx,
       initialDate: initial,
-      firstDate: first,
-      lastDate: last,
     );
     if (date != null) {
       setState(() {
@@ -285,7 +283,7 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                             onPressed: () => _pickDate(context, true),
                             child: Text(_customStart == null
                                 ? loc.startDate
-                                : formatLocalizedDate(
+                                : dFormatter.formatLocalizedDate(
                                     context, _customStart.toString())),
                           ),
                         ),
@@ -295,7 +293,7 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                             onPressed: () => _pickDate(context, false),
                             child: Text(_customEnd == null
                                 ? loc.endDate
-                                : formatLocalizedDate(
+                                : dFormatter.formatLocalizedDate(
                                     context, _customEnd.toString())),
                           ),
                         ),
@@ -338,7 +336,8 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                   const SizedBox(height: 12),
                   Card(
                     child: ListTile(
-                      leading: const Icon(Icons.balance, color: AppTheme.primaryColor),
+                      leading: const Icon(Icons.balance,
+                          color: AppTheme.primaryColor),
                       title: Text(loc.balance),
                       trailing: Text(
                         _currency != null

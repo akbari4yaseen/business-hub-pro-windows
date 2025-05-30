@@ -1,3 +1,4 @@
+import '../../../widgets/journal/journal_filter_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,8 +13,7 @@ import '../../../database/database_helper.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/transaction/transaction_details_widget.dart';
 import '../../../widgets/search_bar.dart';
-import '../../../widgets/transaction/transaction_filter_bottom_sheet.dart';
-import '../../../utils/date_formatters.dart';
+import '../../../utils/date_formatters.dart' as dFormatter;
 import '../../../utils/utilities.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
@@ -44,7 +44,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String? _selectedType;
   String? _selectedCurrency;
   DateTime? _selectedDate;
-  List<String> currencyOptions = [];
+  final List<String> _currencyOptions = ['all'];
 
   int _currentPage = 0;
   bool _hasMore = true;
@@ -58,6 +58,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _balances = widget.account['balances'] as Map<String, dynamic>? ?? {};
+    _loadCurrencies();
     _refreshTransactions();
   }
 
@@ -143,53 +144,57 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _loadCurrencies() async {
     final list = await DatabaseHelper().getDistinctCurrencies();
-    list.sort();
     setState(() {
-      currencyOptions = ['all', ...list];
+      _currencyOptions
+        ..clear()
+        ..addAll(['all', ...list..sort()]);
     });
   }
 
-  void _showFilterModal() async {
+  void _showFilterModal() {
     String? tmpType = _selectedType;
     String? tmpCurrency = _selectedCurrency;
     DateTime? tmpDate = _selectedDate;
-    await _loadCurrencies();
-    final typeList = ['all', 'credit', 'debit'];
 
     showDialog(
       context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (c2, setModal) => Dialog(
-          child: TransactionFilterBottomSheet(
-            selectedType: tmpType,
-            selectedCurrency: tmpCurrency,
-            selectedDate: tmpDate,
-            typeOptions: typeList,
-            currencyOptions: currencyOptions,
-            onChanged: ({type, currency, date}) {
-              setModal(() {
-                if (type != null) tmpType = type;
-                if (currency != null) tmpCurrency = currency;
-                if (date != null) tmpDate = date;
-              });
-            },
-            onReset: () => setModal(() {
-              tmpType = null;
-              tmpCurrency = null;
-              tmpDate = null;
-            }),
-            onApply: ({type, currency, date}) {
-              setState(() {
-                _selectedType = tmpType;
-                _selectedCurrency = tmpCurrency;
-                _selectedDate = tmpDate;
-              });
-              Navigator.pop(context);
-              _refreshTransactions();
-            },
-          ),
-        ),
-      ),
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return JournalFilterDialog(
+              selectedType: tmpType,
+              selectedCurrency: tmpCurrency,
+              selectedDate: tmpDate,
+              typeOptions: const ['all', 'credit', 'debit'],
+              currencyOptions: _currencyOptions,
+              onChanged: ({String? type, String? currency, DateTime? date}) {
+                setModalState(() {
+                  if (type != null) tmpType = type;
+                  if (currency != null) tmpCurrency = currency;
+                  if (date != null) tmpDate = date;
+                });
+              },
+              onReset: () {
+                setModalState(() {
+                  tmpType = null;
+                  tmpCurrency = null;
+                  tmpDate = null;
+                });
+              },
+              onApply: ({type, currency, date}) {
+                setState(() {
+                  _selectedType = tmpType;
+                  _selectedCurrency = tmpCurrency;
+                  _selectedDate = tmpDate;
+                });
+                Navigator.of(context).pop();
+                _refreshTransactions();
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -203,7 +208,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   /// Fetches all transactions, applies print settings filters in-memory, then prints.
   void _onPrintPressed() async {
-    if (currencyOptions.isEmpty) {
+    if (_currencyOptions.isEmpty) {
       await _loadCurrencies();
     }
 
@@ -211,7 +216,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       context: context,
       builder: (_) => PrintSettingsDialog(
         typeOptions: ['all', 'credit', 'debit'],
-        currencyOptions: currencyOptions,
+        currencyOptions: _currencyOptions,
         initialType: _selectedType ?? 'all',
         initialCurrency: _selectedCurrency ?? 'all',
         initialStart: null,
@@ -713,7 +718,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               '${loc.balance}:${formatAmount(tx['balance'])} ${tx['currency']}',
               style: TextStyle(fontSize: 14, color: balanceColor),
             ),
-            Text(formatLocalizedDateTime(context, tx['date']),
+            Text(dFormatter.formatLocalizedDateTime(context, tx['date']),
                 style: const TextStyle(fontSize: 13)),
             Text(
               tx['description'] ?? '',

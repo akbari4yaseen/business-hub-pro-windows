@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../../utils/date_formatters.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/stock_movement.dart';
 import '../../utils/inventory.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 
 class AddStockMovementDialog extends StatefulWidget {
   final Function(StockMovement) onSave;
@@ -280,12 +281,9 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.calendar_today),
                             onPressed: () async {
-                              final date = await showDatePicker(
+                              final date = await pickLocalizedDate(
                                 context: context,
                                 initialDate: _selectedDate ?? DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate:
-                                    DateTime.now().add(const Duration(days: 3650)),
                               );
                               if (date != null) {
                                 setState(() {
@@ -297,7 +295,8 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                         ),
                         controller: TextEditingController(
                           text: _selectedDate != null
-                              ? formatLocalizedDate(context, _selectedDate.toString())
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _selectedDate.toString())
                               : loc.notSet,
                         ),
                       ),
@@ -327,12 +326,9 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.calendar_today),
                             onPressed: () async {
-                              final date = await showDatePicker(
+                              final date = await pickLocalizedDate(
                                 context: context,
                                 initialDate: DateTime.now(),
-                                firstDate: DateTime.now(),
-                                lastDate:
-                                    DateTime.now().add(const Duration(days: 3650)),
                               );
                               if (date != null) {
                                 setState(() {
@@ -344,7 +340,8 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                         ),
                         controller: TextEditingController(
                           text: _expiryDate != null
-                              ? formatLocalizedDate(context, _expiryDate.toString())
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _expiryDate.toString())
                               : loc.notSet,
                         ),
                       ),
@@ -360,7 +357,8 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: _isSubmitting ? null : _saveStockMovement,
+                            onPressed:
+                                _isSubmitting ? null : _saveStockMovement,
                             child: Text(loc.save),
                           ),
                         ],

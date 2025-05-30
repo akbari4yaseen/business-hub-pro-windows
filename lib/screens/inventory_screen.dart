@@ -26,9 +26,13 @@ class _InventoryScreenState extends State<InventoryScreen>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     Future.microtask(() async {
+      if (!mounted) return;
       await context.read<InventoryProvider>().initialize();
+      if (!mounted) return;
       await context.read<InventoryProvider>().refreshWarehouses();
+      if (!mounted) return;
       await context.read<InventoryProvider>().refreshProducts();
+      if (!mounted) return;
       await context.read<InvoiceProvider>().initialize();
     });
   }

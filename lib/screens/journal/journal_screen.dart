@@ -9,7 +9,7 @@ import '../../utils/search_manager.dart';
 import '../../utils/transaction_share_helper.dart';
 import '../../widgets/auth_widget.dart';
 import '../../widgets/journal/journal_details_widget.dart';
-import '../../widgets/journal/journal_filter_bottom_sheet.dart';
+import '../../widgets/journal/journal_filter_dialog.dart';
 import '../../widgets/journal/journal_list.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/journal/journal_form_dialog.dart';
@@ -178,32 +178,37 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  void _showFilterModal() {
-    String? tmpType = _selectedType;
-    String? tmpCurrency = _selectedCurrency;
-    DateTime? tmpDate = _selectedDate;
+void _showFilterModal() {
+  String? tmpType = _selectedType;
+  String? tmpCurrency = _selectedCurrency;
+  DateTime? tmpDate = _selectedDate;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setModal) => Dialog(
-          child: JournalFilterBottomSheet(
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return JournalFilterDialog(
             selectedType: tmpType,
             selectedCurrency: tmpCurrency,
             selectedDate: tmpDate,
             typeOptions: const ['all', 'credit', 'debit'],
             currencyOptions: _currencyOptions,
-            onChanged: ({String? type, String? currency, DateTime? date}) =>
-                setModal(() {
-              if (type != null) tmpType = type;
-              if (currency != null) tmpCurrency = currency;
-              if (date != null) tmpDate = date;
-            }),
-            onReset: () => setModal(() {
-              tmpType = null;
-              tmpCurrency = null;
-              tmpDate = null;
-            }),
+            onChanged: ({String? type, String? currency, DateTime? date}) {
+              setModalState(() {
+                if (type != null) tmpType = type;
+                if (currency != null) tmpCurrency = currency;
+                if (date != null) tmpDate = date;
+              });
+            },
+            onReset: () {
+              setModalState(() {
+                tmpType = null;
+                tmpCurrency = null;
+                tmpDate = null;
+              });
+            },
             onApply: ({type, currency, date}) {
               setState(() {
                 _selectedType = tmpType;
@@ -213,11 +218,12 @@ class _JournalScreenState extends State<JournalScreen> {
               Navigator.of(context).pop();
               _refreshJournals();
             },
-          ),
-        ),
-      ),
-    );
-  }
+          );
+        },
+      );
+    },
+  );
+}
 
   void _onSearchChanged(String query) async {
     if (query.isEmpty) {

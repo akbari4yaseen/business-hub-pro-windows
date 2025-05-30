@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../utils/date_formatters.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 import '../../utils/utilities.dart';
 
 class PrintSettings {
@@ -56,11 +57,9 @@ class _PrintSettingsDialogState extends State<PrintSettingsDialog> {
 
   Future<void> _pickDate(BuildContext ctx, bool isStart) async {
     final initial = isStart ? _start ?? DateTime.now() : _end ?? DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await pickLocalizedDate(
       context: ctx,
       initialDate: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(Duration(days: 365)),
     );
     if (picked != null) {
       setState(() {
@@ -89,7 +88,8 @@ class _PrintSettingsDialogState extends State<PrintSettingsDialog> {
                     onPressed: () => _pickDate(context, true),
                     child: Text(_start == null
                         ? loc.startDate
-                        : formatLocalizedDate(context, _start.toString())),
+                        : dFormatter.formatLocalizedDate(
+                            context, _start.toString())),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -98,7 +98,8 @@ class _PrintSettingsDialogState extends State<PrintSettingsDialog> {
                     onPressed: () => _pickDate(context, false),
                     child: Text(_end == null
                         ? loc.endDate
-                        : formatLocalizedDate(context, _end.toString())),
+                        : dFormatter.formatLocalizedDate(
+                            context, _end.toString())),
                   ),
                 ),
               ],

@@ -1,13 +1,14 @@
-import 'package:BusinessHubPro/utils/inventory.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
+import '../../../utils/date_time_picker_helper.dart';
+import '../../../utils/date_formatters.dart' as dFormatter;
 import '../add_stock_movement_dialog.dart';
 import '../widgets/search_filter_bar.dart';
-import '../../../utils/date_formatters.dart';
+import '../../../utils/inventory.dart';
+
 import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
 import '../../../themes/app_theme.dart';
@@ -165,9 +166,23 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
           children: [
             Expanded(
               child: TextButton.icon(
-                icon: const Icon(Icons.date_range),
-                label: Text(_getDateRangeText(loc)),
-                onPressed: () => _selectDateRange(context),
+                icon: const Icon(Icons.calendar_today),
+                label: Text(_startDate == null
+                    ? loc.startDate
+                    : dFormatter.formatLocalizedDate(
+                        context, _startDate.toString())),
+                onPressed: () => _selectStartDate(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextButton.icon(
+                icon: const Icon(Icons.calendar_today),
+                label: Text(_endDate == null
+                    ? loc.endDate
+                    : dFormatter.formatLocalizedDate(
+                        context, _endDate.toString())),
+                onPressed: () => _selectEndDate(context),
               ),
             ),
             if (_startDate != null || _endDate != null)
@@ -239,24 +254,30 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         date.isBefore(_endDate!.add(const Duration(days: 1)));
   }
 
-  String _getDateRangeText(AppLocalizations loc) {
-    if (_startDate == null && _endDate == null) return loc.selectDateRange;
-    return '${formatLocalizedDate(context, _startDate.toString())} - ${formatLocalizedDate(context, _endDate.toString())}';
-  }
-
-  Future<void> _selectDateRange(BuildContext context) async {
-    final picked = await showDateRangePicker(
+  Future<void> _selectStartDate(BuildContext context) async {
+    final picked = await pickLocalizedDate(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: _startDate != null && _endDate != null
-          ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : null,
+      initialDate: _startDate ?? DateTime.now(),
     );
     if (picked != null) {
       setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
+        _startDate = picked;
+        // If end date is before start date, update end date
+        if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+          _endDate = _startDate;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectEndDate(BuildContext context) async {
+    final picked = await pickLocalizedDate(
+      context: context,
+      initialDate: _endDate ?? DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
       });
     }
   }
@@ -347,7 +368,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
             Text('${loc.from}: $sourceLocation'),
             Text('${loc.to}: $destinationLocation'),
             Text(
-                '${formatLocalizedDateTime(context, movement.date.toString())}'),
+                '${dFormatter.formatLocalizedDateTime(context, movement.date.toString())}'),
             if (movement.reference != null)
               Text('${loc.reference}: ${movement.reference}'),
           ],

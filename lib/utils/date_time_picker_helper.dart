@@ -50,3 +50,30 @@ String formatLocalizedDateTime(BuildContext context, DateTime dateTime) {
     return '${j.formatCompactDate()} ${time.format(context)}';
   }
 }
+
+/// A utility function that shows a localized date picker only.
+/// Returns `null` if the user cancels.
+Future<DateTime?> pickLocalizedDate({
+  required BuildContext context,
+  required DateTime initialDate,
+}) async {
+  final locale = Localizations.localeOf(context);
+
+  if (locale.languageCode == 'fa') {
+    final j = await showPersianDatePicker(
+      context: context,
+      initialDate: Jalali.fromDateTime(initialDate),
+      firstDate: Jalali(1390, 1),
+      lastDate: Jalali.fromDateTime(DateTime.now().add(Duration(days: 2))),
+    );
+    if (j == null) return null;
+    return j.toDateTime();
+  } else {
+    return await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(Duration(days: 2)),
+    );
+  }
+}
