@@ -5,7 +5,6 @@ import 'package:badges/badges.dart' as badges;
 import '../themes/app_theme.dart';
 
 import '../providers/notification_provider.dart';
-import '../providers/bottom_navigation_provider.dart';
 import '../database/account_db.dart';
 import '../database/settings_db.dart';
 import '../widgets/backup_card.dart';
@@ -45,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final nav = Provider.of<BottomNavigationProvider>(context, listen: false);
 
     // Define all your actions here
     final actions = <_ActionData>[
@@ -57,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _ActionData(
         label: loc.accounts,
         icon: Icons.supervisor_account_outlined,
-           onPressed: () => Navigator.pushNamed(context, '/accounts'),
+        onPressed: () => Navigator.pushNamed(context, '/accounts'),
       ),
       _ActionData(
         label: loc.reports,

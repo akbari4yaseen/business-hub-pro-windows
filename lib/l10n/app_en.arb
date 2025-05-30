@@ -545,5 +545,6 @@
   "cancelInvoiceConfirmation": "Are you sure you want to cancel this invoice? This will revert stock and remove from account details.",
   "invoiceCancelled": "Invoice cancelled",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "summary": "Summary"
 }

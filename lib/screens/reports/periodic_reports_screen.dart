@@ -117,7 +117,7 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
 
   Future<void> _pickDate(BuildContext ctx, bool isStart) async {
     final initial = DateTime.now();
-   
+
     final date = await pickLocalizedDate(
       context: ctx,
       initialDate: initial,
@@ -226,135 +226,206 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(loc.periodicReports)),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ListView(
-                children: [
-                  // Account Type
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: loc.accountType),
-                    value: _accountType,
-                    items: _accountTypes.map((type) {
-                      return DropdownMenuItem<String>(
-                        value: type['account_type'] as String,
-                        child: Text(getLocalizedAccountType(
-                            context, type['account_type'])),
-                      );
-                    }).toList(),
-                    onChanged: (v) {
-                      setState(() => _accountType = v);
-                      _loadCurrencies();
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Currency
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: loc.currency),
-                    value: _currency,
-                    items: _currencies.map((currency) {
-                      return DropdownMenuItem<String>(
-                        value: currency,
-                        child: Text(currency),
-                      );
-                    }).toList(),
-                    onChanged: (v) => setState(() => _currency = v),
-                    hint: Text(loc.currency),
-                  ),
-                  const SizedBox(height: 12),
-                  // Period selector
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: loc.period),
-                    value: _selectedPeriod,
-                    items: _periods.entries
-                        .map((e) => DropdownMenuItem(
-                            value: e.key, child: Text(e.value)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedPeriod = v!),
-                  ),
-                  if (_selectedPeriod == 'custom') ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => _pickDate(context, true),
-                            child: Text(_customStart == null
-                                ? loc.startDate
-                                : dFormatter.formatLocalizedDate(
-                                    context, _customStart.toString())),
+        appBar: AppBar(title: Text(loc.periodicReports)),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left: Filters Panel
+                    Expanded(
+                      flex: 2,
+                      child: Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(loc.filters,
+                                  style:
+                                      Theme.of(context).textTheme.titleLarge),
+                              const SizedBox(height: 20),
+
+                              // Account Type
+                              DropdownButtonFormField<String>(
+                                decoration:
+                                    InputDecoration(labelText: loc.accountType),
+                                value: _accountType,
+                                items: _accountTypes.map((type) {
+                                  return DropdownMenuItem<String>(
+                                    value: type['account_type'] as String,
+                                    child: Text(getLocalizedAccountType(
+                                        context, type['account_type'])),
+                                  );
+                                }).toList(),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _accountType = v;
+                                    _currency = null;
+                                    _currencies = [];
+                                  });
+                                  _loadCurrencies(); // now _accountType is up-to-date
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Currency
+                              DropdownButtonFormField<String>(
+                                decoration:
+                                    InputDecoration(labelText: loc.currency),
+                                value: _currency,
+                                items: _currencies.map((currency) {
+                                  return DropdownMenuItem<String>(
+                                    value: currency,
+                                    child: Text(currency),
+                                  );
+                                }).toList(),
+                                onChanged: (v) => setState(() => _currency = v),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Period
+                              DropdownButtonFormField<String>(
+                                decoration:
+                                    InputDecoration(labelText: loc.period),
+                                value: _selectedPeriod,
+                                items: _periods.entries
+                                    .map((e) => DropdownMenuItem(
+                                        value: e.key, child: Text(e.value)))
+                                    .toList(),
+                                onChanged: (v) =>
+                                    setState(() => _selectedPeriod = v!),
+                              ),
+
+                              // Custom Date Picker
+                              if (_selectedPeriod == 'custom') ...[
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _pickDate(context, true),
+                                        icon: const Icon(Icons.calendar_today),
+                                        label: Text(_customStart == null
+                                            ? loc.startDate
+                                            : dFormatter.formatLocalizedDate(
+                                                context,
+                                                _customStart.toString())),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _pickDate(context, false),
+                                        icon: const Icon(Icons.calendar_today),
+                                        label: Text(_customEnd == null
+                                            ? loc.endDate
+                                            : dFormatter.formatLocalizedDate(
+                                                context,
+                                                _customEnd.toString())),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: _fetchBalances,
+                                icon: const Icon(Icons.analytics),
+                                label: Text(loc.generateReport),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 48),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => _pickDate(context, false),
-                            child: Text(_customEnd == null
-                                ? loc.endDate
-                                : dFormatter.formatLocalizedDate(
-                                    context, _customEnd.toString())),
+                      ),
+                    ),
+
+                    const SizedBox(width: 24),
+
+                    // Right: Result Summary
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(loc.summary,
+                              style: Theme.of(context).textTheme.titleLarge),
+                          const SizedBox(height: 16),
+
+                          // Credit
+                          Card(
+                            elevation: 2,
+                            child: ListTile(
+                              leading: const Icon(Icons.arrow_downward,
+                                  color: Colors.green),
+                              title: Text(loc.totalCredit),
+                              trailing: Text(
+                                _currency != null
+                                    ? '${_formatter.format(_creditTotal)} $_currency'
+                                    : _formatter.format(_creditTotal),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+
+                          const SizedBox(height: 8),
+
+                          // Debit
+                          Card(
+                            elevation: 2,
+                            child: ListTile(
+                              leading: const Icon(Icons.arrow_upward,
+                                  color: Colors.red),
+                              title: Text(loc.totalDebit),
+                              trailing: Text(
+                                _currency != null
+                                    ? '${_formatter.format(_debitTotal)} $_currency'
+                                    : _formatter.format(_debitTotal),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Balance
+                          Card(
+                            elevation: 2,
+                            child: ListTile(
+                              leading: const Icon(Icons.balance,
+                                  color: AppTheme.primaryColor),
+                              title: Text(loc.balance),
+                              trailing: Text(
+                                _currency != null
+                                    ? '\u200E${_formatter.format(_creditTotal - _debitTotal)} $_currency'
+                                    : '\u200E${_formatter.format(_creditTotal - _debitTotal)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _creditTotal >= _debitTotal
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _fetchBalances,
-                    child: Text(loc.generateReport),
-                  ),
-                  const SizedBox(height: 24),
-                  // Results
-                  Card(
-                    child: ListTile(
-                      leading:
-                          const Icon(Icons.arrow_downward, color: Colors.green),
-                      title: Text(loc.totalCredit),
-                      trailing: Text(
-                        _currency != null
-                            ? '${_formatter.format(_creditTotal)} $_currency'
-                            : _formatter.format(_creditTotal),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      leading:
-                          const Icon(Icons.arrow_upward, color: Colors.red),
-                      title: Text(loc.totalDebit),
-                      trailing: Text(
-                        _currency != null
-                            ? '${_formatter.format(_debitTotal)} $_currency'
-                            : _formatter.format(_debitTotal),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.balance,
-                          color: AppTheme.primaryColor),
-                      title: Text(loc.balance),
-                      trailing: Text(
-                        _currency != null
-                            ? '\u200E${_formatter.format(_creditTotal - _debitTotal)} $_currency'
-                            : '\u200E${_formatter.format(_creditTotal - _debitTotal)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: _creditTotal >= _debitTotal
-                              ? Colors.green
-                              : Colors.red,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
+                ),
+              ));
   }
 }
