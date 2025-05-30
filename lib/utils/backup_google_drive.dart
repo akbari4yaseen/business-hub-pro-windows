@@ -12,9 +12,9 @@ class DriveBackupService {
   static const _prefsFolderIdKey = 'drive_businesshub_folder_id';
 
   static const _clientId =
-      '436609276204-8bsiurnijn29s0hbmmcni6qiuulelfrd.apps.googleusercontent.com'; // Web OAuth2 client ID
+      ''; // Web OAuth2 client ID
   static const _clientSecret =
-      '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'; // Web OAuth2 client secret
+      ''; // Web OAuth2 client secret
   static final _scopes = [drive.DriveApi.driveFileScope];
 
   drive.DriveApi? _driveApi;
