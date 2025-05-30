@@ -37,6 +37,10 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Initialize stock movements
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<InventoryProvider>().loadStockMovements(refresh: true);
+    });
   }
 
   @override

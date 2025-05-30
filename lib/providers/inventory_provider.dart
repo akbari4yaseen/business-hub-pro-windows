@@ -442,7 +442,12 @@ class InventoryProvider with ChangeNotifier {
         offset: _currentMovementsPage * _movementsPageSize,
       );
       
-      _stockMovements.addAll(newMovements);
+      if (refresh) {
+        _stockMovements = newMovements;
+      } else {
+        _stockMovements.addAll(newMovements);
+      }
+      
       _currentMovementsPage++;
       _hasMoreMovements = newMovements.length == _movementsPageSize;
       
