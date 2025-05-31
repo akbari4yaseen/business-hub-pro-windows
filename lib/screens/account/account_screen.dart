@@ -5,8 +5,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'transactions/transactions_screen.dart';
-// import 'edit_account_screen.dart';
-// import 'add_account_screen.dart';
 import 'print_accounts.dart';
 
 import '../../database/account_db.dart';
@@ -14,7 +12,7 @@ import '../../database/database_helper.dart';
 import '../../utils/transaction_helper.dart';
 import '../../utils/account_types.dart';
 import '../../utils/account_share_helper.dart';
-import '../../widgets/account/account_filter_bottom_sheet.dart';
+import '../../widgets/account/account_filter_dialog.dart';
 import '../../widgets/account/account_action_dialogs.dart';
 import '../../widgets/account/account_list_view.dart';
 import '../../widgets/search_bar.dart';
@@ -102,7 +100,7 @@ class _AccountScreenState extends State<AccountScreen>
 
   Future<void> _loadAccounts() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _activeAccounts = [];
@@ -118,7 +116,7 @@ class _AccountScreenState extends State<AccountScreen>
         _loadMoreActiveAccounts(reset: true),
         _loadMoreDeactivatedAccounts(reset: true),
       ]);
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -291,32 +289,30 @@ class _AccountScreenState extends State<AccountScreen>
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (c, setM) => Dialog(
-          child: FilterBottomSheet(
-            selectedAccountType: tmpType,
-            selectedCurrency: tmpCurr,
-            currencyOptions: _currencyOptions,
-            onChanged: ({accountType, currency}) {
-              setM(() {
-                if (accountType != null) tmpType = accountType;
-                if (currency != null) tmpCurr = currency;
-              });
-            },
-            onReset: () {
-              setM(() {
-                tmpType = null;
-                tmpCurr = null;
-              });
-            },
-            onApply: ({accountType, currency}) {
-              setState(() {
-                _selectedAccountType = tmpType;
-                _selectedCurrency = tmpCurr;
-              });
-              Navigator.pop(context);
-              _loadAccounts();
-            },
-          ),
+        builder: (c, setM) => AccountFilterBottomDialog(
+          selectedAccountType: tmpType,
+          selectedCurrency: tmpCurr,
+          currencyOptions: _currencyOptions,
+          onChanged: ({accountType, currency}) {
+            setM(() {
+              if (accountType != null) tmpType = accountType;
+              if (currency != null) tmpCurr = currency;
+            });
+          },
+          onReset: () {
+            setM(() {
+              tmpType = null;
+              tmpCurr = null;
+            });
+          },
+          onApply: ({accountType, currency}) {
+            setState(() {
+              _selectedAccountType = tmpType;
+              _selectedCurrency = tmpCurr;
+            });
+            Navigator.pop(context);
+            _loadAccounts();
+          },
         ),
       ),
     );
@@ -335,7 +331,7 @@ class _AccountScreenState extends State<AccountScreen>
         break;
       case 'edit':
         if (!mounted) return;
-        
+
         final result = await showDialog<Map<String, dynamic>>(
           context: context,
           barrierDismissible: true,
@@ -343,13 +339,15 @@ class _AccountScreenState extends State<AccountScreen>
             accountData: account,
             onSave: (accountData) async {
               try {
-                await AccountDBHelper().updateAccount(account['id'], accountData);
+                await AccountDBHelper()
+                    .updateAccount(account['id'], accountData);
                 Navigator.of(dialogContext).pop(accountData);
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(AppLocalizations.of(context)!.existsAccountError),
+                      content: Text(
+                          AppLocalizations.of(context)!.existsAccountError),
                     ),
                   );
                 }
@@ -357,7 +355,7 @@ class _AccountScreenState extends State<AccountScreen>
             },
           ),
         );
-        
+
         if (result != null && mounted) {
           await _loadAccounts();
         }
@@ -567,7 +565,7 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _addAccount() async {
     if (!mounted) return;
-    
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
@@ -580,7 +578,8 @@ class _AccountScreenState extends State<AccountScreen>
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(AppLocalizations.of(context)!.existsAccountError),
+                  content:
+                      Text(AppLocalizations.of(context)!.existsAccountError),
                 ),
               );
             }
@@ -588,7 +587,7 @@ class _AccountScreenState extends State<AccountScreen>
         },
       ),
     );
-    
+
     if (result != null && mounted) {
       await _loadAccounts();
     }

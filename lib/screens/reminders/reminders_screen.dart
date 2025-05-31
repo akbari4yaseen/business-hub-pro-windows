@@ -5,7 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../themes/app_theme.dart';
 
-import 'add_reminder_sheet.dart';
+import 'add_reminder_dialog.dart';
 import '../../models/reminder.dart';
 import '../../database/reminder_db.dart';
 import '../../widgets/search_bar.dart';
@@ -39,6 +39,12 @@ class NotificationService {
     await _plugin.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        windows: WindowsInitializationSettings(
+          appName: "BusinessHubPro",
+          iconPath: 'assets/images/app_logo.png',
+          appUserModelId: 'com.businesshubpro.app',
+          guid: '12345678-1234-1234-1234-123456789abc',
+        ),
       ),
     );
   }
@@ -177,19 +183,15 @@ class _RemindersScreenState extends State<RemindersScreen> {
     }
   }
 
-  Future<void> _showAddSheet({Reminder? existing}) async {
+  Future<void> _showAddDialog({Reminder? existing}) async {
     final newR = await showDialog<Reminder>(
       context: context,
-      builder: (_) => Dialog(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: AddReminderSheet(
-            reminder: existing,
-            onSave: (r) => Navigator.pop(context, r),
-          ),
-        ),
+      builder: (_) => AddReminderDialog(
+        reminder: existing,
+        onSave: (r) => Navigator.pop(context, r),
       ),
     );
+
     if (newR != null) {
       if (existing == null) {
         await _addReminder(newR);
@@ -270,7 +272,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                             onSelected: (opt) {
                               switch (opt) {
                                 case _MenuOption.edit:
-                                  _showAddSheet(existing: r);
+                                  _showAddDialog(existing: r);
                                   break;
                                 case _MenuOption.delete:
                                   _confirmDelete(r);
@@ -307,7 +309,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'reminders_add_fab',
-        onPressed: () => _showAddSheet(),
+        onPressed: () => _showAddDialog(),
         child: const Icon(Icons.add),
       ),
     );

@@ -137,9 +137,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> _selectDate(BuildContext context, bool isDueDate) async {
     final result = await pickLocalizedDate(
-      context: context,
-      initialDate: isDueDate ? (_dueDate ?? _date) : _date,
-    );
+        context: context,
+        initialDate: isDueDate ? (_dueDate ?? _date) : _date,
+        lastDate: isDueDate ? DateTime.now().add(Duration(days: 365)) : null);
     if (result != null) {
       setState(() {
         if (isDueDate) {
