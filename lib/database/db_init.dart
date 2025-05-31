@@ -176,6 +176,27 @@ class DbInit {
     ''');
 
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS exchanges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_account_id INTEGER NOT NULL,
+        to_account_id INTEGER NOT NULL,
+        from_currency VARCHAR(3) NOT NULL,
+        to_currency VARCHAR(3) NOT NULL,
+        operator VARCHAR(1) NOT NULL,
+        amount REAL NOT NULL,
+        rate REAL NOT NULL,
+        result_amount REAL NOT NULL,
+        expected_rate REAL,
+        profit_loss REAL DEFAULT 0,
+        transaction_type TEXT NOT NULL,
+        description TEXT,
+        timestamp TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        FOREIGN KEY (from_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+        FOREIGN KEY (to_account_id) REFERENCES accounts(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS current_stock (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
