@@ -7,6 +7,7 @@
   "home": "اصلي پاڼه",
   "journal": "روزنامچه",
   "accounts": "حسابونه",
+  "exchange": "د اسعار بدلول",
   "accountsPrint": "حسابونه",
   "reports": "راپورونه",
   "inventory": "گدام",
@@ -549,5 +550,8 @@
   "invoiceCancelled": "فاکتور لغوه شو",
   "yes": "هو",
   "no": "یه",
-  "summary": "خلاصه"
+  "summary": "خلاصه",
+  "newExchange": "نوې تبادله",
+  "editExchange": "د تبادلې سمون",
+  "refresh": "تازه کول"
 }

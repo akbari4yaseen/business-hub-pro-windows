@@ -476,6 +476,11 @@ class _AccountScreenState extends State<AccountScreen>
               onPressed: () => setState(() => _isSearching = true),
               tooltip: loc.search,
             ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadAccounts,
+            tooltip: loc.refresh,
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {

@@ -112,6 +112,8 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
         if (match.isNotEmpty) {
           _customTrackName =
               getLocalizedSystemAccountName(context, match['name']);
+        } else {
+          _customTrackName = AppLocalizations.of(context)!.track;
         }
       }
     });

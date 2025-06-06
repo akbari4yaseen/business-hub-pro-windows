@@ -135,7 +135,7 @@ bool Win32Window::Create(const std::wstring& title,
   double scale_factor = dpi / 96.0;
 
   HWND window = CreateWindow(
-      window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
+      window_class, title.c_str(), WS_OVERLAPPEDWINDOW | WS_MAXIMIZE,
       Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
       Scale(size.width, scale_factor), Scale(size.height, scale_factor),
       nullptr, nullptr, GetModuleHandle(nullptr), this);
@@ -144,13 +144,14 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  ShowWindow(window, SW_MAXIMIZE);
   UpdateTheme(window);
 
   return OnCreate();
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  return ShowWindow(window_handle_, SW_MAXIMIZE);
 }
 
 // static
@@ -195,6 +196,12 @@ Win32Window::MessageHandler(HWND hwnd,
       SetWindowPos(hwnd, nullptr, newRectSize->left, newRectSize->top, newWidth,
                    newHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 
+      return 0;
+    }
+    case WM_GETMINMAXINFO: {
+      LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+      lpMMI->ptMinTrackSize.x = 1440;  // Minimum width
+      lpMMI->ptMinTrackSize.y = 900;   // Minimum height
       return 0;
     }
     case WM_SIZE: {

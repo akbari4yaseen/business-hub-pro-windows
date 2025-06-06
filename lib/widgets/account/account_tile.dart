@@ -48,8 +48,8 @@ class AccountTile extends StatelessWidget {
     final iconColor = _iconColor(accountType, isActive);
 
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 2),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         onTap: () => onActionSelected('transactions'),
@@ -161,9 +161,9 @@ class AccountTile extends StatelessWidget {
     items.add(_buildMenuItem(
         'copy_balance', FontAwesomeIcons.copy, loc?.copyBalance ?? ''));
 
-    if (account['phone'] != null && (account['phone'] as String).isNotEmpty) {
-      items.add(_buildMenuItem('call', FontAwesomeIcons.phone, loc!.call));
-    }
+    // if (account['phone'] != null && (account['phone'] as String).isNotEmpty) {
+    //   items.add(_buildMenuItem('call', FontAwesomeIcons.phone, loc!.call));
+    // }
     return items;
   }
 

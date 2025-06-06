@@ -30,6 +30,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/reminders/reminders_screen.dart';
 import 'screens/inventory_screen.dart';
 import 'screens/invoice/invoice_screen.dart';
+import 'screens/exchange/exchange_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/about_screen.dart';
 import 'database/user_dao.dart';
@@ -131,6 +132,7 @@ class MyApp extends StatelessWidget {
         '/reports': (_) => const ReportsScreen(),
         '/help': (_) => const HelpScreen(),
         '/about': (_) => const AboutScreen(),
+        '/exchange': (_) => const ExchangeScreen(),
       },
 
       // Error handling for the entire app
@@ -225,6 +227,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
       const HomeScreen(),
       const JournalScreen(),
       const AccountScreen(),
+      ExchangeScreen(),
       const InventoryScreen(),
       const InvoiceScreen(),
       const ReportsScreen(),

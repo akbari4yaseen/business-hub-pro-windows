@@ -51,9 +51,11 @@ class JournalList extends StatelessWidget {
       itemCount: journals.length + (hasMore ? 1 : 0),
       itemBuilder: (ctx, i) {
         if (i >= journals.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
           );
         }
         final j = journals[i];
@@ -62,9 +64,8 @@ class JournalList extends StatelessWidget {
         final color = isCredit ? Colors.green : Colors.red;
 
         return Card(
-          elevation: 0,
           shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
-          margin: const EdgeInsets.symmetric(vertical: 2),
+          margin: const EdgeInsets.symmetric(vertical: 6),
           child: ListTile(
             onTap: () => onDetails(j),
             contentPadding:
@@ -133,7 +134,8 @@ class JournalList extends StatelessWidget {
                 PopupMenuItem(
                   value: 'edit',
                   child: ListTile(
-                    leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
+                    leading:
+                        const Icon(Icons.edit, color: AppTheme.primaryColor),
                     title: Text(loc.edit),
                   ),
                 ),

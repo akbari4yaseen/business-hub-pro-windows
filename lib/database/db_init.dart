@@ -188,9 +188,9 @@ class DbInit {
         result_amount REAL NOT NULL,
         expected_rate REAL,
         profit_loss REAL DEFAULT 0,
-        transaction_type TEXT NOT NULL,
+        transaction_type TEXT NOT NULL, -- e.g. 'exchange', 'cash_in', 'cash_out', 'cash_swap'
         description TEXT,
-        timestamp TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        date DATETIME NOT NULL,
         FOREIGN KEY (from_account_id) REFERENCES accounts(id) ON DELETE CASCADE,
         FOREIGN KEY (to_account_id) REFERENCES accounts(id) ON DELETE CASCADE
       )

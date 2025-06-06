@@ -6,6 +6,7 @@
   "home": "Home",
   "journal": "Journal",
   "accounts": "Accounts",
+  "exchange": "Exchange",
   "accountsPrint": "Accounts",
   "reports": "Reports",
   "inventory": "Inventory",
@@ -546,5 +547,8 @@
   "invoiceCancelled": "Invoice cancelled",
   "yes": "Yes",
   "no": "No",
-  "summary": "Summary"
+  "summary": "Summary",
+  "newExchange": "New Exchange",
+  "editExchange": "Edit Exchange",
+  "refresh": "Refresh"
 }
