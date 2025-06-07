@@ -20,11 +20,6 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
     setState(() => _isLoading = true);
     try {
       await _exchangeDb.getExchanges();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exchange data refreshed successfully')),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -80,8 +75,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ExchangeFormScreen(
-            // editingExchange: editingExchange?.toMap(),
-            ),
+          exchange: editingExchange,
+        ),
       ),
     );
 

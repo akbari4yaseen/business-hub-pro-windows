@@ -133,6 +133,7 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
               trailing: PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'edit') {
+                    print('Edit clicked for exchange: ${exchange.toMap()}');
                     widget.onEdit(exchange);
                   } else if (value == 'delete') {
                     widget.onDelete(exchange);

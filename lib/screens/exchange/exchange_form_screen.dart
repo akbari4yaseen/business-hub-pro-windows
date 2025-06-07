@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../database/exchange_db.dart';
+import '../../utils/utilities.dart';
 import '../../constants/currencies.dart';
 import '../../models/exchange.dart';
 import '../../database/account_db.dart';
@@ -18,7 +19,7 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _exchangeDB = ExchangeDBHelper();
   final _accountDB = AccountDBHelper();
-  
+
   late TextEditingController _fromAccountController;
   late TextEditingController _toAccountController;
   late TextEditingController _amountController;
@@ -26,16 +27,16 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
   late TextEditingController _expectedRateController;
   late TextEditingController _descriptionController;
   late TextEditingController _resultAmountController;
-  
+
   Map<String, dynamic>? _selectedFromAccount;
   Map<String, dynamic>? _selectedToAccount;
-  String _fromCurrency = 'USD';
-  String _toCurrency = 'EUR';
+  String _fromCurrency = 'AFN';
+  String _toCurrency = 'USD';
   String _operator = '*';
   DateTime _selectedDate = DateTime.now();
   String _transactionType = 'exchange';
   double _profitLoss = 0;
-  
+
   List<Map<String, dynamic>> _accounts = [];
   List<Map<String, dynamic>> _filteredFromAccounts = [];
   List<Map<String, dynamic>> _filteredToAccounts = [];
@@ -57,60 +58,123 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
     _expectedRateController = TextEditingController();
     _descriptionController = TextEditingController();
     _resultAmountController = TextEditingController();
-    
+
     _loadAccounts();
-    if (widget.exchange != null) {
-      _loadExchangeData();
+    _loadExchangeData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.exchange != null && _accounts.isNotEmpty) {
+      _updateControllers();
+    }
+  }
+
+  void _updateControllers() {
+    if (!mounted) return;
+
+    if (_selectedFromAccount != null) {
+      _fromAccountController.text = getLocalizedSystemAccountName(context, _selectedFromAccount!['name']);
+    }
+    
+    if (_selectedToAccount != null) {
+      _toAccountController.text = getLocalizedSystemAccountName(context, _selectedToAccount!['name']);
     }
   }
 
   Future<void> _loadAccounts() async {
-    final accounts = await _accountDB.getOptionAccounts();
-    setState(() {
-      _accounts = accounts;
-      _filteredFromAccounts = accounts;
-      _filteredToAccounts = accounts;
-    });
+    try {
+      final accounts = await _accountDB.getOptionAccounts();
+      if (mounted) {
+        setState(() {
+          _accounts = accounts;
+          _filteredFromAccounts = accounts;
+          _filteredToAccounts = accounts;
+        });
+        // Load exchange data after accounts are loaded
+        _loadExchangeData();
+      }
+    } catch (e) {
+      print('Error loading accounts: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading accounts: $e')),
+        );
+      }
+    }
   }
 
-  void _loadExchangeData() {
-    final exchange = widget.exchange!;
-    _fromAccountController.text =
-        _accounts.firstWhere((a) => a['id'] == exchange.fromAccountId)['name'];
-    _toAccountController.text =
-        _accounts.firstWhere((a) => a['id'] == exchange.toAccountId)['name'];
-    _amountController.text = exchange.amount.toString();
-    _rateController.text = exchange.rate.toString();
-    _resultAmountController.text = exchange.resultAmount.toString();
-    _expectedRateController.text = exchange.expectedRate?.toString() ?? '';
-    _descriptionController.text = exchange.description ?? '';
-    _fromCurrency = exchange.fromCurrency;
-    _toCurrency = exchange.toCurrency;
-    _operator = exchange.operator;
-    _selectedDate = DateTime.parse(exchange.date);
-    _transactionType = exchange.transactionType;
-    _profitLoss = exchange.profitLoss;
+  Future<void> _loadExchangeData() async {
+    if (widget.exchange == null) return;
 
-    _selectedFromAccount =
-        _accounts.firstWhere((a) => a['id'] == exchange.fromAccountId);
-    _selectedToAccount =
-        _accounts.firstWhere((a) => a['id'] == exchange.toAccountId);
+    try {
+      final exchange = widget.exchange!;
+      
+      // Set the selected accounts first
+      final fromAccount = _accounts.firstWhere(
+        (account) => account['id'] == exchange.fromAccountId,
+        orElse: () => _accounts.first,
+      );
+      final toAccount = _accounts.firstWhere(
+        (account) => account['id'] == exchange.toAccountId,
+        orElse: () => _accounts.first,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedFromAccount = fromAccount;
+        _selectedToAccount = toAccount;
+        _fromCurrency = exchange.fromCurrency;
+        _toCurrency = exchange.toCurrency;
+        _operator = exchange.operator;
+        _transactionType = exchange.transactionType;
+        _selectedDate = DateTime.parse(exchange.date);
+        _profitLoss = exchange.profitLoss;
+      });
+
+      // Update all controllers in one place
+      if (mounted) {
+        _amountController.text = exchange.amount.toString();
+        _rateController.text = exchange.rate.toString();
+        _expectedRateController.text = exchange.expectedRate?.toString() ?? '';
+        _descriptionController.text = exchange.description ?? '';
+        _resultAmountController.text = exchange.resultAmount.toString();
+        _updateControllers(); // Update account controllers
+      }
+
+      // Update filtered accounts after setting state
+      if (mounted) {
+        setState(() {
+          _filteredFromAccounts = _accounts;
+          _filteredToAccounts = _accounts;
+        });
+      }
+    } catch (e) {
+      print('Error loading exchange data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading exchange data: $e')),
+        );
+      }
+    }
   }
 
   void _calculateResultAmount() {
     if (_amountController.text.isEmpty || _rateController.text.isEmpty) return;
-    
+
     try {
       final amount = double.parse(_amountController.text);
       final rate = double.parse(_rateController.text);
       double resultAmount;
-      
+
       if (_operator == '*') {
         resultAmount = amount * rate;
       } else {
         resultAmount = amount / rate;
       }
-      
+
       setState(() {
         _resultAmountController.text = resultAmount.toStringAsFixed(2);
       });
@@ -119,13 +183,13 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
       if (_expectedRateController.text.isNotEmpty) {
         final expectedRate = double.parse(_expectedRateController.text);
         double expectedAmount;
-        
+
         if (_operator == '*') {
           expectedAmount = resultAmount / rate * expectedRate;
         } else {
           expectedAmount = resultAmount * rate / expectedRate;
         }
-        
+
         setState(() {
           _profitLoss = resultAmount - expectedAmount;
         });
@@ -167,21 +231,45 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
     }
 
     try {
-      await _exchangeDB.performExchange(
-        fromAccountId: _selectedFromAccount!['id'],
-        toAccountId: _selectedToAccount!['id'],
-        fromCurrency: _fromCurrency,
-        toCurrency: _toCurrency,
-        amount: double.parse(_amountController.text),
-        rate: double.parse(_rateController.text),
-        operator: _operator,
-        description: _descriptionController.text,
-        expectedRate: _expectedRateController.text.isNotEmpty
-            ? double.parse(_expectedRateController.text)
-            : null,
-        transactionType: _transactionType,
-        date: _selectedDate,
-      );
+      if (widget.exchange == null) {
+        // New exchange
+        await _exchangeDB.performExchange(
+          fromAccountId: _selectedFromAccount!['id'],
+          toAccountId: _selectedToAccount!['id'],
+          fromCurrency: _fromCurrency,
+          toCurrency: _toCurrency,
+          amount: double.parse(_amountController.text),
+          rate: double.parse(_rateController.text),
+          operator: _operator,
+          description: _descriptionController.text,
+          expectedRate: _expectedRateController.text.isNotEmpty
+              ? double.parse(_expectedRateController.text)
+              : null,
+          transactionType: _transactionType,
+          date: _selectedDate,
+        );
+      } else {
+        // Edit existing exchange
+        final updatedExchange = Exchange(
+          id: widget.exchange!.id,
+          fromAccountId: _selectedFromAccount!['id'],
+          toAccountId: _selectedToAccount!['id'],
+          fromCurrency: _fromCurrency,
+          toCurrency: _toCurrency,
+          operator: _operator,
+          amount: double.parse(_amountController.text),
+          rate: double.parse(_rateController.text),
+          resultAmount: double.parse(_resultAmountController.text),
+          expectedRate: _expectedRateController.text.isNotEmpty
+              ? double.parse(_expectedRateController.text)
+              : null,
+          profitLoss: _profitLoss,
+          transactionType: _transactionType,
+          description: _descriptionController.text,
+          date: _selectedDate.toIso8601String(),
+        );
+        await _exchangeDB.updateExchange(updatedExchange);
+      }
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -243,12 +331,15 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                     items: _transactionTypes
                                         .map((type) => DropdownMenuItem(
                                               value: type,
-                                              child: Text(type.replaceAll('_', ' ').toUpperCase()),
+                                              child: Text(type
+                                                  .replaceAll('_', ' ')
+                                                  .toUpperCase()),
                                             ))
                                         .toList(),
                                     onChanged: (value) {
                                       if (value != null) {
-                                        setState(() => _transactionType = value);
+                                        setState(
+                                            () => _transactionType = value);
                                       }
                                     },
                                   ),
@@ -256,23 +347,29 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
                                   // From Account Autocomplete
                                   Autocomplete<Map<String, dynamic>>(
-                                    optionsBuilder: (TextEditingValue textEditingValue) {
+                                    optionsBuilder:
+                                        (TextEditingValue textEditingValue) {
                                       if (textEditingValue.text.isEmpty) {
                                         return _accounts;
                                       }
                                       return _filteredFromAccounts;
                                     },
-                                    displayStringForOption: (Map<String, dynamic> account) =>
-                                        account['name'],
+                                    displayStringForOption:
+                                        (Map<String, dynamic> account) =>
+                                            getLocalizedSystemAccountName(
+                                                context, account['name']),
                                     onSelected: (Map<String, dynamic> account) {
                                       setState(() {
                                         _selectedFromAccount = account;
-                                        _fromAccountController.text = account['name'];
+                                        _fromAccountController.text = getLocalizedSystemAccountName(context, account['name']);
                                       });
                                     },
-                                    fieldViewBuilder: (context, textEditingController, focusNode,
+                                    fieldViewBuilder: (context,
+                                        textEditingController,
+                                        focusNode,
                                         onFieldSubmitted) {
-                                      _fromAccountController = textEditingController;
+                                      _fromAccountController =
+                                          textEditingController;
                                       return TextFormField(
                                         controller: textEditingController,
                                         focusNode: focusNode,
@@ -294,23 +391,29 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
                                   // To Account Autocomplete
                                   Autocomplete<Map<String, dynamic>>(
-                                    optionsBuilder: (TextEditingValue textEditingValue) {
+                                    optionsBuilder:
+                                        (TextEditingValue textEditingValue) {
                                       if (textEditingValue.text.isEmpty) {
                                         return _accounts;
                                       }
                                       return _filteredToAccounts;
                                     },
-                                    displayStringForOption: (Map<String, dynamic> account) =>
-                                        account['name'],
+                                    displayStringForOption:
+                                        (Map<String, dynamic> account) =>
+                                            getLocalizedSystemAccountName(
+                                                context, account['name']),
                                     onSelected: (Map<String, dynamic> account) {
                                       setState(() {
                                         _selectedToAccount = account;
-                                        _toAccountController.text = account['name'];
+                                        _toAccountController.text = getLocalizedSystemAccountName(context, account['name']);
                                       });
                                     },
-                                    fieldViewBuilder: (context, textEditingController, focusNode,
+                                    fieldViewBuilder: (context,
+                                        textEditingController,
+                                        focusNode,
                                         onFieldSubmitted) {
-                                      _toAccountController = textEditingController;
+                                      _toAccountController =
+                                          textEditingController;
                                       return TextFormField(
                                         controller: textEditingController,
                                         focusNode: focusNode,
@@ -341,14 +444,16 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                             border: OutlineInputBorder(),
                                           ),
                                           items: currencies
-                                              .map((currency) => DropdownMenuItem(
+                                              .map((currency) =>
+                                                  DropdownMenuItem(
                                                     value: currency,
                                                     child: Text(currency),
                                                   ))
                                               .toList(),
                                           onChanged: (value) {
                                             if (value != null) {
-                                              setState(() => _fromCurrency = value);
+                                              setState(
+                                                  () => _fromCurrency = value);
                                             }
                                           },
                                         ),
@@ -362,14 +467,16 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                             border: OutlineInputBorder(),
                                           ),
                                           items: currencies
-                                              .map((currency) => DropdownMenuItem(
+                                              .map((currency) =>
+                                                  DropdownMenuItem(
                                                     value: currency,
                                                     child: Text(currency),
                                                   ))
                                               .toList(),
                                           onChanged: (value) {
                                             if (value != null) {
-                                              setState(() => _toCurrency = value);
+                                              setState(
+                                                  () => _toCurrency = value);
                                             }
                                           },
                                         ),
@@ -395,12 +502,15 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                             border: OutlineInputBorder(),
                                           ),
                                           keyboardType: TextInputType.number,
-                                          onChanged: (_) => _calculateResultAmount(),
+                                          onChanged: (_) =>
+                                              _calculateResultAmount(),
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter an amount';
                                             }
-                                            if (double.tryParse(value) == null) {
+                                            if (double.tryParse(value) ==
+                                                null) {
                                               return 'Please enter a valid number';
                                             }
                                             return null;
@@ -416,12 +526,15 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                             border: OutlineInputBorder(),
                                           ),
                                           keyboardType: TextInputType.number,
-                                          onChanged: (_) => _calculateResultAmount(),
+                                          onChanged: (_) =>
+                                              _calculateResultAmount(),
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter a rate';
                                             }
-                                            if (double.tryParse(value) == null) {
+                                            if (double.tryParse(value) ==
+                                                null) {
                                               return 'Please enter a valid number';
                                             }
                                             return null;
@@ -440,8 +553,12 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                       border: OutlineInputBorder(),
                                     ),
                                     items: const [
-                                      DropdownMenuItem(value: '*', child: Text('Multiply (*)')),
-                                      DropdownMenuItem(value: '/', child: Text('Divide (/)')),
+                                      DropdownMenuItem(
+                                          value: '*',
+                                          child: Text('Multiply (*)')),
+                                      DropdownMenuItem(
+                                          value: '/',
+                                          child: Text('Divide (/)')),
                                     ],
                                     onChanged: (value) {
                                       if (value != null) {
@@ -491,17 +608,22 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: _profitLoss >= 0 ? Colors.green : Colors.red),
+                                            color: _profitLoss >= 0
+                                                ? Colors.green
+                                                : Colors.red),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           const Text('Profit/Loss:'),
                                           Text(
                                             _profitLoss.toStringAsFixed(2),
                                             style: TextStyle(
-                                              color: _profitLoss >= 0 ? Colors.green : Colors.red,
+                                              color: _profitLoss >= 0
+                                                  ? Colors.green
+                                                  : Colors.red,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -527,7 +649,9 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                               items: _transactionTypes
                                   .map((type) => DropdownMenuItem(
                                         value: type,
-                                        child: Text(type.replaceAll('_', ' ').toUpperCase()),
+                                        child: Text(type
+                                            .replaceAll('_', ' ')
+                                            .toUpperCase()),
                                       ))
                                   .toList(),
                               onChanged: (value) {
@@ -540,22 +664,24 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
                             // From Account Autocomplete
                             Autocomplete<Map<String, dynamic>>(
-                              optionsBuilder: (TextEditingValue textEditingValue) {
+                              optionsBuilder:
+                                  (TextEditingValue textEditingValue) {
                                 if (textEditingValue.text.isEmpty) {
                                   return _accounts;
                                 }
                                 return _filteredFromAccounts;
                               },
-                              displayStringForOption: (Map<String, dynamic> account) =>
-                                  account['name'],
+                              displayStringForOption:
+                                  (Map<String, dynamic> account) =>
+                                      account['name'],
                               onSelected: (Map<String, dynamic> account) {
                                 setState(() {
                                   _selectedFromAccount = account;
                                   _fromAccountController.text = account['name'];
                                 });
                               },
-                              fieldViewBuilder: (context, textEditingController, focusNode,
-                                  onFieldSubmitted) {
+                              fieldViewBuilder: (context, textEditingController,
+                                  focusNode, onFieldSubmitted) {
                                 _fromAccountController = textEditingController;
                                 return TextFormField(
                                   controller: textEditingController,
@@ -578,22 +704,24 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
                             // To Account Autocomplete
                             Autocomplete<Map<String, dynamic>>(
-                              optionsBuilder: (TextEditingValue textEditingValue) {
+                              optionsBuilder:
+                                  (TextEditingValue textEditingValue) {
                                 if (textEditingValue.text.isEmpty) {
                                   return _accounts;
                                 }
                                 return _filteredToAccounts;
                               },
-                              displayStringForOption: (Map<String, dynamic> account) =>
-                                  account['name'],
+                              displayStringForOption:
+                                  (Map<String, dynamic> account) =>
+                                      account['name'],
                               onSelected: (Map<String, dynamic> account) {
                                 setState(() {
                                   _selectedToAccount = account;
                                   _toAccountController.text = account['name'];
                                 });
                               },
-                              fieldViewBuilder: (context, textEditingController, focusNode,
-                                  onFieldSubmitted) {
+                              fieldViewBuilder: (context, textEditingController,
+                                  focusNode, onFieldSubmitted) {
                                 _toAccountController = textEditingController;
                                 return TextFormField(
                                   controller: textEditingController,
@@ -718,8 +846,10 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                 border: OutlineInputBorder(),
                               ),
                               items: const [
-                                DropdownMenuItem(value: '*', child: Text('Multiply (*)')),
-                                DropdownMenuItem(value: '/', child: Text('Divide (/)')),
+                                DropdownMenuItem(
+                                    value: '*', child: Text('Multiply (*)')),
+                                DropdownMenuItem(
+                                    value: '/', child: Text('Divide (/)')),
                               ],
                               onChanged: (value) {
                                 if (value != null) {
@@ -769,17 +899,22 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                      color: _profitLoss >= 0 ? Colors.green : Colors.red),
+                                      color: _profitLoss >= 0
+                                          ? Colors.green
+                                          : Colors.red),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text('Profit/Loss:'),
                                     Text(
                                       _profitLoss.toStringAsFixed(2),
                                       style: TextStyle(
-                                        color: _profitLoss >= 0 ? Colors.green : Colors.red,
+                                        color: _profitLoss >= 0
+                                            ? Colors.green
+                                            : Colors.red,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -816,7 +951,8 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Date'),
-                        subtitle: Text(DateFormat('yyyy-MM-dd').format(_selectedDate)),
+                        subtitle: Text(
+                            DateFormat('yyyy-MM-dd').format(_selectedDate)),
                         trailing: const Icon(Icons.calendar_today),
                         onTap: () async {
                           final date = await showDatePicker(
