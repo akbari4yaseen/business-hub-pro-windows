@@ -62,6 +62,7 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
     });
     try {
       final movement = StockMovement(
+        id: 0, // Replace with the appropriate ID value
         productId: _selectedProductId!,
         quantity: double.parse(_quantityController.text),
         type: _selectedType,
@@ -72,8 +73,9 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
             : _referenceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         expiryDate: _expiryDate,
-        date: _selectedDate,
+        date: _selectedDate ?? DateTime.now(),
         createdAt: _selectedDate ?? DateTime.now(),
+        updatedAt: DateTime.now(), // Replace with the appropriate updatedAt value
       );
       await widget.onSave(movement);
       if (mounted) {

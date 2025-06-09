@@ -353,6 +353,12 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         color = Colors.orange;
         icon = Icons.build;
         break;
+      case MovementType.purchase:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case MovementType.sale:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
 
     // Get unit name

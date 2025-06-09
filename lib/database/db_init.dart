@@ -122,6 +122,21 @@ class DbInit {
     ''');
 
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS product_units (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        unit_id INTEGER NOT NULL,
+        is_base_unit BOOLEAN NOT NULL DEFAULT 0,
+        conversion_rate REAL NOT NULL, -- 1 base unit = how many of this unit?
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (unit_id) REFERENCES units(id),
+        UNIQUE(product_id, unit_id)
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -131,6 +146,7 @@ class DbInit {
         minimum_stock REAL NOT NULL,
         reorder_point REAL DEFAULT 0,
         maximum_stock REAL,
+        base_unit_id INTEGER,
         has_expiry_date INTEGER NOT NULL,
         barcode TEXT,
         sku TEXT,
@@ -235,12 +251,51 @@ class DbInit {
         quantity REAL NOT NULL,
         unit_price REAL NOT NULL,
         description TEXT,
+        unit_id INTEGER,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products (id)
       )
     ''');
+
+    await db.execute('''
+     CREATE TABLE IF NOT EXISTS purchases (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      supplier_id INTEGER NOT NULL,
+      invoice_number TEXT,
+      date TEXT NOT NULL,
+      currency TEXT NOT NULL,
+      notes TEXT,
+      total_amount REAL DEFAULT 0,
+      paid_amount REAL DEFAULT 0,
+      due_date TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (supplier_id) REFERENCES accounts(id)
+    )
+
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS purchase_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        purchase_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity REAL NOT NULL,
+        unit_id INTEGER NOT NULL, -- e.g., Ton, Burlap, etc.
+        unit_price REAL NOT NULL,
+        expiry_date TEXT,
+        warehouse_id INTEGER NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id),
+        FOREIGN KEY (unit_id) REFERENCES units(id),
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
+      ) 
+''');
   }
 
   static Future<void> seedDefaults(Database db) async {

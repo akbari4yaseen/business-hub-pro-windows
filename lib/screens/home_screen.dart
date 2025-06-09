@@ -77,6 +77,16 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.alarm,
         onPressed: () => Navigator.pushNamed(context, '/reminders'),
       ),
+      _ActionData(
+        label: loc.help,
+        icon: Icons.help_outline,
+        onPressed: () => Navigator.pushNamed(context, '/help'),
+      ),
+      _ActionData(
+        label: loc.about,
+        icon: Icons.info_outline,
+        onPressed: () => Navigator.pushNamed(context, '/about'),
+      ),
       // add more here as needed
     ];
 

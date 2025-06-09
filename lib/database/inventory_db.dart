@@ -5,6 +5,7 @@ import '../models/warehouse.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart';
 import '../models/unit.dart';
+import '../models/product_unit.dart';
 
 class InventoryDB {
   static final InventoryDB _instance = InventoryDB._internal();
@@ -44,6 +45,96 @@ class InventoryDB {
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
+  // Product Unit operations
+  Future<int> insertProductUnit(ProductUnit productUnit) async {
+    final db = await _db;
+    return await db.insert('product_units', productUnit.toMap());
+  }
+
+  Future<int> updateProductUnit(ProductUnit productUnit) async {
+    final db = await _db;
+    return await db.update(
+      'product_units',
+      productUnit.toMap(),
+      where: 'id = ?',
+      whereArgs: [productUnit.id],
+    );
+  }
+
+  Future<int> deleteProductUnit(int id) async {
+    final db = await _db;
+    return await db.delete(
+      'product_units',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<List<ProductUnit>> getProductUnits(int productId) async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'product_units',
+      where: 'product_id = ?',
+      whereArgs: [productId],
+    );
+    return List.generate(maps.length, (i) => ProductUnit.fromMap(maps[i]));
+  }
+
+  // Current Stock operations
+  Future<List<Map<String, dynamic>>> getCurrentStock() async {
+    final db = await _db;
+    return await db.rawQuery('''
+      SELECT 
+        cs.*,
+        p.name as product_name,
+        p.description as product_description,
+        p.category_id,
+        p.unit_id,
+        p.minimum_stock,
+        p.has_expiry_date,
+        p.barcode,
+        w.name as warehouse_name
+      FROM current_stock cs
+      JOIN products p ON cs.product_id = p.id
+      JOIN warehouses w ON cs.warehouse_id = w.id
+      ORDER BY p.name, w.name
+    ''');
+  }
+
+  Future<void> updateCurrentStock({
+    required int productId,
+    required int warehouseId,
+    required double quantity,
+    DateTime? expiryDate,
+  }) async {
+    final db = await _db;
+    
+    // Check if stock record exists
+    final existing = await db.query(
+      'current_stock',
+      where: 'product_id = ? AND warehouse_id = ? AND expiry_date IS ?',
+      whereArgs: [productId, warehouseId, expiryDate?.toIso8601String()],
+    );
+
+    if (existing.isEmpty) {
+      // Insert new record
+      await db.insert('current_stock', {
+        'product_id': productId,
+        'warehouse_id': warehouseId,
+        'quantity': quantity,
+        'expiry_date': expiryDate?.toIso8601String(),
+      });
+    } else {
+      // Update existing record
+      await db.update(
+        'current_stock',
+        {'quantity': quantity},
+        where: 'product_id = ? AND warehouse_id = ? AND expiry_date IS ?',
+        whereArgs: [productId, warehouseId, expiryDate?.toIso8601String()],
+      );
+    }
+  }
+
   // Warehouse operations
   Future<int> insertWarehouse(Warehouse warehouse) async {
     final db = await _db;
@@ -62,7 +153,6 @@ class InventoryDB {
 
   Future<int> deleteWarehouse(int id) async {
     final db = await _db;
-    // Just delete the warehouse
     return await db.delete(
       'warehouses',
       where: 'id = ?',
@@ -77,75 +167,30 @@ class InventoryDB {
   }
 
   // Stock movement operations
-  Future<int> recordStockMovement(StockMovement movement) async {
+  Future<void> recordStockMovement(StockMovement movement) async {
     final db = await _db;
-    return await db.transaction((txn) async {
-      // Insert the movement record
-      final movementId = await txn.insert(
-        'stock_movements',
-        {
-          'product_id': movement.productId,
-          'source_warehouse_id': movement.sourceWarehouseId,
-          'destination_warehouse_id': movement.destinationWarehouseId,
-          'quantity': movement.quantity,
-          'type': movement.type.toString().split('.').last,
-          'reference': movement.reference,
-          'notes': movement.notes,
-          'date': movement.date?.toIso8601String(),
-          'expiry_date': movement.expiryDate?.toIso8601String(),
-          'created_at': movement.createdAt.toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-      );
+    await db.transaction((txn) async {
+      // Insert movement record
+      await txn.insert('stock_movements', movement.toMap());
 
-      // Update source warehouse stock
+      // Update current stock
       if (movement.sourceWarehouseId != null) {
-        await txn.rawUpdate('''
-          UPDATE current_stock
-          SET quantity = quantity - ?
-          WHERE product_id = ? AND warehouse_id = ?
-        ''', [
-          movement.quantity,
-          movement.productId,
-          movement.sourceWarehouseId,
-        ]);
-      }
-
-      // Update destination warehouse stock
-      if (movement.destinationWarehouseId != null) {
-        // Check if stock record exists
-        final existingStock = await txn.query(
-          'current_stock',
-          where: 'product_id = ? AND warehouse_id = ?',
-          whereArgs: [movement.productId, movement.destinationWarehouseId],
+        await updateCurrentStock(
+          productId: movement.productId,
+          warehouseId: movement.sourceWarehouseId!,
+          quantity: -movement.quantity,
+          expiryDate: movement.expiryDate,
         );
-
-        if (existingStock.isEmpty) {
-          // Create new stock record
-          await txn.insert(
-            'current_stock',
-            {
-              'product_id': movement.productId,
-              'warehouse_id': movement.destinationWarehouseId,
-              'quantity': movement.quantity,
-              'expiry_date': movement.expiryDate?.toIso8601String(),
-            },
-          );
-        } else {
-          // Update existing stock record
-          await txn.rawUpdate('''
-            UPDATE current_stock
-            SET quantity = quantity + ?
-            WHERE product_id = ? AND warehouse_id = ?
-          ''', [
-            movement.quantity,
-            movement.productId,
-            movement.destinationWarehouseId,
-          ]);
-        }
       }
 
-      return movementId;
+      if (movement.destinationWarehouseId != null) {
+        await updateCurrentStock(
+          productId: movement.productId,
+          warehouseId: movement.destinationWarehouseId!,
+          quantity: movement.quantity,
+          expiryDate: movement.expiryDate,
+        );
+      }
     });
   }
 
@@ -154,97 +199,13 @@ class InventoryDB {
     int? offset,
   }) async {
     final db = await _db;
-    final args = <dynamic>[];
-
-    // Add pagination parameters
-    if (limit != null) {
-      args.add(limit);
-      if (offset != null) {
-        args.add(offset);
-      }
-    } else if (offset != null) {
-      args.add(offset);
-    }
-
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT 
-        sm.*,
-        p.name as product_name,
-        u.name as unit_name,
-        sw.name as source_warehouse_name,
-        dw.name as destination_warehouse_name
-      FROM stock_movements sm
-      JOIN products p ON sm.product_id = p.id
-      LEFT JOIN units u ON p.unit_id = u.id
-      LEFT JOIN warehouses sw ON sm.source_warehouse_id = sw.id
-      LEFT JOIN warehouses dw ON sm.destination_warehouse_id = dw.id
-      ORDER BY sm.created_at DESC
-      ${limit != null ? 'LIMIT ?' : ''}
-      ${offset != null ? 'OFFSET ?' : ''}
-    ''', args);
-
-    return maps.map((map) => StockMovement.fromMap(map)).toList();
-  }
-
-  // Query operations
-  Future<List<Map<String, dynamic>>> getCurrentStock() async {
-    final db = await _db;
-    return await db.rawQuery('''
-      SELECT 
-        cs.*,
-        p.name as product_name,
-        p.description as product_description,
-        p.minimum_stock,
-        p.maximum_stock,
-        p.has_expiry_date,
-        p.barcode,
-        p.sku,
-        p.brand,
-        c.name as category_name,
-        u.name as unit_name,
-        u.symbol as unit_symbol,
-        w.name as warehouse_name
-      FROM current_stock cs
-      JOIN products p ON cs.product_id = p.id
-      JOIN categories c ON p.category_id = c.id
-      JOIN units u ON p.unit_id = u.id
-      LEFT JOIN warehouses w ON cs.warehouse_id = w.id
-      WHERE p.is_active = 1
-    ''');
-  }
-
-  Future<List<Map<String, dynamic>>> getLowStockProducts() async {
-    final db = await _db;
-    return await db.rawQuery('''
-      SELECT 
-        p.name as product_name,
-        p.minimum_stock,
-        COALESCE(SUM(cs.quantity), 0) as current_stock
-      FROM products p
-      LEFT JOIN current_stock cs ON p.id = cs.product_id
-      GROUP BY p.id
-      HAVING current_stock <= p.minimum_stock
-      ORDER BY p.name
-    ''');
-  }
-
-  Future<List<Map<String, dynamic>>> getExpiringProducts(
-      int daysThreshold) async {
-    final db = await _db;
-    final thresholdDate = DateTime.now().add(Duration(days: daysThreshold));
-    return await db.rawQuery('''
-      SELECT 
-        p.name as product_name,
-        w.name as warehouse_name,
-        cs.quantity,
-        cs.expiry_date
-      FROM current_stock cs
-      JOIN products p ON cs.product_id = p.id
-      LEFT JOIN warehouses w ON cs.warehouse_id = w.id
-      WHERE cs.expiry_date IS NOT NULL 
-        AND cs.expiry_date <= ?
-      ORDER BY cs.expiry_date
-    ''', [thresholdDate.toIso8601String()]);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'stock_movements',
+      orderBy: 'date DESC',
+      limit: limit,
+      offset: offset,
+    );
+    return List.generate(maps.length, (i) => StockMovement.fromMap(maps[i]));
   }
 
   // Category operations
@@ -307,5 +268,40 @@ class InventoryDB {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query('units');
     return List.generate(maps.length, (i) => Unit.fromMap(maps[i]));
+  }
+
+  // Helper methods
+  Future<List<Map<String, dynamic>>> getLowStockProducts() async {
+    final db = await _db;
+    return await db.rawQuery('''
+      SELECT 
+        p.*,
+        cs.quantity as current_stock,
+        w.name as warehouse_name
+      FROM products p
+      JOIN current_stock cs ON p.id = cs.product_id
+      JOIN warehouses w ON cs.warehouse_id = w.id
+      WHERE cs.quantity <= p.minimum_stock
+      ORDER BY cs.quantity ASC
+    ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getExpiringProducts(int days) async {
+    final db = await _db;
+    final expiryDate = DateTime.now().add(Duration(days: days));
+    return await db.rawQuery('''
+      SELECT 
+        p.*,
+        cs.quantity as current_stock,
+        cs.expiry_date,
+        w.name as warehouse_name
+      FROM products p
+      JOIN current_stock cs ON p.id = cs.product_id
+      JOIN warehouses w ON cs.warehouse_id = w.id
+      WHERE p.has_expiry_date = 1
+        AND cs.expiry_date IS NOT NULL
+        AND cs.expiry_date <= ?
+      ORDER BY cs.expiry_date ASC
+    ''', [expiryDate.toIso8601String()]);
   }
 }

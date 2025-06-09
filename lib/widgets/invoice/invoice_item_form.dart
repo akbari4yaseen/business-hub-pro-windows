@@ -118,9 +118,9 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                             products.firstWhere((p) => p.id == option['id']);
 
                         // Set description if the product has one
-                        if (product.description.isNotEmpty) {
+                        if (product.description != null && product.description!.isNotEmpty) {
                           widget.formData.descriptionController.text =
-                              product.description;
+                              product.description!;
                         }
 
                         // Check if we have stock

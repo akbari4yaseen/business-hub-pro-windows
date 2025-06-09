@@ -1,12 +1,13 @@
 class Product {
-  final int? id;
+  final int id;
   final String name;
-  final String description;
+  final String? description;
   final int categoryId;
   final int unitId;
   final double minimumStock;
-  final double reorderPoint;
-  final double maximumStock;
+  final double? reorderPoint;
+  final double? maximumStock;
+  final int? baseUnitId;
   final bool hasExpiryDate;
   final String? barcode;
   final String? sku;
@@ -17,24 +18,24 @@ class Product {
   final DateTime updatedAt;
 
   Product({
-    this.id,
+    required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.categoryId,
     required this.unitId,
     required this.minimumStock,
-    this.reorderPoint = 0,
-    this.maximumStock = double.infinity,
-    this.hasExpiryDate = false,
+    this.reorderPoint,
+    this.maximumStock,
+    this.baseUnitId,
+    required this.hasExpiryDate,
     this.barcode,
     this.sku,
     this.brand,
     this.customFields,
-    this.isActive = true,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -46,11 +47,12 @@ class Product {
       'minimum_stock': minimumStock,
       'reorder_point': reorderPoint,
       'maximum_stock': maximumStock,
+      'base_unit_id': baseUnitId,
       'has_expiry_date': hasExpiryDate ? 1 : 0,
       'barcode': barcode,
       'sku': sku,
       'brand': brand,
-      'custom_fields': customFields != null ? customFieldsToString(customFields!) : null,
+      'custom_fields': customFields != null ? customFields.toString() : null,
       'is_active': isActive ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -59,41 +61,26 @@ class Product {
 
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      categoryId: map['category_id'],
-      unitId: map['unit_id'],
-      minimumStock: map['minimum_stock'],
-      reorderPoint: map['reorder_point'] ?? 0,
-      maximumStock: map['maximum_stock'] ?? double.infinity,
+      id: map['id'] as int,
+      name: map['name'] as String,
+      description: map['description'] as String?,
+      categoryId: map['category_id'] as int,
+      unitId: map['unit_id'] as int,
+      minimumStock: map['minimum_stock'] as double,
+      reorderPoint: map['reorder_point'] as double?,
+      maximumStock: map['maximum_stock'] as double?,
+      baseUnitId: map['base_unit_id'] as int?,
       hasExpiryDate: map['has_expiry_date'] == 1,
-      barcode: map['barcode'],
-      sku: map['sku'],
-      brand: map['brand'],
-      customFields: map['custom_fields'] != null ? stringToCustomFields(map['custom_fields']) : null,
+      barcode: map['barcode'] as String?,
+      sku: map['sku'] as String?,
+      brand: map['brand'] as String?,
+      customFields: map['custom_fields'] != null 
+          ? Map<String, dynamic>.from(map['custom_fields'] as Map)
+          : null,
       isActive: map['is_active'] == 1,
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
-  }
-
-  static String customFieldsToString(Map<String, dynamic> fields) {
-    return fields.toString();
-  }
-
-  static Map<String, dynamic> stringToCustomFields(String str) {
-    final map = <String, dynamic>{};
-    str = str.substring(1, str.length - 1);
-    for (var pair in str.split(',')) {
-      var parts = pair.split(':');
-      if (parts.length == 2) {
-        var key = parts[0].trim();
-        var value = parts[1].trim();
-        map[key] = value;
-      }
-    }
-    return map;
   }
 
   Product copyWith({
@@ -105,6 +92,7 @@ class Product {
     double? minimumStock,
     double? reorderPoint,
     double? maximumStock,
+    int? baseUnitId,
     bool? hasExpiryDate,
     String? barcode,
     String? sku,
@@ -123,6 +111,7 @@ class Product {
       minimumStock: minimumStock ?? this.minimumStock,
       reorderPoint: reorderPoint ?? this.reorderPoint,
       maximumStock: maximumStock ?? this.maximumStock,
+      baseUnitId: baseUnitId ?? this.baseUnitId,
       hasExpiryDate: hasExpiryDate ?? this.hasExpiryDate,
       barcode: barcode ?? this.barcode,
       sku: sku ?? this.sku,

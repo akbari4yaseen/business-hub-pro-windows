@@ -5,6 +5,7 @@ import '../models/warehouse.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart' as inventory_models;
 import '../models/unit.dart';
+import '../models/product_unit.dart';
 
 class InventoryProvider with ChangeNotifier {
   final InventoryDB _db = InventoryDB();
@@ -17,6 +18,7 @@ class InventoryProvider with ChangeNotifier {
   List<Warehouse> _warehouses = [];
   List<StockMovement> _stockMovements = [];
   List<Product> _allProducts = [];
+  Map<int, List<ProductUnit>> _productUnits = {};
   bool _isLoading = false;
   String? _error;
   bool _isLoadingMovements = false;
@@ -77,6 +79,9 @@ class InventoryProvider with ChangeNotifier {
             minimumStock: item['minimum_stock'] as double? ?? 0,
             hasExpiryDate: item['has_expiry_date'] == 1,
             barcode: item['barcode'] as String?,
+            isActive: item['is_active'] as bool? ?? true,
+            createdAt: item['created_at'] as DateTime? ?? DateTime.now(),
+            updatedAt: item['updated_at'] as DateTime? ?? DateTime.now(),
           );
         } catch (e) {
           debugPrint('Error creating product from stock: $e');
@@ -94,37 +99,104 @@ class InventoryProvider with ChangeNotifier {
         .toList();
   }
 
+  // Get product units
+  List<ProductUnit> getProductUnits(int productId) {
+    return _productUnits[productId] ?? [];
+  }
+
+  // Get base unit for a product
+  ProductUnit? getBaseUnit(int productId) {
+    final units = _productUnits[productId];
+    if (units == null || units.isEmpty) return null;
+    return units.firstWhere((u) => u.isBaseUnit, orElse: () => units.first);
+  }
+
+  // Convert quantity between units
+  double convertQuantity({
+    required int productId,
+    required double quantity,
+    required int fromUnitId,
+    required int toUnitId,
+  }) {
+    final units = _productUnits[productId];
+    if (units == null) return quantity;
+
+    final fromUnit = units.firstWhere((u) => u.unitId == fromUnitId);
+    final toUnit = units.firstWhere((u) => u.unitId == toUnitId);
+
+    // Convert to base unit first
+    final baseQuantity = quantity * fromUnit.conversionRate;
+    // Then convert to target unit
+    return baseQuantity / toUnit.conversionRate;
+  }
+
   // Product operations
-  Future<void> addProduct(Product product) async {
+  Future<void> addProduct(Product product, List<ProductUnit> units) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      await _db.insertProduct(product);
+      final productId = await _db.insertProduct(product);
+      
+      // Add product units
+      for (var unit in units) {
+        await _db.insertProductUnit(
+          ProductUnit(
+            id: 0, // Will be set by database
+            productId: productId,
+            unitId: unit.unitId,
+            isBaseUnit: unit.isBaseUnit,
+            conversionRate: unit.conversionRate,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
 
-      // Refresh data after adding
       await refreshData();
     } catch (e) {
       debugPrint('Error adding product: $e');
       _error = e.toString();
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> updateProduct(Product product) async {
+  Future<void> updateProduct(Product product, List<ProductUnit> units) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       await _db.updateProduct(product);
 
-      // Refresh data after updating
+      // Delete existing units
+      final existingUnits = await _db.getProductUnits(product.id);
+      for (var unit in existingUnits) {
+        await _db.deleteProductUnit(unit.id);
+      }
+
+      // Add new units
+      for (var unit in units) {
+        await _db.insertProductUnit(
+          ProductUnit(
+            id: 0, // Will be set by database
+            productId: product.id,
+            unitId: unit.unitId,
+            isBaseUnit: unit.isBaseUnit,
+            conversionRate: unit.conversionRate,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
+
       await refreshData();
     } catch (e) {
       debugPrint('Error updating product: $e');
       _error = e.toString();
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -177,7 +249,6 @@ class InventoryProvider with ChangeNotifier {
   Future<void> recordStockMovement(StockMovement movement) async {
     try {
       await _db.recordStockMovement(movement);
-      // Only refresh the critical data to reduce memory pressure
       await _refreshCurrentStock();
       await _refreshStockMovements();
       notifyListeners();
@@ -195,10 +266,14 @@ class InventoryProvider with ChangeNotifier {
   }) async {
     try {
       final movement = StockMovement(
+        id: 0, // Provide a default or appropriate value
         productId: productId,
         quantity: quantity,
         type: quantity > 0 ? MovementType.stockIn : MovementType.stockOut,
         reference: reference,
+        date: DateTime.now(), // Provide the current date or appropriate value
+        createdAt: DateTime.now(), // Provide the current date or appropriate value
+        updatedAt: DateTime.now(), // Provide the current date or appropriate value
       );
       await recordStockMovement(movement);
     } catch (e) {
@@ -323,7 +398,6 @@ class InventoryProvider with ChangeNotifier {
       _currentStock = await _db.getCurrentStock();
     } catch (e) {
       debugPrint('Error refreshing current stock: $e');
-      // Don't rethrow to prevent UI crashes, just use existing data
     }
   }
 
@@ -370,6 +444,12 @@ class InventoryProvider with ChangeNotifier {
   Future<void> _refreshProducts() async {
     try {
       _allProducts = await _db.getProducts();
+      
+      // Load product units
+      _productUnits.clear();
+      for (var product in _allProducts) {
+        _productUnits[product.id] = await _db.getProductUnits(product.id);
+      }
     } catch (e) {
       debugPrint('Error refreshing products: $e');
     }
@@ -389,15 +469,16 @@ class InventoryProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Load data in sequence to reduce memory pressure
-      await _refreshCurrentStock();
-      await _refreshLowStockProducts();
-      await _refreshExpiringProducts();
-      await _refreshCategories();
-      await _refreshUnits();
-      await _refreshWarehouses();
-      await _refreshProducts();
-      await _refreshStockMovements();
+      await Future.wait([
+        _refreshCurrentStock(),
+        _refreshLowStockProducts(),
+        _refreshExpiringProducts(),
+        _refreshCategories(),
+        _refreshUnits(),
+        _refreshWarehouses(),
+        _refreshProducts(),
+        _refreshStockMovements(),
+      ]);
     } catch (e) {
       debugPrint('Error refreshing inventory data: $e');
     } finally {

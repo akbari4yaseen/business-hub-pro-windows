@@ -14,6 +14,10 @@ extension MovementTypeLocalization on MovementType {
         return l10n.movementType_transfer;
       case MovementType.adjustment:
         return l10n.movementType_adjustment;
+      case MovementType.purchase:
+        return l10n.movementType_purchase;
+      case MovementType.sale:
+        return l10n.movementType_sale;
     }
   }
 }

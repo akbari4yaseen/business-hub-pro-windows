@@ -15,6 +15,7 @@ import 'providers/notification_provider.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/invoice_provider.dart';
 import 'providers/account_provider.dart';
+import 'providers/purchase_provider.dart';
 
 import 'widgets/windows_drawer_menu.dart';
 
@@ -23,6 +24,7 @@ import 'screens/home_screen.dart';
 import 'screens/journal/journal_screen.dart';
 import 'screens/account/account_screen.dart';
 import 'screens/reports/reports_screen.dart';
+import 'screens/purchase/purchase_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/settings/user_settings.dart';
 import 'screens/settings/company_info.dart';
@@ -76,10 +78,12 @@ void main() async {
 
   // Initialize providers
   final inventoryProvider = InventoryProvider();
+  final purchaseProvider = PurchaseProvider();
   try {
     await inventoryProvider.initialize();
+    await purchaseProvider.initialize();
   } catch (e) {
-    debugPrint('Error initializing inventory provider: $e');
+    debugPrint('Error initializing providers: $e');
   }
 
   // 4) Launch the app with a dynamic initialRoute
@@ -92,6 +96,7 @@ void main() async {
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider(create: (_) => InfoProvider()),
         ChangeNotifierProvider.value(value: inventoryProvider),
+        ChangeNotifierProvider.value(value: purchaseProvider),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(
             create: (context) =>
@@ -229,6 +234,7 @@ class _BottomNavigationAppState extends State<BottomNavigationApp> {
       const AccountScreen(),
       ExchangeScreen(),
       const InventoryScreen(),
+      const PurchaseScreen(),
       const InvoiceScreen(),
       const ReportsScreen(),
       const RemindersScreen(),
