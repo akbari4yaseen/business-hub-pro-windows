@@ -362,6 +362,14 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                       _fromAccountController.text =
                                           getLocalizedSystemAccountName(
                                               context, account['name']);
+
+                                      // Also set the 'to' account if not already selected
+                                      if (_selectedToAccount == null) {
+                                        _selectedToAccount = account;
+                                        _toAccountController.text =
+                                            getLocalizedSystemAccountName(
+                                                context, account['name']);
+                                      }
                                     });
                                   },
                                   fieldViewBuilder: (context,
