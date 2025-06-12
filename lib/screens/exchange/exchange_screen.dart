@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../database/exchange_db.dart';
 import '../../models/exchange.dart';
 import '../../widgets/exchange_list_widget.dart';
@@ -22,8 +23,9 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
       await _exchangeDb.getExchanges();
     } catch (e) {
       if (mounted) {
+        final loc = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error refreshing data: ${e.toString()}')),
+          SnackBar(content: Text('${loc.errorRefreshingData}: ${e.toString()}')),
         );
       }
     } finally {
@@ -34,19 +36,20 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
   }
 
   Future<void> _deleteExchange(Exchange exchange) async {
+    final loc = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Exchange'),
-        content: const Text('Are you sure you want to delete this exchange?'),
+        title: Text(loc.deleteExchangeTitle),
+        content: Text(loc.deleteExchangeConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(loc.delete),
           ),
         ],
       ),
@@ -57,13 +60,13 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
         await _exchangeDb.deleteExchange(exchange.id!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Exchange deleted successfully')),
+            SnackBar(content: Text(loc.exchangeDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting exchange: ${e.toString()}')),
+            SnackBar(content: Text('${loc.errorDeletingExchange}: ${e.toString()}')),
           );
         }
       }
@@ -87,6 +90,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -97,7 +102,7 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exchange'),
+        title: Text(loc.exchange),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

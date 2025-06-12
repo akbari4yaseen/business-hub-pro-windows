@@ -86,10 +86,12 @@ class ProductDetailsSheet extends StatelessWidget {
                     [
                       _buildDetailRow(loc.minStock,
                           _numberFormatter.format(product.minimumStock)),
-                      _buildDetailRow(loc.maxStock,
-                          _numberFormatter.format(product.maximumStock)),
-                      _buildDetailRow(loc.reorderPoint,
-                          _numberFormatter.format(product.reorderPoint)),
+                      if (product.maximumStock != null)
+                        _buildDetailRow(loc.maxStock,
+                            _numberFormatter.format(product.maximumStock)),
+                      if (product.reorderPoint != null)
+                        _buildDetailRow(loc.reorderPoint,
+                            _numberFormatter.format(product.reorderPoint)),
                     ],
                   ),
                   _buildDetailCard(

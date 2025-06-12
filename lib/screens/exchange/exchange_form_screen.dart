@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../database/exchange_db.dart';
 import '../../utils/utilities.dart';
 import '../../constants/currencies.dart';
 import '../../models/exchange.dart';
 import '../../database/account_db.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
 
 class ExchangeFormScreen extends StatefulWidget {
   final Exchange? exchange;
@@ -75,11 +77,13 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
     if (!mounted) return;
 
     if (_selectedFromAccount != null) {
-      _fromAccountController.text = getLocalizedSystemAccountName(context, _selectedFromAccount!['name']);
+      _fromAccountController.text =
+          getLocalizedSystemAccountName(context, _selectedFromAccount!['name']);
     }
-    
+
     if (_selectedToAccount != null) {
-      _toAccountController.text = getLocalizedSystemAccountName(context, _selectedToAccount!['name']);
+      _toAccountController.text =
+          getLocalizedSystemAccountName(context, _selectedToAccount!['name']);
     }
   }
 
@@ -96,7 +100,6 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
         _loadExchangeData();
       }
     } catch (e) {
-      print('Error loading accounts: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading accounts: $e')),
@@ -110,7 +113,7 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
     try {
       final exchange = widget.exchange!;
-      
+
       // Set the selected accounts first
       final fromAccount = _accounts.firstWhere(
         (account) => account['id'] == exchange.fromAccountId,
@@ -285,15 +288,17 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.exchange == null ? 'New Exchange' : 'Edit Exchange'),
+        title:
+            Text(widget.exchange == null ? loc.newExchange : loc.editExchange),
       ),
       body: Form(
         key: _formKey,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isWideScreen = constraints.maxWidth > 800;
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Center(
@@ -303,8 +308,8 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Header Section
-                      const Text(
-                        'Exchange Details',
+                      Text(
+                        loc.exchangeDetails,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -312,623 +317,313 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Main Form Content
-                      if (isWideScreen)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Column
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  // Transaction Type Selection
-                                  DropdownButtonFormField<String>(
-                                    value: _transactionType,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Transaction Type',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    items: _transactionTypes
-                                        .map((type) => DropdownMenuItem(
-                                              value: type,
-                                              child: Text(type
-                                                  .replaceAll('_', ' ')
-                                                  .toUpperCase()),
-                                            ))
-                                        .toList(),
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(
-                                            () => _transactionType = value);
-                                      }
-                                    },
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left Column
+                          Expanded(
+                            child: Column(
+                              children: [
+                                // Transaction Type Selection
+                                DropdownButtonFormField<String>(
+                                  value: _transactionType,
+                                  decoration: InputDecoration(
+                                    labelText: loc.transactionType,
                                   ),
-                                  const SizedBox(height: 16),
+                                  items: _transactionTypes
+                                      .map((type) => DropdownMenuItem(
+                                            value: type,
+                                            child: Text(type
+                                                .replaceAll('_', ' ')
+                                                .toUpperCase()),
+                                          ))
+                                      .toList(),
+                                  onChanged: null, // disables the dropdown
+                                ),
 
-                                  // From Account Autocomplete
-                                  Autocomplete<Map<String, dynamic>>(
-                                    optionsBuilder:
-                                        (TextEditingValue textEditingValue) {
-                                      if (textEditingValue.text.isEmpty) {
-                                        return _accounts;
-                                      }
-                                      return _filteredFromAccounts;
-                                    },
-                                    displayStringForOption:
-                                        (Map<String, dynamic> account) =>
-                                            getLocalizedSystemAccountName(
-                                                context, account['name']),
-                                    onSelected: (Map<String, dynamic> account) {
-                                      setState(() {
-                                        _selectedFromAccount = account;
-                                        _fromAccountController.text = getLocalizedSystemAccountName(context, account['name']);
-                                      });
-                                    },
-                                    fieldViewBuilder: (context,
-                                        textEditingController,
-                                        focusNode,
-                                        onFieldSubmitted) {
-                                      _fromAccountController =
-                                          textEditingController;
-                                      return TextFormField(
-                                        controller: textEditingController,
-                                        focusNode: focusNode,
-                                        decoration: const InputDecoration(
-                                          labelText: 'From Account',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: _filterFromAccounts,
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Please select an account';
-                                          }
-                                          return null;
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
+                                const SizedBox(height: 16),
 
-                                  // To Account Autocomplete
-                                  Autocomplete<Map<String, dynamic>>(
-                                    optionsBuilder:
-                                        (TextEditingValue textEditingValue) {
-                                      if (textEditingValue.text.isEmpty) {
-                                        return _accounts;
-                                      }
-                                      return _filteredToAccounts;
-                                    },
-                                    displayStringForOption:
-                                        (Map<String, dynamic> account) =>
-                                            getLocalizedSystemAccountName(
-                                                context, account['name']),
-                                    onSelected: (Map<String, dynamic> account) {
-                                      setState(() {
-                                        _selectedToAccount = account;
-                                        _toAccountController.text = getLocalizedSystemAccountName(context, account['name']);
-                                      });
-                                    },
-                                    fieldViewBuilder: (context,
-                                        textEditingController,
-                                        focusNode,
-                                        onFieldSubmitted) {
-                                      _toAccountController =
-                                          textEditingController;
-                                      return TextFormField(
-                                        controller: textEditingController,
-                                        focusNode: focusNode,
-                                        decoration: const InputDecoration(
-                                          labelText: 'To Account',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: _filterToAccounts,
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Please select an account';
-                                          }
-                                          return null;
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Currencies
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: DropdownButtonFormField<String>(
-                                          value: _fromCurrency,
-                                          decoration: const InputDecoration(
-                                            labelText: 'From Currency',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          items: currencies
-                                              .map((currency) =>
-                                                  DropdownMenuItem(
-                                                    value: currency,
-                                                    child: Text(currency),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (value) {
-                                            if (value != null) {
-                                              setState(
-                                                  () => _fromCurrency = value);
-                                            }
-                                          },
-                                        ),
+                                // From Account Autocomplete
+                                Autocomplete<Map<String, dynamic>>(
+                                  optionsBuilder:
+                                      (TextEditingValue textEditingValue) {
+                                    if (textEditingValue.text.isEmpty) {
+                                      return _accounts;
+                                    }
+                                    return _filteredFromAccounts;
+                                  },
+                                  displayStringForOption:
+                                      (Map<String, dynamic> account) =>
+                                          getLocalizedSystemAccountName(
+                                              context, account['name']),
+                                  onSelected: (Map<String, dynamic> account) {
+                                    setState(() {
+                                      _selectedFromAccount = account;
+                                      _fromAccountController.text =
+                                          getLocalizedSystemAccountName(
+                                              context, account['name']);
+                                    });
+                                  },
+                                  fieldViewBuilder: (context,
+                                      textEditingController,
+                                      focusNode,
+                                      onFieldSubmitted) {
+                                    _fromAccountController =
+                                        textEditingController;
+                                    return TextFormField(
+                                      controller: textEditingController,
+                                      focusNode: focusNode,
+                                      decoration: InputDecoration(
+                                        labelText: loc.fromAccount,
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: DropdownButtonFormField<String>(
-                                          value: _toCurrency,
-                                          decoration: const InputDecoration(
-                                            labelText: 'To Currency',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          items: currencies
-                                              .map((currency) =>
-                                                  DropdownMenuItem(
-                                                    value: currency,
-                                                    child: Text(currency),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (value) {
-                                            if (value != null) {
-                                              setState(
-                                                  () => _toCurrency = value);
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            // Right Column
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  // Amount and Rate
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _amountController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Amount',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (_) =>
-                                              _calculateResultAmount(),
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Please enter an amount';
-                                            }
-                                            if (double.tryParse(value) ==
-                                                null) {
-                                              return 'Please enter a valid number';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _rateController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Rate',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (_) =>
-                                              _calculateResultAmount(),
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Please enter a rate';
-                                            }
-                                            if (double.tryParse(value) ==
-                                                null) {
-                                              return 'Please enter a valid number';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Operator Selection
-                                  DropdownButtonFormField<String>(
-                                    value: _operator,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Operator',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                          value: '*',
-                                          child: Text('Multiply (*)')),
-                                      DropdownMenuItem(
-                                          value: '/',
-                                          child: Text('Divide (/)')),
-                                    ],
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(() {
-                                          _operator = value;
-                                          _calculateResultAmount();
-                                        });
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Result Amount (Read-only)
-                                  TextFormField(
-                                    controller: _resultAmountController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Result Amount',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    readOnly: true,
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Expected Rate (Optional)
-                                  TextFormField(
-                                    controller: _expectedRateController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Expected Rate (Optional)',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => _calculateResultAmount(),
-                                    validator: (value) {
-                                      if (value != null && value.isNotEmpty) {
-                                        if (double.tryParse(value) == null) {
-                                          return 'Please enter a valid number';
+                                      onChanged: _filterFromAccounts,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return loc.pleaseSelectAccount;
                                         }
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Profit/Loss Display
-                                  if (_expectedRateController.text.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: _profitLoss >= 0
-                                                ? Colors.green
-                                                : Colors.red),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text('Profit/Loss:'),
-                                          Text(
-                                            _profitLoss.toStringAsFixed(2),
-                                            style: TextStyle(
-                                              color: _profitLoss >= 0
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        // Mobile layout (existing single column layout)
-                        Column(
-                          children: [
-                            // Transaction Type Selection
-                            DropdownButtonFormField<String>(
-                              value: _transactionType,
-                              decoration: const InputDecoration(
-                                labelText: 'Transaction Type',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: _transactionTypes
-                                  .map((type) => DropdownMenuItem(
-                                        value: type,
-                                        child: Text(type
-                                            .replaceAll('_', ' ')
-                                            .toUpperCase()),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() => _transactionType = value);
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // From Account Autocomplete
-                            Autocomplete<Map<String, dynamic>>(
-                              optionsBuilder:
-                                  (TextEditingValue textEditingValue) {
-                                if (textEditingValue.text.isEmpty) {
-                                  return _accounts;
-                                }
-                                return _filteredFromAccounts;
-                              },
-                              displayStringForOption:
-                                  (Map<String, dynamic> account) =>
-                                      account['name'],
-                              onSelected: (Map<String, dynamic> account) {
-                                setState(() {
-                                  _selectedFromAccount = account;
-                                  _fromAccountController.text = account['name'];
-                                });
-                              },
-                              fieldViewBuilder: (context, textEditingController,
-                                  focusNode, onFieldSubmitted) {
-                                _fromAccountController = textEditingController;
-                                return TextFormField(
-                                  controller: textEditingController,
-                                  focusNode: focusNode,
-                                  decoration: const InputDecoration(
-                                    labelText: 'From Account',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  onChanged: _filterFromAccounts,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please select an account';
-                                    }
-                                    return null;
+                                        return null;
+                                      },
+                                    );
                                   },
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
+                                ),
+                                const SizedBox(height: 16),
 
-                            // To Account Autocomplete
-                            Autocomplete<Map<String, dynamic>>(
-                              optionsBuilder:
-                                  (TextEditingValue textEditingValue) {
-                                if (textEditingValue.text.isEmpty) {
-                                  return _accounts;
-                                }
-                                return _filteredToAccounts;
-                              },
-                              displayStringForOption:
-                                  (Map<String, dynamic> account) =>
-                                      account['name'],
-                              onSelected: (Map<String, dynamic> account) {
-                                setState(() {
-                                  _selectedToAccount = account;
-                                  _toAccountController.text = account['name'];
-                                });
-                              },
-                              fieldViewBuilder: (context, textEditingController,
-                                  focusNode, onFieldSubmitted) {
-                                _toAccountController = textEditingController;
-                                return TextFormField(
-                                  controller: textEditingController,
-                                  focusNode: focusNode,
-                                  decoration: const InputDecoration(
-                                    labelText: 'To Account',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  onChanged: _filterToAccounts,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please select an account';
+                                // To Account Autocomplete
+                                Autocomplete<Map<String, dynamic>>(
+                                  optionsBuilder:
+                                      (TextEditingValue textEditingValue) {
+                                    if (textEditingValue.text.isEmpty) {
+                                      return _accounts;
                                     }
-                                    return null;
+                                    return _filteredToAccounts;
                                   },
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Currencies
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    value: _fromCurrency,
-                                    decoration: const InputDecoration(
-                                      labelText: 'From Currency',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    items: currencies
-                                        .map((currency) => DropdownMenuItem(
-                                              value: currency,
-                                              child: Text(currency),
-                                            ))
-                                        .toList(),
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(() => _fromCurrency = value);
-                                      }
-                                    },
-                                  ),
+                                  displayStringForOption:
+                                      (Map<String, dynamic> account) =>
+                                          getLocalizedSystemAccountName(
+                                              context, account['name']),
+                                  onSelected: (Map<String, dynamic> account) {
+                                    setState(() {
+                                      _selectedToAccount = account;
+                                      _toAccountController.text =
+                                          getLocalizedSystemAccountName(
+                                              context, account['name']);
+                                    });
+                                  },
+                                  fieldViewBuilder: (context,
+                                      textEditingController,
+                                      focusNode,
+                                      onFieldSubmitted) {
+                                    _toAccountController =
+                                        textEditingController;
+                                    return TextFormField(
+                                      controller: textEditingController,
+                                      focusNode: focusNode,
+                                      decoration: InputDecoration(
+                                        labelText: loc.toAccount,
+                                      ),
+                                      onChanged: _filterToAccounts,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return loc.pleaseSelectAccount;
+                                        }
+                                        return null;
+                                      },
+                                    );
+                                  },
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    value: _toCurrency,
-                                    decoration: const InputDecoration(
-                                      labelText: 'To Currency',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    items: currencies
-                                        .map((currency) => DropdownMenuItem(
-                                              value: currency,
-                                              child: Text(currency),
-                                            ))
-                                        .toList(),
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(() => _toCurrency = value);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
+                                const SizedBox(height: 16),
 
-                            // Amount and Rate
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _amountController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Amount',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => _calculateResultAmount(),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter an amount';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Please enter a valid number';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _rateController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Rate',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => _calculateResultAmount(),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter a rate';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Please enter a valid number';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Operator Selection
-                            DropdownButtonFormField<String>(
-                              value: _operator,
-                              decoration: const InputDecoration(
-                                labelText: 'Operator',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                    value: '*', child: Text('Multiply (*)')),
-                                DropdownMenuItem(
-                                    value: '/', child: Text('Divide (/)')),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _operator = value;
-                                    _calculateResultAmount();
-                                  });
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Result Amount (Read-only)
-                            TextFormField(
-                              controller: _resultAmountController,
-                              decoration: const InputDecoration(
-                                labelText: 'Result Amount',
-                                border: OutlineInputBorder(),
-                              ),
-                              readOnly: true,
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Expected Rate (Optional)
-                            TextFormField(
-                              controller: _expectedRateController,
-                              decoration: const InputDecoration(
-                                labelText: 'Expected Rate (Optional)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculateResultAmount(),
-                              validator: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  if (double.tryParse(value) == null) {
-                                    return 'Please enter a valid number';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Profit/Loss Display
-                            if (_expectedRateController.text.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                      color: _profitLoss >= 0
-                                          ? Colors.green
-                                          : Colors.red),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                // Currencies
+                                Row(
                                   children: [
-                                    const Text('Profit/Loss:'),
-                                    Text(
-                                      _profitLoss.toStringAsFixed(2),
-                                      style: TextStyle(
-                                        color: _profitLoss >= 0
-                                            ? Colors.green
-                                            : Colors.red,
-                                        fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: _fromCurrency,
+                                        decoration: InputDecoration(
+                                          labelText: loc.fromCurrency,
+                                        ),
+                                        items: currencies
+                                            .map((currency) => DropdownMenuItem(
+                                                  value: currency,
+                                                  child: Text(currency),
+                                                ))
+                                            .toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(
+                                                () => _fromCurrency = value);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: _toCurrency,
+                                        decoration: InputDecoration(
+                                          labelText: loc.toCurrency,
+                                        ),
+                                        items: currencies
+                                            .map((currency) => DropdownMenuItem(
+                                                  value: currency,
+                                                  child: Text(currency),
+                                                ))
+                                            .toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() => _toCurrency = value);
+                                          }
+                                        },
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                          ],
-                        ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          // Right Column
+                          Expanded(
+                            child: Column(
+                              children: [
+                                // Amount and Rate
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _amountController,
+                                        decoration: InputDecoration(
+                                          labelText: loc.amount,
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (_) =>
+                                            _calculateResultAmount(),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter an amount';
+                                          }
+                                          if (double.tryParse(value) == null) {
+                                            return 'Please enter a valid number';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _rateController,
+                                        decoration: InputDecoration(
+                                          labelText: loc.rate,
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (_) =>
+                                            _calculateResultAmount(),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter a rate';
+                                          }
+                                          if (double.tryParse(value) == null) {
+                                            return 'Please enter a valid number';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Operator Selection
+                                DropdownButtonFormField<String>(
+                                  value: _operator,
+                                  decoration: InputDecoration(
+                                    labelText: loc.operator,
+                                  ),
+                                  items: [
+                                    DropdownMenuItem(
+                                        value: '*', child: Text(loc.multiply)),
+                                    DropdownMenuItem(
+                                        value: '/', child: Text(loc.divide)),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _operator = value;
+                                        _calculateResultAmount();
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Result Amount (Read-only)
+                                TextFormField(
+                                  controller: _resultAmountController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.resultAmount,
+                                  ),
+                                  readOnly: true,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Expected Rate (Optional)
+                                TextFormField(
+                                  controller: _expectedRateController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.expectedRateOptional,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (_) => _calculateResultAmount(),
+                                  validator: (value) {
+                                    if (value != null && value.isNotEmpty) {
+                                      if (double.tryParse(value) == null) {
+                                        return 'Please enter a valid number';
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Profit/Loss Display
+                                if (_expectedRateController.text.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: _profitLoss >= 0
+                                              ? Colors.green
+                                              : Colors.red),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(loc.profitLoss),
+                                        Text(
+                                          _profitLoss.toStringAsFixed(2),
+                                          style: TextStyle(
+                                            color: _profitLoss >= 0
+                                                ? Colors.green
+                                                : Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
 
                       const SizedBox(height: 24),
 
-                      // Bottom Section (Common for both layouts)
-                      const Text(
-                        'Additional Information',
+                      Text(
+                        loc.additionalInfo,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -939,9 +634,8 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                       // Description
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: loc.description,
                         ),
                         maxLines: 3,
                       ),
@@ -950,16 +644,14 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                       // Date Selection
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Date'),
-                        subtitle: Text(
-                            DateFormat('yyyy-MM-dd').format(_selectedDate)),
+                        title: Text(loc.date),
+                        subtitle: Text(dFormatter.formatLocalizedDate(
+                            context, _selectedDate.toString())),
                         trailing: const Icon(Icons.calendar_today),
                         onTap: () async {
-                          final date = await showDatePicker(
+                          final date = await pickLocalizedDate(
                             context: context,
                             initialDate: _selectedDate,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
                           );
                           if (date != null) {
                             setState(() => _selectedDate = date);
@@ -976,8 +668,8 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text(
-                            'Save Exchange',
+                          child: Text(
+                            loc.saveExchange,
                             style: TextStyle(fontSize: 16),
                           ),
                         ),

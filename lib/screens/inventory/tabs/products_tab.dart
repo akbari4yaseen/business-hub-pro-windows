@@ -7,8 +7,6 @@ import '../../../providers/inventory_provider.dart';
 import '../widgets/product_details_sheet.dart';
 import '../../../themes/app_theme.dart';
 import '../dialogs/product_form_dialog.dart';
-import '../../../models/product.dart';
-import '../../../models/product_unit.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({Key? key}) : super(key: key);
@@ -30,12 +28,14 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   // Filter products based on search query and filters
-  List<Product> _getFilteredProducts(InventoryProvider provider) {
+  List<dynamic> _getFilteredProducts(InventoryProvider provider) {
     return provider.products.where((product) {
       final matchesSearch =
           product.name.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesCategory = _selectedCategory == null ||
-          provider.getCategoryName(product.categoryId).contains(_selectedCategory!);
+          provider
+              .getCategoryName(product.categoryId)
+              .contains(_selectedCategory!);
       final matchesStatus = _showInactive || product.isActive;
       return matchesSearch && matchesCategory && matchesStatus;
     }).toList();
@@ -86,7 +86,7 @@ class _ProductsTabState extends State<ProductsTab> {
               children: [
                 Text(
                   loc.products,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -157,8 +157,8 @@ class _ProductsTabState extends State<ProductsTab> {
                   child: DropdownButtonFormField<String>(
                     isDense: true,
                     decoration: InputDecoration(
-                      labelText: loc.category,
-                      hintText: loc.allCategories,
+                      labelText: loc.category, // e.g., "Category"
+                      hintText: loc.allCategories, // e.g., "All Categories"
                       border: const OutlineInputBorder(),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
@@ -223,12 +223,12 @@ class _ProductsTabState extends State<ProductsTab> {
           const SizedBox(height: 16),
           Text(
             loc.noProductsFound,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             loc.changeSearchCriteria,
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -244,7 +244,8 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
-  Widget _buildProductsList(List<Product> products, InventoryProvider provider) {
+  Widget _buildProductsList(
+      List<dynamic> products, InventoryProvider provider) {
     return ListView.separated(
       padding: const EdgeInsets.only(
         left: 16,
@@ -261,10 +262,8 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
-  Widget _buildProductCard(Product product, InventoryProvider provider) {
+  Widget _buildProductCard(dynamic product, InventoryProvider provider) {
     final loc = AppLocalizations.of(context)!;
-    final baseUnit = provider.getBaseUnit(product.id);
-    final productUnits = provider.getProductUnits(product.id);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -290,43 +289,19 @@ class _ProductsTabState extends State<ProductsTab> {
               children: [
                 Chip(
                   label: Text(provider.getCategoryName(product.categoryId)),
-                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                   labelStyle: const TextStyle(fontSize: 12),
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 const SizedBox(width: 8),
-                if (baseUnit != null)
-                  Text('${loc.baseUnit}: ${provider.getUnitName(baseUnit.unitId)}'),
+                Text('${loc.unit}: ${provider.getUnitName(product.unitId)}'),
               ],
             ),
             if (product.sku != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text('${loc.sku}: ${product.sku}'),
-              ),
-            if (productUnits.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 8,
-                  children: productUnits.map((unit) {
-                    return Chip(
-                      label: Text(
-                        '${provider.getUnitName(unit.unitId)} (${unit.conversionRate}x)',
-                      ),
-                      backgroundColor: unit.isBaseUnit
-                          ? AppTheme.primaryColor.withOpacity(0.2)
-                          : Colors.grey.withOpacity(0.1),
-                      labelStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: unit.isBaseUnit ? FontWeight.bold : null,
-                      ),
-                      padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    );
-                  }).toList(),
-                ),
               ),
           ],
         ),
@@ -339,7 +314,8 @@ class _ProductsTabState extends State<ProductsTab> {
                 child: Chip(
                   label: Text(loc.inactive),
                   backgroundColor: Colors.grey,
-                  labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                  labelStyle:
+                      const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
             PopupMenuButton<String>(
@@ -362,7 +338,7 @@ class _ProductsTabState extends State<ProductsTab> {
                         product.isActive ? Icons.toggle_off : Icons.toggle_on,
                         size: 18,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(product.isActive ? loc.deactivate : loc.activate),
                     ],
                   ),
@@ -409,13 +385,13 @@ class _ProductsTabState extends State<ProductsTab> {
       builder: (BuildContext dialogContext) => WillPopScope(
         onWillPop: () async => false,
         child: ProductFormDialog(
-          onSave: (Product product, List<ProductUnit> units) async {
+          onSave: (product) async {
             try {
               final provider = context.read<InventoryProvider>();
               if (product.id == 0) {
-                await provider.addProduct(product, units);
+                await provider.addProduct(product);
               } else {
-                await provider.updateProduct(product, units);
+                await provider.updateProduct(product);
               }
               if (dialogContext.mounted) {
                 Navigator.of(dialogContext).pop();
@@ -433,7 +409,7 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
-  void _handleProductAction(String action, Product product) async {
+  void _handleProductAction(String action, dynamic product) async {
     final provider = context.read<InventoryProvider>();
     final loc = AppLocalizations.of(context)!;
 
@@ -443,9 +419,9 @@ class _ProductsTabState extends State<ProductsTab> {
           context: context,
           builder: (BuildContext dialogContext) => ProductFormDialog(
             product: product,
-            onSave: (Product updatedProduct, List<ProductUnit> units) async {
+            onSave: (updatedProduct) async {
               try {
-                await provider.updateProduct(updatedProduct, units);
+                await provider.updateProduct(updatedProduct);
                 Navigator.of(dialogContext).pop();
               } catch (e) {
                 if (mounted) {
@@ -462,14 +438,15 @@ class _ProductsTabState extends State<ProductsTab> {
       case 'activate':
       case 'deactivate':
         try {
-          final updatedProduct = product.copyWith(isActive: action == 'activate');
-          await provider.updateProduct(updatedProduct, provider.getProductUnits(product.id));
+          final updatedProduct =
+              product.copyWith(isActive: action == 'activate');
+          await provider.updateProduct(updatedProduct);
 
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '${action == 'activate' ? loc.productActivated : loc.productDeactivated}'),
+                  '${action == 'activate' ? loc.productActivated : loc.productDeleted}'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -534,7 +511,7 @@ class _ProductsTabState extends State<ProductsTab> {
     }
   }
 
-  void _showProductDetails(Product product) {
+  void _showProductDetails(dynamic product) {
     showDialog(
       context: context,
       builder: (context) => ProductDetailsSheet(product: product),

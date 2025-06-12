@@ -26,7 +26,7 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
   }
 
   List<String> _getUniqueCategories(List<Map<String, dynamic>> stock) {
-    return stock.map((e) => e['category_name'] as String).toSet().toList()
+    return stock.map((e) => e['category_name'] as String? ?? 'Uncategorized').toSet().toList()
       ..sort();
   }
 

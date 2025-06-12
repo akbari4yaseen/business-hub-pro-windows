@@ -122,21 +122,6 @@ class DbInit {
     ''');
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS product_units (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER NOT NULL,
-        unit_id INTEGER NOT NULL,
-        is_base_unit BOOLEAN NOT NULL DEFAULT 0,
-        conversion_rate REAL NOT NULL, -- 1 base unit = how many of this unit?
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        FOREIGN KEY (unit_id) REFERENCES units(id),
-        UNIQUE(product_id, unit_id)
-      )
-    ''');
-
-    await db.execute('''
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -146,7 +131,6 @@ class DbInit {
         minimum_stock REAL NOT NULL,
         reorder_point REAL DEFAULT 0,
         maximum_stock REAL,
-        base_unit_id INTEGER,
         has_expiry_date INTEGER NOT NULL,
         barcode TEXT,
         sku TEXT,

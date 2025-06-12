@@ -5,7 +5,6 @@ import '../models/warehouse.dart';
 import '../models/stock_movement.dart';
 import '../models/category.dart' as inventory_models;
 import '../models/unit.dart';
-import '../models/product_unit.dart';
 
 class InventoryProvider with ChangeNotifier {
   final InventoryDB _db = InventoryDB();
@@ -18,7 +17,6 @@ class InventoryProvider with ChangeNotifier {
   List<Warehouse> _warehouses = [];
   List<StockMovement> _stockMovements = [];
   List<Product> _allProducts = [];
-  Map<int, List<ProductUnit>> _productUnits = {};
   bool _isLoading = false;
   String? _error;
   bool _isLoadingMovements = false;
@@ -39,7 +37,8 @@ class InventoryProvider with ChangeNotifier {
   bool get hasMoreMovements => _hasMoreMovements;
 
   // Added method to get category name
-  String getCategoryName(int categoryId) {
+  String getCategoryName(int? categoryId) {
+    if (categoryId == null) return 'Unknown Category';
     try {
       final category = _categories.firstWhere((c) => c.id == categoryId);
       return category.name;
@@ -49,7 +48,8 @@ class InventoryProvider with ChangeNotifier {
   }
 
   // Added method to get unit name
-  String getUnitName(int unitId) {
+  String getUnitName(int? unitId) {
+    if (unitId == null) return 'Unknown Unit';
     try {
       final unit = _units.firstWhere((u) => u.id == unitId);
       return unit.name;
@@ -99,60 +99,13 @@ class InventoryProvider with ChangeNotifier {
         .toList();
   }
 
-  // Get product units
-  List<ProductUnit> getProductUnits(int productId) {
-    return _productUnits[productId] ?? [];
-  }
-
-  // Get base unit for a product
-  ProductUnit? getBaseUnit(int productId) {
-    final units = _productUnits[productId];
-    if (units == null || units.isEmpty) return null;
-    return units.firstWhere((u) => u.isBaseUnit, orElse: () => units.first);
-  }
-
-  // Convert quantity between units
-  double convertQuantity({
-    required int productId,
-    required double quantity,
-    required int fromUnitId,
-    required int toUnitId,
-  }) {
-    final units = _productUnits[productId];
-    if (units == null) return quantity;
-
-    final fromUnit = units.firstWhere((u) => u.unitId == fromUnitId);
-    final toUnit = units.firstWhere((u) => u.unitId == toUnitId);
-
-    // Convert to base unit first
-    final baseQuantity = quantity * fromUnit.conversionRate;
-    // Then convert to target unit
-    return baseQuantity / toUnit.conversionRate;
-  }
-
   // Product operations
-  Future<void> addProduct(Product product, List<ProductUnit> units) async {
+  Future<void> addProduct(Product product) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final productId = await _db.insertProduct(product);
-      
-      // Add product units
-      for (var unit in units) {
-        await _db.insertProductUnit(
-          ProductUnit(
-            id: 0, // Will be set by database
-            productId: productId,
-            unitId: unit.unitId,
-            isBaseUnit: unit.isBaseUnit,
-            conversionRate: unit.conversionRate,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-      }
-
+      await _db.insertProduct(product);
       await refreshData();
     } catch (e) {
       debugPrint('Error adding product: $e');
@@ -164,34 +117,12 @@ class InventoryProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateProduct(Product product, List<ProductUnit> units) async {
+  Future<void> updateProduct(Product product) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       await _db.updateProduct(product);
-
-      // Delete existing units
-      final existingUnits = await _db.getProductUnits(product.id);
-      for (var unit in existingUnits) {
-        await _db.deleteProductUnit(unit.id);
-      }
-
-      // Add new units
-      for (var unit in units) {
-        await _db.insertProductUnit(
-          ProductUnit(
-            id: 0, // Will be set by database
-            productId: product.id,
-            unitId: unit.unitId,
-            isBaseUnit: unit.isBaseUnit,
-            conversionRate: unit.conversionRate,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-      }
-
       await refreshData();
     } catch (e) {
       debugPrint('Error updating product: $e');
@@ -266,14 +197,14 @@ class InventoryProvider with ChangeNotifier {
   }) async {
     try {
       final movement = StockMovement(
-        id: 0, // Provide a default or appropriate value
+        id: 0,
         productId: productId,
         quantity: quantity,
         type: quantity > 0 ? MovementType.stockIn : MovementType.stockOut,
         reference: reference,
-        date: DateTime.now(), // Provide the current date or appropriate value
-        createdAt: DateTime.now(), // Provide the current date or appropriate value
-        updatedAt: DateTime.now(), // Provide the current date or appropriate value
+        date: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
       await recordStockMovement(movement);
     } catch (e) {
@@ -289,8 +220,6 @@ class InventoryProvider with ChangeNotifier {
       notifyListeners();
 
       await _db.insertCategory(category);
-
-      // Refresh data after adding
       await _refreshCategories();
     } catch (e) {
       debugPrint('Error adding category: $e');
@@ -306,9 +235,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      _db.updateCategory(category);
-
-      // Refresh data after updating
+      await _db.updateCategory(category);
       await _refreshCategories();
     } catch (e) {
       debugPrint('Error updating category: $e');
@@ -324,9 +251,7 @@ class InventoryProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      _db.deleteCategory(categoryId);
-
-      // Refresh data after deleting
+      await _db.deleteCategory(categoryId);
       await _refreshCategories();
     } catch (e) {
       debugPrint('Error deleting category: $e');
@@ -340,55 +265,44 @@ class InventoryProvider with ChangeNotifier {
   // Unit operations
   Future<void> addUnit(Unit unit) async {
     try {
-      _isLoading = true;
+      final id = await _db.insertUnit(unit);
+      _units.add(Unit(
+        id: id,
+        name: unit.name,
+        symbol: unit.symbol,
+        description: unit.description,
+        createdAt: unit.createdAt,
+        updatedAt: unit.updatedAt,
+      ));
       notifyListeners();
-
-      await _db.insertUnit(unit);
-
-      // Refresh data after adding
-      await _refreshUnits();
     } catch (e) {
       debugPrint('Error adding unit: $e');
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      rethrow;
     }
   }
 
   Future<void> updateUnit(Unit unit) async {
     try {
-      _isLoading = true;
-      notifyListeners();
-
-      _db.updateUnit(unit);
-
-      // Refresh data after updating
-      await _refreshUnits();
+      await _db.updateUnit(unit);
+      final index = _units.indexWhere((u) => u.id == unit.id);
+      if (index != -1) {
+        _units[index] = unit;
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Error updating unit: $e');
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      rethrow;
     }
   }
 
-  Future<void> deleteUnit(int unitId) async {
+  Future<void> deleteUnit(int id) async {
     try {
-      _isLoading = true;
+      await _db.deleteUnit(id);
+      _units.removeWhere((u) => u.id == id);
       notifyListeners();
-
-      _db.deleteUnit(unitId);
-
-      // Refresh data after deleting
-      await _refreshUnits();
     } catch (e) {
       debugPrint('Error deleting unit: $e');
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      rethrow;
     }
   }
 
@@ -444,12 +358,6 @@ class InventoryProvider with ChangeNotifier {
   Future<void> _refreshProducts() async {
     try {
       _allProducts = await _db.getProducts();
-      
-      // Load product units
-      _productUnits.clear();
-      for (var product in _allProducts) {
-        _productUnits[product.id] = await _db.getProductUnits(product.id);
-      }
     } catch (e) {
       debugPrint('Error refreshing products: $e');
     }
@@ -522,20 +430,46 @@ class InventoryProvider with ChangeNotifier {
         limit: _movementsPageSize,
         offset: _currentMovementsPage * _movementsPageSize,
       );
-      
+
       if (refresh) {
         _stockMovements = newMovements;
       } else {
         _stockMovements.addAll(newMovements);
       }
-      
+
       _currentMovementsPage++;
       _hasMoreMovements = newMovements.length == _movementsPageSize;
-      
+
       notifyListeners();
     } finally {
       _isLoadingMovements = false;
       notifyListeners();
     }
+  }
+
+  // Get product units
+  List<Unit> getProductUnits(int productId) {
+    final product = _allProducts.firstWhere((p) => p.id == productId);
+    if (product.unitId == null) return [];
+    final unit = _units.firstWhere((u) => u.id == product.unitId);
+    return [unit];
+  }
+
+  // Get base unit for a product
+  Unit? getBaseUnit(int productId) {
+    final product = _allProducts.firstWhere((p) => p.id == productId);
+    if (product.unitId == null) return null;
+    return _units.firstWhere((u) => u.id == product.unitId);
+  }
+
+  // Convert quantity between units
+  double convertQuantity({
+    required int productId,
+    required double quantity,
+    required int fromUnitId,
+    required int toUnitId,
+  }) {
+    // Since we no longer support unit conversion, just return the original quantity
+    return quantity;
   }
 }

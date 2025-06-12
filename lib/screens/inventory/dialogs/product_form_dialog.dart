@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
-import '../../../models/product_unit.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../models/product.dart';
 
 class ProductFormDialog extends StatefulWidget {
   final Product? product;
-  final Function(Product, List<ProductUnit>) onSave;
+  final Function(Product) onSave;
 
   const ProductFormDialog({
     Key? key,
@@ -30,14 +29,13 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   int? _selectedCategoryId;
   int? _selectedUnitId;
   bool _isSubmitting = false;
-  List<ProductUnit> _units = [];
 
   @override
   void initState() {
     super.initState();
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
-      _descriptionController.text = widget.product!.description ?? '';
+      _descriptionController.text = widget.product!.description!;
       _selectedCategoryId = widget.product!.categoryId;
       _selectedUnitId = widget.product!.unitId;
       _minimumStockController.text = widget.product!.minimumStock.toString();
@@ -64,23 +62,26 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       final product = Product(
         id: widget.product?.id ?? 0,
         name: _nameController.text,
-        description: _descriptionController.text.isEmpty
-            ? null
-            : _descriptionController.text,
-        categoryId: _selectedCategoryId!,
-        unitId: _selectedUnitId!,
+        description: _descriptionController.text,
+        categoryId: _selectedCategoryId,
+        unitId: _selectedUnitId,
         minimumStock: double.parse(_minimumStockController.text),
-        reorderPoint: widget.product?.reorderPoint ?? 0,
-        maximumStock: widget.product?.maximumStock ?? double.infinity,
+        reorderPoint: widget.product?.reorderPoint,
         hasExpiryDate: _hasExpiryDate,
-        barcode:
-            _barcodeController.text.isEmpty ? null : _barcodeController.text,
+        barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
         isActive: true,
-        createdAt: widget.product?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
       );
 
-      await widget.onSave(product, _units);
+      final provider = context.read<InventoryProvider>();
+      if (widget.product == null) {
+        await provider.addProduct(product);
+      } else {
+        await provider.updateProduct(product);
+      }
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,8 +268,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : Text(loc.save),
                         ),
@@ -283,4 +283,4 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       ),
     );
   }
-}
+} 

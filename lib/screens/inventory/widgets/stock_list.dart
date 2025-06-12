@@ -137,8 +137,9 @@ class StockList extends StatelessWidget {
                               numberFormatter.format(item['quantity'])),
                           _buildDetailRow(loc.minimumStock,
                               numberFormatter.format(item['minimum_stock'])),
-                          _buildDetailRow(loc.maximumStock,
-                              numberFormatter.format(item['maximum_stock'])),
+                          if (item['maximum_stock'] != null)
+                            _buildDetailRow(loc.maximumStock,
+                                numberFormatter.format(item['maximum_stock'])),
                           _buildDetailRow(loc.location, item['warehouse_name']),
                           if (item['expiry_date'] != null)
                             _buildDetailRow(

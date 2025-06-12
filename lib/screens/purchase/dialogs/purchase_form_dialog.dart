@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../models/purchase.dart';
 import '../../../models/purchase_item.dart';
 import '../../../models/product.dart';
-import '../../../models/product_unit.dart';
+import '../../../models/unit.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../providers/account_provider.dart';
@@ -116,7 +116,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       if (!mounted) return;
 
       setState(() {
-        _warehouses = inventoryProvider.warehouses.map((w) => w.toMap()).toList();
+        _warehouses =
+            inventoryProvider.warehouses.map((w) => w.toMap()).toList();
       });
     } finally {
       if (mounted) {
@@ -192,7 +193,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
     final product = products.first;
     final productUnits = inventoryProvider.getProductUnits(product.id);
-    
+
     if (productUnits.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -209,7 +210,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         purchaseId: widget.purchase?.id ?? 0,
         productId: product.id,
         quantity: 0,
-        unitId: productUnits.first.unitId,
+        unitId: productUnits.first.id!,
         unitPrice: 0,
         warehouseId: _warehouses.isNotEmpty ? _warehouses.first['id'] : 0,
         createdAt: DateTime.now(),
@@ -230,7 +231,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     });
   }
 
-  void _updateItem(int index, Product product, ProductUnit unit) {
+  void _updateItem(int index, Product product, Unit unit) {
     if (!mounted) return;
 
     setState(() {
@@ -239,7 +240,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         purchaseId: widget.purchase?.id ?? 0,
         productId: product.id,
         quantity: double.tryParse(_quantityControllers[index].text) ?? 0,
-        unitId: unit.unitId,
+        unitId: unit.id!,
         unitPrice: double.tryParse(_priceControllers[index].text) ?? 0,
         warehouseId: 0,
         createdAt: _items[index].createdAt,
@@ -521,11 +522,12 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                             (p) => p.id == item.productId,
                             orElse: () => products.first,
                           );
-                          
+
                           // Get product units for the selected product
-                          final productUnits = inventoryProvider.getProductUnits(product.id);
+                          final productUnits =
+                              inventoryProvider.getProductUnits(product.id);
                           final unit = productUnits.firstWhere(
-                            (u) => u.unitId == item.unitId,
+                            (u) => u.id == item.unitId,
                             orElse: () => productUnits.first,
                           );
 
@@ -537,7 +539,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         '${loc.item} ${index + 1}',
@@ -567,10 +570,15 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                     }).toList(),
                                     onChanged: (value) {
                                       if (value != null) {
-                                        final selectedProduct = products.firstWhere((p) => p.id == value);
-                                        final selectedProductUnits = inventoryProvider.getProductUnits(selectedProduct.id);
-                                        final selectedUnit = selectedProductUnits.first;
-                                        _updateItem(index, selectedProduct, selectedUnit);
+                                        final selectedProduct = products
+                                            .firstWhere((p) => p.id == value);
+                                        final selectedProductUnits =
+                                            inventoryProvider.getProductUnits(
+                                                selectedProduct.id);
+                                        final selectedUnit =
+                                            selectedProductUnits.first;
+                                        _updateItem(index, selectedProduct,
+                                            selectedUnit);
                                       }
                                     },
                                   ),
@@ -579,21 +587,25 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                     children: [
                                       Expanded(
                                         child: DropdownButtonFormField<int>(
-                                          value: unit.unitId,
+                                          value: unit.id,
                                           decoration: InputDecoration(
                                             labelText: loc.unit,
                                             border: const OutlineInputBorder(),
                                           ),
                                           items: productUnits.map((u) {
                                             return DropdownMenuItem(
-                                              value: u.unitId,
-                                              child: Text(inventoryProvider.getUnitName(u.unitId)),
+                                              value: u.id,
+                                              child: Text(inventoryProvider
+                                                  .getUnitName(u.id)),
                                             );
                                           }).toList(),
                                           onChanged: (value) {
                                             if (value != null) {
-                                              final selectedUnit = productUnits.firstWhere((u) => u.unitId == value);
-                                              _updateItem(index, product, selectedUnit);
+                                              final selectedUnit =
+                                                  productUnits.firstWhere(
+                                                      (u) => u.id == value);
+                                              _updateItem(
+                                                  index, product, selectedUnit);
                                             }
                                           },
                                         ),
@@ -601,7 +613,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: TextFormField(
-                                          controller: _quantityControllers[index],
+                                          controller:
+                                              _quantityControllers[index],
                                           decoration: InputDecoration(
                                             labelText: loc.quantity,
                                             border: const OutlineInputBorder(),
@@ -632,7 +645,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
-                                        child: DropdownButtonFormField<Map<String, dynamic>>(
+                                        child: DropdownButtonFormField<
+                                            Map<String, dynamic>>(
                                           value: _warehouses.firstWhere(
                                             (w) => w['id'] == item.warehouseId,
                                             orElse: () => _warehouses.first,
@@ -649,7 +663,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                           }).toList(),
                                           onChanged: (value) {
                                             if (value != null) {
-                                              _updateWarehouse(index, value['id']);
+                                              _updateWarehouse(
+                                                  index, value['id']);
                                             }
                                           },
                                         ),
