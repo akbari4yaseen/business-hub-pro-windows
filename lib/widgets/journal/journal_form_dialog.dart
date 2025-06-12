@@ -215,7 +215,7 @@ class _JournalFormDialogState extends State<JournalFormDialog> {
             ),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [NumberInputFormatter()],
+          inputFormatters: [NumberInput()],
           maxLength: 15,
           validator: (v) => v?.isEmpty == true ? loc.amountRequired : null,
         ),

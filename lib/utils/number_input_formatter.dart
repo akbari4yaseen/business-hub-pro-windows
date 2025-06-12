@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class NumberInputFormatter extends TextInputFormatter {
-  final NumberFormat _formatter = NumberFormat("#,###.##");
+  final NumberFormat _formatter = NumberFormat("#,##0.##");
 
   @override
   TextEditingValue formatEditUpdate(

@@ -192,7 +192,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     }
 
     final product = products.first;
-    final productUnits = inventoryProvider.getProductUnits(product.id);
+    final productUnits = inventoryProvider.getProductUnits(product.id!);
 
     if (productUnits.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -208,7 +208,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       _items.add(PurchaseItem(
         id: 0,
         purchaseId: widget.purchase?.id ?? 0,
-        productId: product.id,
+        productId: product.id!,
         quantity: 0,
         unitId: productUnits.first.id!,
         unitPrice: 0,
@@ -238,7 +238,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       _items[index] = PurchaseItem(
         id: _items[index].id,
         purchaseId: widget.purchase?.id ?? 0,
-        productId: product.id,
+        productId: product.id!,
         quantity: double.tryParse(_quantityControllers[index].text) ?? 0,
         unitId: unit.id!,
         unitPrice: double.tryParse(_priceControllers[index].text) ?? 0,
@@ -525,7 +525,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
                           // Get product units for the selected product
                           final productUnits =
-                              inventoryProvider.getProductUnits(product.id);
+                              inventoryProvider.getProductUnits(product.id!);
                           final unit = productUnits.firstWhere(
                             (u) => u.id == item.unitId,
                             orElse: () => productUnits.first,
@@ -574,7 +574,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             .firstWhere((p) => p.id == value);
                                         final selectedProductUnits =
                                             inventoryProvider.getProductUnits(
-                                                selectedProduct.id);
+                                                selectedProduct.id!);
                                         final selectedUnit =
                                             selectedProductUnits.first;
                                         _updateItem(index, selectedProduct,

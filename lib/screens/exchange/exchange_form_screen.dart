@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 import '../../database/exchange_db.dart';
 import '../../utils/utilities.dart';
 import '../../constants/currencies.dart';
@@ -7,6 +8,7 @@ import '../../models/exchange.dart';
 import '../../database/account_db.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
+import '../../utils/number_input_formatter.dart';
 
 class ExchangeFormScreen extends StatefulWidget {
   final Exchange? exchange;
@@ -21,6 +23,7 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _exchangeDB = ExchangeDBHelper();
   final _accountDB = AccountDBHelper();
+  static final NumberFormat _numberFormatter = NumberFormat('#,##0.##');
 
   late TextEditingController _fromAccountController;
   late TextEditingController _toAccountController;
@@ -155,7 +158,6 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
         });
       }
     } catch (e) {
-      print('Error loading exchange data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading exchange data: $e')),
@@ -168,8 +170,8 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
     if (_amountController.text.isEmpty || _rateController.text.isEmpty) return;
 
     try {
-      final amount = double.parse(_amountController.text);
-      final rate = double.parse(_rateController.text);
+      final amount = double.parse(_amountController.text.replaceAll(',', ''));
+      final rate = double.parse(_rateController.text.replaceAll(',', ''));
       double resultAmount;
 
       if (_operator == '*') {
@@ -179,12 +181,13 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
       }
 
       setState(() {
-        _resultAmountController.text = resultAmount.toStringAsFixed(2);
+        _resultAmountController.text = _numberFormatter.format(resultAmount);
       });
 
       // Calculate profit/loss if expected rate is provided
       if (_expectedRateController.text.isNotEmpty) {
-        final expectedRate = double.parse(_expectedRateController.text);
+        final expectedRate =
+            double.parse(_expectedRateController.text.replaceAll(',', ''));
         double expectedAmount;
 
         if (_operator == '*') {
@@ -199,6 +202,7 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
       }
     } catch (e) {
       // Handle parsing errors silently
+      debugPrint(e.toString());
     }
   }
 
@@ -241,8 +245,10 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
           toAccountId: _selectedToAccount!['id'],
           fromCurrency: _fromCurrency,
           toCurrency: _toCurrency,
-          amount: double.parse(_amountController.text),
-          rate: double.parse(_rateController.text),
+          amount: double.parse(_amountController.text.replaceAll(',', '')),
+          rate: double.parse(_rateController.text.replaceAll(',', '')),
+          resultAmount:
+              double.parse(_resultAmountController.text.replaceAll(',', '')),
           operator: _operator,
           description: _descriptionController.text,
           expectedRate: _expectedRateController.text.isNotEmpty
@@ -260,9 +266,10 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
           fromCurrency: _fromCurrency,
           toCurrency: _toCurrency,
           operator: _operator,
-          amount: double.parse(_amountController.text),
-          rate: double.parse(_rateController.text),
-          resultAmount: double.parse(_resultAmountController.text),
+          amount: double.parse(_amountController.text.replaceAll(',', '')),
+          rate: double.parse(_rateController.text.replaceAll(',', '')),
+          resultAmount:
+              double.parse(_resultAmountController.text.replaceAll(',', '')),
           expectedRate: _expectedRateController.text.isNotEmpty
               ? double.parse(_expectedRateController.text)
               : null,
@@ -504,15 +511,14 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                           labelText: loc.amount,
                                         ),
                                         keyboardType: TextInputType.number,
+                                        inputFormatters: [NumberInput()],
                                         onChanged: (_) =>
                                             _calculateResultAmount(),
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter an amount';
                                           }
-                                          if (double.tryParse(value) == null) {
-                                            return 'Please enter a valid number';
-                                          }
+
                                           return null;
                                         },
                                       ),
@@ -525,15 +531,14 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                           labelText: loc.rate,
                                         ),
                                         keyboardType: TextInputType.number,
+                                        inputFormatters: [NumberInput()],
                                         onChanged: (_) =>
                                             _calculateResultAmount(),
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter a rate';
                                           }
-                                          if (double.tryParse(value) == null) {
-                                            return 'Please enter a valid number';
-                                          }
+
                                           return null;
                                         },
                                       ),
@@ -565,13 +570,14 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                 ),
                                 const SizedBox(height: 16),
 
-                                // Result Amount (Read-only)
+                                // Result Amount
                                 TextFormField(
                                   controller: _resultAmountController,
                                   decoration: InputDecoration(
                                     labelText: loc.resultAmount,
                                   ),
-                                  readOnly: true,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [NumberInput()],
                                 ),
                                 const SizedBox(height: 16),
 
@@ -582,12 +588,11 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
                                     labelText: loc.expectedRateOptional,
                                   ),
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [NumberInput()],
                                   onChanged: (_) => _calculateResultAmount(),
                                   validator: (value) {
                                     if (value != null && value.isNotEmpty) {
-                                      if (double.tryParse(value) == null) {
-                                        return 'Please enter a valid number';
-                                      }
+                                      return 'Please enter a valid number';
                                     }
                                     return null;
                                   },

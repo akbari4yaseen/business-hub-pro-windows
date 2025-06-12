@@ -87,6 +87,7 @@ class ExchangeDBHelper {
     required String toCurrency,
     required double amount,
     required double rate,
+    required double resultAmount,
     required String operator,
     String? description,
     double? expectedRate,
@@ -95,14 +96,7 @@ class ExchangeDBHelper {
   }) async {
     final db = await _db;
     await db.transaction((txn) async {
-      double resultAmount;
-      if (operator == '*') {
-        resultAmount = amount * rate;
-      } else if (operator == '/') {
-        resultAmount = amount / rate;
-      } else {
-        throw Exception('Invalid operator');
-      }
+     
 
       double profitLoss = 0;
       if (expectedRate != null) {

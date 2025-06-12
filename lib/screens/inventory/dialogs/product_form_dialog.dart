@@ -60,7 +60,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
 
     try {
       final product = Product(
-        id: widget.product?.id ?? 0,
+        id: widget.product?.id,
         name: _nameController.text,
         description: _descriptionController.text,
         categoryId: _selectedCategoryId,

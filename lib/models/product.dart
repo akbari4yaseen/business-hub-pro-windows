@@ -1,5 +1,5 @@
 class Product {
-  final int id;
+  final int? id;
   final String name;
   final String? description;
   final int? categoryId;
@@ -15,7 +15,7 @@ class Product {
   final DateTime updatedAt;
 
   Product({
-    required this.id,
+    this.id,
     required this.name,
     this.description,
     this.categoryId,
@@ -33,8 +33,7 @@ class Product {
         updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = {
       'name': name,
       'description': description,
       'category_id': categoryId,
@@ -49,11 +48,18 @@ class Product {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
+
+    // Only include id if it's not null
+    if (id != null) {
+      map['id'] = id;
+    }
+
+    return map;
   }
 
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
-      id: map['id'] as int,
+      id: map['id'] as int?,
       name: map['name'] as String,
       description: map['description'] as String?,
       categoryId: map['category_id'] as int?,
