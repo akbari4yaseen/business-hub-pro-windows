@@ -37,6 +37,11 @@ class AccountProvider with ChangeNotifier {
     return _accountsCache[id];
   }
 
+  // Get account by ID from database
+  Future<Map<String, dynamic>?> getAccountById(int id) async {
+    return await _db.getAccountById(id);
+  }
+
   // Update account in cache and database
   Future<void> updateAccount(Map<String, dynamic> account) async {
     final accountId = account['id'] as int;

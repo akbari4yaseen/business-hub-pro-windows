@@ -7,6 +7,8 @@ import '../../providers/purchase_provider.dart';
 import '../../themes/app_theme.dart';
 import 'dialogs/purchase_form_dialog.dart';
 import 'widgets/purchase_details_sheet.dart';
+import '../../providers/account_provider.dart';
+import '../../providers/inventory_provider.dart';
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({Key? key}) : super(key: key);
@@ -56,7 +58,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   // Filter purchases based on search query
   List<Purchase> _getFilteredPurchases(PurchaseProvider provider) {
     return provider.purchases.where((purchase) {
-      final matchesSearch = purchase.referenceNumber
+      final matchesSearch = purchase.invoiceNumber!
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
       return matchesSearch;
@@ -197,7 +199,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  Widget _buildPurchasesList(List<Purchase> purchases, PurchaseProvider provider) {
+  Widget _buildPurchasesList(
+      List<Purchase> purchases, PurchaseProvider provider) {
     return RefreshIndicator(
       onRefresh: _loadPurchases,
       child: ListView.separated(
@@ -252,61 +255,75 @@ class PurchaseCard extends StatefulWidget {
 
 class _PurchaseCardState extends State<PurchaseCard> {
   late Future<List<PurchaseItem>> _itemsFuture;
+  late Future<Map<String, dynamic>?> _supplierFuture;
 
   @override
   void initState() {
     super.initState();
-    _itemsFuture = context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+    if (widget.purchase.id != null) {
+      _itemsFuture = context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+      _supplierFuture = context.read<AccountProvider>().getAccountById(widget.purchase.supplierId);
+    } else {
+      _itemsFuture = Future.value([]);
+      _supplierFuture = Future.value(null);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    
+
     return FutureBuilder<List<PurchaseItem>>(
       future: _itemsFuture,
       builder: (context, snapshot) {
         final items = snapshot.data ?? [];
-        
-        return Card(
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            title: Text(
-              widget.purchase.referenceNumber,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text('${loc.date}: ${widget.purchase.date.toIso8601String().split('T')[0]}'),
-                Text('${loc.supplier}: ${widget.purchase.supplierName}'),
-                Text(
-                  '${loc.total}: ${widget.purchase.total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.primaryColor,
-                  ),
+
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _supplierFuture,
+          builder: (context, supplierSnapshot) {
+            final supplier = supplierSnapshot.data;
+
+            return Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                  widget.purchase.invoiceNumber!,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                if (items.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Wrap(
-                      spacing: 8,
-                      children: items.map((item) {
-                        return Chip(
-                          label: Text(item.productName),
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                        );
-                      }).toList(),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text('${loc.date}: ${widget.purchase.date.toIso8601String().split('T')[0]}'),
+                    Text('${loc.supplier}: ${supplier?['name'] ?? ''}'),
+                    Text(
+                      '${loc.total}: ${widget.purchase.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            onTap: widget.onTap,
-          ),
+                    if (items.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 8,
+                          children: items.map((item) {
+                            return Chip(
+                              label: Text(item.productName ?? 'Unknown Product'),
+                              backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                  ],
+                ),
+                onTap: widget.onTap,
+              ),
+            );
+          },
         );
       },
     );
   }
-} 
+}

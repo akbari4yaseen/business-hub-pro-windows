@@ -567,5 +567,8 @@
   "item": "قلم",
   "price": "قیمت",
   "purchaseDetails": "جزئیات خرید",
-  "editPurchase": "ویرایش خرید"
+  "editPurchase": "ویرایش خرید",
+  "unit_conversion": "تبدیل واحد",
+  "conversion_rate": "نرخ تبدیل",
+  "sales": "فروشات"
 }

@@ -570,5 +570,8 @@
   "item": "توکی",
   "price": "بیه",
   "purchaseDetails": "د پېرلو جزئیات",
-  "editPurchase": "پېرنه ایډیټ کړئ"
+  "editPurchase": "پېرنه ایډیټ کړئ",
+  "unit_conversion": "د واحد تبدیل",
+  "conversion_rate": "د تبدیل نرخ",
+  "sales": "پلورونه"
 }

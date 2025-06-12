@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/unit.dart';
 import '../../widgets/unit_dialog.dart';
+import '../../widgets/unit_conversion_dialog.dart';
 
 class ManageUnitsScreen extends StatelessWidget {
   const ManageUnitsScreen({Key? key}) : super(key: key);
@@ -57,35 +58,45 @@ class ManageUnitsScreen extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium),
                   subtitle:
                       unit.description != null ? Text(unit.description!) : null,
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _showUnitDialog(context, unit: unit);
-                      } else if (value == 'delete') {
-                        _confirmDeleteUnit(context, unit);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.edit, size: 20),
-                            const SizedBox(width: 8),
-                            Text(loc.edit),
-                          ],
-                        ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.swap_horiz),
+                        tooltip: loc.unit_conversion,
+                        onPressed: () => _showUnitConversionDialog(context, unit),
                       ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete,
-                                size: 20, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Text(loc.delete),
-                          ],
-                        ),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _showUnitDialog(context, unit: unit);
+                          } else if (value == 'delete') {
+                            _confirmDeleteUnit(context, unit);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit, size: 20),
+                                const SizedBox(width: 8),
+                                Text(loc.edit),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete,
+                                    size: 20, color: Colors.red),
+                                const SizedBox(width: 8),
+                                Text(loc.delete),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -119,6 +130,56 @@ class ManageUnitsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => UnitDialog(unit: unit),
+    );
+  }
+
+  void _showUnitConversionDialog(BuildContext context, Unit fromUnit) {
+    final provider = context.read<InventoryProvider>();
+    final otherUnits = provider.units.where((u) => u.id != fromUnit.id).toList();
+
+    if (otherUnits.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.no_units),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.unit_conversion),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: otherUnits.length,
+            itemBuilder: (context, index) {
+              final toUnit = otherUnits[index];
+              return ListTile(
+                title: Text(toUnit.name),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => UnitConversionDialog(
+                      fromUnit: fromUnit,
+                      toUnit: toUnit,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context)!.close),
+          ),
+        ],
+      ),
     );
   }
 

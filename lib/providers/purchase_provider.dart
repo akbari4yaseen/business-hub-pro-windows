@@ -5,7 +5,7 @@ import '../models/purchase_item.dart';
 
 class PurchaseProvider with ChangeNotifier {
   final PurchaseDBHelper _db = PurchaseDBHelper();
-  
+
   List<Purchase> _purchases = [];
   bool _isLoading = false;
   String? _error;
@@ -81,18 +81,18 @@ class PurchaseProvider with ChangeNotifier {
   }
 
   // Create new purchase
-  Future<int> createPurchase(Purchase purchase, List<PurchaseItem> items) async {
+  Future<int> createPurchase(
+      Purchase purchase, List<PurchaseItem> items) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       final purchaseId = await _db.createPurchase(purchase);
-      
+
       // Create purchase items
       for (var item in items) {
         await _db.createPurchaseItem(
           PurchaseItem(
-            id: 0, // Will be set by database
             purchaseId: purchaseId,
             productId: item.productId,
             productName: item.productName,
@@ -100,7 +100,6 @@ class PurchaseProvider with ChangeNotifier {
             unitId: item.unitId,
             unitName: item.unitName,
             unitPrice: item.unitPrice,
-            price: item.price,
             expiryDate: item.expiryDate,
             warehouseId: item.warehouseId,
             notes: item.notes,
@@ -123,40 +122,56 @@ class PurchaseProvider with ChangeNotifier {
   }
 
   // Update purchase
-  Future<void> updatePurchase(Purchase purchase, List<PurchaseItem> items) async {
+  Future<void> updatePurchase(
+      Purchase purchase, List<PurchaseItem> items) async {
+    if (purchase.id == null) return;
+
     try {
       _isLoading = true;
       notifyListeners();
 
-      await _db.updatePurchase(purchase);
-
-      // Delete existing items
-      final existingItems = await _db.getPurchaseItems(purchase.id);
-      for (var item in existingItems) {
-        await _db.deletePurchaseItem(item['id'] as int);
-      }
-
-      // Create new items
-      for (var item in items) {
-        await _db.createPurchaseItem(
-          PurchaseItem(
-            id: 0, // Will be set by database
-            purchaseId: purchase.id,
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity,
-            unitId: item.unitId,
-            unitName: item.unitName,
-            unitPrice: item.unitPrice,
-            price: item.price,
-            expiryDate: item.expiryDate,
-            warehouseId: item.warehouseId,
-            notes: item.notes,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
+      await _db.transaction((txn) async {
+        // Update purchase
+        await txn.update(
+          'purchases',
+          purchase.toMap(),
+          where: 'id = ?',
+          whereArgs: [purchase.id],
         );
-      }
+
+        // Get existing items
+        final existingItems = await _db.getPurchaseItems(purchase.id);
+
+        // Delete removed items
+        for (var item in existingItems) {
+          if (!items.any((i) => i.id == item['id'])) {
+            await txn.delete(
+              'purchase_items',
+              where: 'id = ?',
+              whereArgs: [item['id']],
+            );
+          }
+        }
+
+        // Update or insert items
+        for (var item in items) {
+          if (item.id == 0) {
+            // New item
+            await txn.insert('purchase_items', {
+              ...item.toMap(),
+              'purchase_id': purchase.id,
+            });
+          } else {
+            // Existing item
+            await txn.update(
+              'purchase_items',
+              item.toMap(),
+              where: 'id = ?',
+              whereArgs: [item.id],
+            );
+          }
+        }
+      });
 
       await loadPurchases(refresh: true);
     } catch (e) {
@@ -188,15 +203,10 @@ class PurchaseProvider with ChangeNotifier {
   }
 
   // Get purchase by ID
-  Future<Purchase?> getPurchaseById(int id) async {
-    try {
-      final purchase = await _db.getPurchaseById(id);
-      return purchase != null ? Purchase.fromMap(purchase) : null;
-    } catch (e) {
-      debugPrint('Error getting purchase: $e');
-      _error = e.toString();
-      rethrow;
-    }
+  Future<Map<String, dynamic>?> getPurchaseById(int? id) async {
+    if (id == null) return null;
+
+    return await _db.getPurchaseById(id);
   }
 
   // Set search query
@@ -219,15 +229,11 @@ class PurchaseProvider with ChangeNotifier {
   }
 
   // Get purchase items
-  Future<List<PurchaseItem>> getPurchaseItems(int purchaseId) async {
-    try {
-      final items = await _db.getPurchaseItems(purchaseId);
-      return items.map((item) => PurchaseItem.fromMap(item)).toList();
-    } catch (e) {
-      debugPrint('Error getting purchase items: $e');
-      _error = e.toString();
-      rethrow;
-    }
+  Future<List<PurchaseItem>> getPurchaseItems(int? purchaseId) async {
+    if (purchaseId == null) return [];
+
+    final items = await _db.getPurchaseItems(purchaseId);
+    return items.map((item) => PurchaseItem.fromMap(item)).toList();
   }
 
   // Refresh purchases
@@ -239,4 +245,4 @@ class PurchaseProvider with ChangeNotifier {
   Future<void> addPurchase(Purchase purchase, List<PurchaseItem> items) async {
     await createPurchase(purchase, items);
   }
-} 
+}

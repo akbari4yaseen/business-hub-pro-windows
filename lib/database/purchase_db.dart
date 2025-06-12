@@ -10,6 +10,12 @@ class PurchaseDBHelper {
 
   Future<Database> get _db async => await DatabaseHelper().database;
 
+  // Transaction helper
+  Future<void> transaction(Future<void> Function(Transaction txn) action) async {
+    final db = await _db;
+    await db.transaction(action);
+  }
+
   // Purchase operations
   Future<int> createPurchase(Purchase purchase) async {
     final db = await _db;
@@ -73,7 +79,9 @@ class PurchaseDBHelper {
     return await db.rawQuery(sql, args);
   }
 
-  Future<Map<String, dynamic>?> getPurchaseById(int id) async {
+  Future<Map<String, dynamic>?> getPurchaseById(int? id) async {
+    if (id == null) return null;
+    
     final db = await _db;
     final result = await db.rawQuery('''
       SELECT 
@@ -118,7 +126,9 @@ class PurchaseDBHelper {
     return await db.insert('purchase_items', item.toMap());
   }
 
-  Future<List<Map<String, dynamic>>> getPurchaseItems(int purchaseId) async {
+  Future<List<Map<String, dynamic>>> getPurchaseItems(int? purchaseId) async {
+    if (purchaseId == null) return [];
+    
     final db = await _db;
     return await db.rawQuery('''
       SELECT 

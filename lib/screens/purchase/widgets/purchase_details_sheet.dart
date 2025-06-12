@@ -5,8 +5,9 @@ import '../../../models/purchase.dart';
 import '../../../models/purchase_item.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../themes/app_theme.dart';
+import '../../../providers/account_provider.dart';
 
-class PurchaseDetailsSheet extends StatelessWidget {
+class PurchaseDetailsSheet extends StatefulWidget {
   final Purchase purchase;
 
   const PurchaseDetailsSheet({
@@ -15,103 +16,82 @@ class PurchaseDetailsSheet extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _PurchaseDetailsSheetState createState() => _PurchaseDetailsSheetState();
+}
+
+class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
+  late Future<List<PurchaseItem>> _itemsFuture;
+  late Future<Map<String, dynamic>?> _supplierFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.purchase.id != null) {
+      _itemsFuture =
+          context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+      _supplierFuture = context
+          .read<AccountProvider>()
+          .getAccountById(widget.purchase.supplierId);
+    } else {
+      _itemsFuture = Future.value([]);
+      _supplierFuture = Future.value(null);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final provider = context.read<PurchaseProvider>();
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            children: [
-              _buildHandle(),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _buildHeader(loc),
-                    const Divider(),
-                    _buildDetails(loc),
-                    const SizedBox(height: 24),
-                    FutureBuilder<List<PurchaseItem>>(
-                      future: provider.getPurchaseItems(purchase.id),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        
-                        final items = snapshot.data ?? [];
-                        return _buildItemsList(loc, items);
-                      },
+    return FutureBuilder<List<PurchaseItem>>(
+      future: _itemsFuture,
+      builder: (context, snapshot) {
+        final items = snapshot.data ?? [];
+
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _supplierFuture,
+          builder: (context, supplierSnapshot) {
+            final supplier = supplierSnapshot.data;
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.purchaseDetails,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                    if (purchase.notes?.isNotEmpty ?? false) ...[
-                      const SizedBox(height: 24),
-                      _buildNotes(loc),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailRow(loc.invoice, widget.purchase.invoiceNumber!),
+                  _buildDetailRow(loc.date,
+                      widget.purchase.date.toIso8601String().split('T')[0]),
+                  _buildDetailRow(loc.supplier, supplier?['name'] ?? ''),
+                  _buildDetailRow(loc.currency, widget.purchase.currency),
+                  _buildDetailRow(loc.total,
+                      widget.purchase.totalAmount.toStringAsFixed(2)),
+                  if (widget.purchase.notes != null &&
+                      widget.purchase.notes!.isNotEmpty)
+                    _buildDetailRow(loc.notes, widget.purchase.notes!),
+                  const SizedBox(height: 16),
+                  Text(
+                    loc.items,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...items.map((item) => _buildItemRow(item)),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
-    );
-  }
-
-  Widget _buildHandle() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  Widget _buildHeader(AppLocalizations loc) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          loc.purchaseDetails,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          purchase.referenceNumber,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetails(AppLocalizations loc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDetailRow(loc.date, purchase.date.toIso8601String().split('T')[0]),
-        _buildDetailRow(loc.supplier, purchase.supplierName),
-        _buildDetailRow(
-          loc.total,
-          purchase.total.toStringAsFixed(2),
-          isTotal: true,
-        ),
-      ],
     );
   }
 
@@ -141,24 +121,7 @@ class PurchaseDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildItemsList(AppLocalizations loc, List<PurchaseItem> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.items,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...items.map((item) => _buildItemCard(loc, item)),
-      ],
-    );
-  }
-
-  Widget _buildItemCard(AppLocalizations loc, PurchaseItem item) {
+  Widget _buildItemRow(PurchaseItem item) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -167,7 +130,7 @@ class PurchaseDetailsSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.productName,
+              item.productName ?? 'Unknown Product',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -178,14 +141,17 @@ class PurchaseDetailsSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${item.quantity} ${item.unitName}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  '${item.quantity} ${item.unitName ?? 'units'}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   item.price.toStringAsFixed(2),
                   style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -196,7 +162,7 @@ class PurchaseDetailsSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  '${loc.price}: ${item.unitPrice.toStringAsFixed(2)}',
+                  '${AppLocalizations.of(context)!.price}: ${item.unitPrice.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
@@ -209,29 +175,4 @@ class PurchaseDetailsSheet extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildNotes(AppLocalizations loc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.notes,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              purchase.notes ?? '',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-} 
+}

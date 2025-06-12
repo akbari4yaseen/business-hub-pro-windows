@@ -20,7 +20,6 @@ class InvoiceDBHelper {
     bool includeItems = false,
     String? searchQuery,
   }) async {
-    debugPrint('Getting invoices from database...');
     final db = await _db;
     final where = <String>[];
     final args = <dynamic>[];
@@ -52,8 +51,6 @@ class InvoiceDBHelper {
     }
 
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
-    debugPrint('WHERE clause: $whereClause');
-    debugPrint('Query args: $args');
 
     // Add pagination parameters
     if (limit != null) {
@@ -66,7 +63,6 @@ class InvoiceDBHelper {
     }
 
     try {
-      debugPrint('Executing main invoice query...');
       final invoices = await db.rawQuery('''
         SELECT 
           i.*,
@@ -85,12 +81,10 @@ class InvoiceDBHelper {
         ${offset != null ? 'OFFSET ?' : ''}
       ''', args);
 
-      debugPrint('Found ${invoices.length} invoices');
-
       if (!includeItems) return invoices;
 
       // If items are requested, fetch them for each invoice in a single query
-      debugPrint('Fetching items for invoices...');
+
       final invoiceIds = invoices.map((i) => i['id'] as int).toList();
       if (invoiceIds.isEmpty) return invoices;
 
@@ -121,7 +115,6 @@ class InvoiceDBHelper {
         };
       }).toList();
 
-      debugPrint('Successfully fetched all invoice data');
       return result;
     } catch (e) {
       debugPrint('Error in getInvoices: $e');
@@ -338,7 +331,6 @@ class InvoiceDBHelper {
 
   Future<List<Map<String, dynamic>>> getOverdueInvoices(
       {bool includeItems = true}) async {
-    debugPrint('Getting overdue invoices...');
     try {
       final db = await _db;
       final now = DateTime.now().toIso8601String();
@@ -360,8 +352,6 @@ class InvoiceDBHelper {
           AND i.status != 'cancelled'
         ORDER BY i.due_date ASC
       ''', [now]);
-
-      debugPrint('Found ${invoices.length} overdue invoices');
 
       if (!includeItems) return invoices;
 
@@ -396,7 +386,6 @@ class InvoiceDBHelper {
         };
       }).toList();
 
-      debugPrint('Successfully fetched all overdue invoice data');
       return result;
     } catch (e) {
       debugPrint('Error in getOverdueInvoices: $e');
@@ -601,7 +590,8 @@ class InvoiceDBHelper {
     );
   }
 
-  Future<void> cancelInvoice(int invoiceId, {required String localizedDescription}) async {
+  Future<void> cancelInvoice(int invoiceId,
+      {required String localizedDescription}) async {
     final db = await _db;
     try {
       await db.transaction((txn) async {
@@ -624,7 +614,8 @@ class InvoiceDBHelper {
 
         // Only allow cancellation of finalized or partially paid invoices
         if (status != 'finalized' && status != 'partiallyPaid') {
-          throw Exception('Only finalized or partially paid invoices can be cancelled');
+          throw Exception(
+              'Only finalized or partially paid invoices can be cancelled');
         }
 
         // Get total amount
@@ -668,7 +659,8 @@ class InvoiceDBHelper {
                 'amount': paidAmount,
                 'currency': currency,
                 'transaction_type': 'credit',
-                'description': '${localizedDescription} $invoiceNumber (Cancellation)',
+                'description':
+                    '${localizedDescription} $invoiceNumber (Cancellation)',
                 'transaction_id': invoiceId,
                 'transaction_group': 'invoice_cancellation',
               },
