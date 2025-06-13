@@ -3,12 +3,12 @@ import 'package:BusinessHubPro/models/purchase_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../providers/purchase_provider.dart';
-import '../../themes/app_theme.dart';
 import 'dialogs/purchase_form_dialog.dart';
 import 'widgets/purchase_details_sheet.dart';
+import '../../providers/purchase_provider.dart';
+import '../../themes/app_theme.dart';
 import '../../providers/account_provider.dart';
-import '../../providers/inventory_provider.dart';
+import '../../../utils/date_formatters.dart';
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({Key? key}) : super(key: key);
@@ -231,9 +231,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   }
 
   void _showPurchaseDetails(Purchase purchase, PurchaseProvider provider) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
       builder: (context) => PurchaseDetailsSheet(purchase: purchase),
     );
   }
@@ -261,8 +260,11 @@ class _PurchaseCardState extends State<PurchaseCard> {
   void initState() {
     super.initState();
     if (widget.purchase.id != null) {
-      _itemsFuture = context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
-      _supplierFuture = context.read<AccountProvider>().getAccountById(widget.purchase.supplierId);
+      _itemsFuture =
+          context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+      _supplierFuture = context
+          .read<AccountProvider>()
+          .getAccountById(widget.purchase.supplierId);
     } else {
       _itemsFuture = Future.value([]);
       _supplierFuture = Future.value(null);
@@ -285,7 +287,8 @@ class _PurchaseCardState extends State<PurchaseCard> {
 
             return Card(
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 title: Text(
                   widget.purchase.invoiceNumber!,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -294,7 +297,8 @@ class _PurchaseCardState extends State<PurchaseCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 4),
-                    Text('${loc.date}: ${widget.purchase.date.toIso8601String().split('T')[0]}'),
+                    Text(
+                        '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
                     Text('${loc.supplier}: ${supplier?['name'] ?? ''}'),
                     Text(
                       '${loc.total}: ${widget.purchase.totalAmount.toStringAsFixed(2)}',
@@ -310,8 +314,10 @@ class _PurchaseCardState extends State<PurchaseCard> {
                           spacing: 8,
                           children: items.map((item) {
                             return Chip(
-                              label: Text(item.productName ?? 'Unknown Product'),
-                              backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                              label:
+                                  Text(item.productName ?? 'Unknown Product'),
+                              backgroundColor:
+                                  AppTheme.primaryColor.withOpacity(0.1),
                             );
                           }).toList(),
                         ),

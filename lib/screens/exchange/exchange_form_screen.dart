@@ -65,14 +65,13 @@ class _ExchangeFormScreenState extends State<ExchangeFormScreen> {
     _resultAmountController = TextEditingController();
 
     _loadAccounts();
-    _loadExchangeData();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (widget.exchange != null && _accounts.isNotEmpty) {
-      _updateControllers();
+      _loadExchangeData();
     }
   }
 

@@ -565,7 +565,7 @@
   "referenceNumber": "شماره مرجع",
   "requiredField": "این فیلد الزامی است",
   "item": "قلم",
-  "price": "قیمت",
+  "price": "نرخ",
   "purchaseDetails": "جزئیات خرید",
   "editPurchase": "ویرایش خرید",
   "unit_conversion": "تبدیل واحد",

@@ -6,6 +6,7 @@ import '../../../models/purchase_item.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../themes/app_theme.dart';
 import '../../../providers/account_provider.dart';
+import '../../../utils/date_formatters.dart';
 
 class PurchaseDetailsSheet extends StatefulWidget {
   final Purchase purchase;
@@ -22,19 +23,25 @@ class PurchaseDetailsSheet extends StatefulWidget {
 class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
   late Future<List<PurchaseItem>> _itemsFuture;
   late Future<Map<String, dynamic>?> _supplierFuture;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.purchase.id != null) {
+    _itemsFuture = Future.value([]);
+    _supplierFuture = Future.value(null);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized && widget.purchase.id != null) {
       _itemsFuture =
           context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
       _supplierFuture = context
           .read<AccountProvider>()
           .getAccountById(widget.purchase.supplierId);
-    } else {
-      _itemsFuture = Future.value([]);
-      _supplierFuture = Future.value(null);
+      _isInitialized = true;
     }
   }
 
@@ -42,56 +49,77 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return FutureBuilder<List<PurchaseItem>>(
-      future: _itemsFuture,
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? [];
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: FutureBuilder<List<PurchaseItem>>(
+          future: _itemsFuture,
+          builder: (context, snapshot) {
+            final items = snapshot.data ?? [];
 
-        return FutureBuilder<Map<String, dynamic>?>(
-          future: _supplierFuture,
-          builder: (context, supplierSnapshot) {
-            final supplier = supplierSnapshot.data;
+            return FutureBuilder<Map<String, dynamic>?>(
+              future: _supplierFuture,
+              builder: (context, supplierSnapshot) {
+                final supplier = supplierSnapshot.data;
 
-            return Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.purchaseDetails,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              loc.purchaseDetails,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                            loc.invoice, widget.purchase.invoiceNumber!),
+                        _buildDetailRow(
+                            loc.date,
+                            formatLocalizedDate(
+                                context, widget.purchase.date.toString())),
+                        _buildDetailRow(loc.supplier, supplier?['name'] ?? ''),
+                        _buildDetailRow(loc.currency, widget.purchase.currency),
+                        _buildDetailRow(loc.total,
+                            widget.purchase.totalAmount.toStringAsFixed(2)),
+                        if (widget.purchase.notes != null &&
+                            widget.purchase.notes!.isNotEmpty)
+                          _buildDetailRow(loc.notes, widget.purchase.notes!),
+                        const SizedBox(height: 16),
+                        Text(
+                          loc.items,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...items.map((item) => _buildItemRow(item)),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildDetailRow(loc.invoice, widget.purchase.invoiceNumber!),
-                  _buildDetailRow(loc.date,
-                      widget.purchase.date.toIso8601String().split('T')[0]),
-                  _buildDetailRow(loc.supplier, supplier?['name'] ?? ''),
-                  _buildDetailRow(loc.currency, widget.purchase.currency),
-                  _buildDetailRow(loc.total,
-                      widget.purchase.totalAmount.toStringAsFixed(2)),
-                  if (widget.purchase.notes != null &&
-                      widget.purchase.notes!.isNotEmpty)
-                    _buildDetailRow(loc.notes, widget.purchase.notes!),
-                  const SizedBox(height: 16),
-                  Text(
-                    loc.items,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...items.map((item) => _buildItemRow(item)),
-                ],
-              ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 

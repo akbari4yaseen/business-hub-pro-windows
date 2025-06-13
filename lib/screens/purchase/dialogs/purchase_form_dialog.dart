@@ -9,6 +9,8 @@ import '../../../providers/inventory_provider.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../providers/account_provider.dart';
 import '../../../constants/currencies.dart';
+import '../../../utils/date_time_picker_helper.dart';
+import '../../../utils/date_formatters.dart' as dFormatter;
 
 class PurchaseFormDialog extends StatefulWidget {
   final Purchase? purchase;
@@ -30,6 +32,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   late TextEditingController _notesController;
   late DateTime _selectedDate;
   final List<PurchaseItem> _items = [];
+  bool _isInitialized = false;
 
   final List<TextEditingController> _quantityControllers = [];
   final List<TextEditingController> _priceControllers = [];
@@ -47,9 +50,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         TextEditingController(text: widget.purchase?.invoiceNumber ?? '');
     _supplierNameController = TextEditingController(
         text: widget.purchase?.supplierId.toString() ?? '');
-    _dateController = TextEditingController(
-        text: widget.purchase?.date.toIso8601String().split('T')[0] ??
-            DateTime.now().toIso8601String().split('T')[0]);
+    _dateController = TextEditingController();
     _notesController =
         TextEditingController(text: widget.purchase?.notes ?? '');
     _selectedDate = widget.purchase?.date ?? DateTime.now();
@@ -68,6 +69,16 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       _loadSuppliers();
       _loadWarehouses();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _dateController.text = dFormatter.formatLocalizedDate(
+          context, widget.purchase?.date.toString() ?? DateTime.now().toString());
+      _isInitialized = true;
+    }
   }
 
   Future<void> _loadSuppliers() async {
@@ -162,16 +173,15 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await pickLocalizedDate(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text = picked.toIso8601String().split('T')[0];
+        _dateController.text =
+            dFormatter.formatLocalizedDate(context, picked.toString());
       });
     }
   }
@@ -206,7 +216,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
     setState(() {
       _items.add(PurchaseItem(
-        id: 0,
         purchaseId: widget.purchase?.id ?? 0,
         productId: product.id!,
         quantity: 0,
@@ -357,339 +366,363 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     return Consumer<InventoryProvider>(
       builder: (context, inventoryProvider, child) {
         final products = inventoryProvider.products;
-        return AlertDialog(
-          title: Text(
-              widget.purchase == null ? loc.addPurchase : loc.editPurchase),
-          content: _isLoadingSuppliers
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: _invoiceNumberController,
-                          decoration: InputDecoration(
-                            labelText: loc.invoice,
-                            border: const OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return loc.requiredField;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Autocomplete<Map<String, dynamic>>(
-                          optionsBuilder: (TextEditingValue textEditingValue) {
-                            if (textEditingValue.text.isEmpty) {
-                              return _suppliers;
-                            }
-                            return _suppliers.where((supplier) {
-                              return supplier['name']
-                                  .toString()
-                                  .toLowerCase()
-                                  .contains(
-                                      textEditingValue.text.toLowerCase());
-                            });
-                          },
-                          displayStringForOption: (option) => option['name'],
-                          fieldViewBuilder: (context, textEditingController,
-                              focusNode, onFieldSubmitted) {
-                            return TextFormField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                labelText: loc.supplier,
-                                border: const OutlineInputBorder(),
-                                suffixIcon: _isLoadingSuppliers
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2),
-                                      )
-                                    : null,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return loc.requiredField;
-                                }
-                                return null;
-                              },
-                            );
-                          },
-                          onSelected: (Map<String, dynamic> supplier) {
-                            setState(() {
-                              _selectedSupplier = supplier;
-                              _supplierNameController.text = supplier['name'];
-                            });
-                          },
-                          optionsViewBuilder: (context, onSelected, options) {
-                            return Align(
-                              alignment: Alignment.topLeft,
-                              child: Material(
-                                elevation: 4,
-                                child: ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxHeight: 200),
-                                  child: ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    itemCount: options.length,
-                                    itemBuilder:
-                                        (BuildContext context, int index) {
-                                      final option = options.elementAt(index);
-                                      return ListTile(
-                                        title: Text(option['name']),
-                                        onTap: () => onSelected(option),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _dateController,
-                          decoration: InputDecoration(
-                            labelText: loc.date,
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.calendar_today),
-                              onPressed: () => _selectDate(context),
-                            ),
-                          ),
-                          readOnly: true,
-                          onTap: () => _selectDate(context),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedCurrency,
-                          decoration: InputDecoration(
-                            labelText: loc.currency,
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: currencies.map((currency) {
-                            return DropdownMenuItem(
-                              value: currency,
-                              child: Text(currency),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedCurrency = value;
-                              });
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _notesController,
-                          decoration: InputDecoration(
-                            labelText: loc.notes,
-                            border: const OutlineInputBorder(),
-                          ),
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              loc.items,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: _addItem,
-                              icon: const Icon(Icons.add),
-                              label: Text(loc.addItem),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ...List.generate(_items.length, (index) {
-                          final item = _items[index];
-                          final product = products.firstWhere(
-                            (p) => p.id == item.productId,
-                            orElse: () => products.first,
-                          );
-
-                          // Get product units for the selected product
-                          final productUnits =
-                              inventoryProvider.getProductUnits(product.id!);
-                          final unit = productUnits.firstWhere(
-                            (u) => u.id == item.unitId,
-                            orElse: () => productUnits.first,
-                          );
-
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${loc.item} ${index + 1}',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete),
-                                        onPressed: () => _removeItem(index),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  DropdownButtonFormField<int>(
-                                    value: product.id,
-                                    decoration: InputDecoration(
-                                      labelText: loc.product,
-                                      border: const OutlineInputBorder(),
-                                    ),
-                                    items: products.map((p) {
-                                      return DropdownMenuItem(
-                                        value: p.id,
-                                        child: Text(p.name),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        final selectedProduct = products
-                                            .firstWhere((p) => p.id == value);
-                                        final selectedProductUnits =
-                                            inventoryProvider.getProductUnits(
-                                                selectedProduct.id!);
-                                        final selectedUnit =
-                                            selectedProductUnits.first;
-                                        _updateItem(index, selectedProduct,
-                                            selectedUnit);
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: DropdownButtonFormField<int>(
-                                          value: unit.id,
-                                          decoration: InputDecoration(
-                                            labelText: loc.unit,
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          items: productUnits.map((u) {
-                                            return DropdownMenuItem(
-                                              value: u.id,
-                                              child: Text(inventoryProvider
-                                                  .getUnitName(u.id)),
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) {
-                                            if (value != null) {
-                                              final selectedUnit =
-                                                  productUnits.firstWhere(
-                                                      (u) => u.id == value);
-                                              _updateItem(
-                                                  index, product, selectedUnit);
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller:
-                                              _quantityControllers[index],
-                                          decoration: InputDecoration(
-                                            labelText: loc.quantity,
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (value) {
-                                            _updateItem(index, product, unit);
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _priceControllers[index],
-                                          decoration: InputDecoration(
-                                            labelText: loc.unitPrice,
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (value) {
-                                            _updateItem(index, product, unit);
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: DropdownButtonFormField<
-                                            Map<String, dynamic>>(
-                                          value: _warehouses.firstWhere(
-                                            (w) => w['id'] == item.warehouseId,
-                                            orElse: () => _warehouses.first,
-                                          ),
-                                          decoration: InputDecoration(
-                                            labelText: loc.warehouse,
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          items: _warehouses.map((w) {
-                                            return DropdownMenuItem(
-                                              value: w,
-                                              child: Text(w['name']),
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) {
-                                            if (value != null) {
-                                              _updateWarehouse(
-                                                  index, value['id']);
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
+        return Dialog(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.purchase == null ? loc.addPurchase : loc.editPurchase,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
                 ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(loc.cancel),
+                const Divider(height: 1),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: _isLoadingSuppliers
+                        ? const Center(child: CircularProgressIndicator())
+                        : Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextFormField(
+                                  controller: _invoiceNumberController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.invoice,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return loc.requiredField;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                Autocomplete<Map<String, dynamic>>(
+                                  optionsBuilder: (TextEditingValue textEditingValue) {
+                                    if (textEditingValue.text.isEmpty) {
+                                      return _suppliers;
+                                    }
+                                    return _suppliers.where((supplier) {
+                                      return supplier['name']
+                                          .toString()
+                                          .toLowerCase()
+                                          .contains(
+                                              textEditingValue.text.toLowerCase());
+                                    });
+                                  },
+                                  displayStringForOption: (option) => option['name'],
+                                  fieldViewBuilder: (context, textEditingController,
+                                      focusNode, onFieldSubmitted) {
+                                    return TextFormField(
+                                      controller: textEditingController,
+                                      focusNode: focusNode,
+                                      decoration: InputDecoration(
+                                        labelText: loc.supplier,
+                                        suffixIcon: _isLoadingSuppliers
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                    strokeWidth: 2),
+                                              )
+                                            : null,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return loc.requiredField;
+                                        }
+                                        return null;
+                                      },
+                                    );
+                                  },
+                                  onSelected: (Map<String, dynamic> supplier) {
+                                    setState(() {
+                                      _selectedSupplier = supplier;
+                                      _supplierNameController.text = supplier['name'];
+                                    });
+                                  },
+                                  optionsViewBuilder: (context, onSelected, options) {
+                                    return Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Material(
+                                        elevation: 4,
+                                        child: ConstrainedBox(
+                                          constraints:
+                                              const BoxConstraints(maxHeight: 200),
+                                          child: ListView.builder(
+                                            padding: EdgeInsets.zero,
+                                            shrinkWrap: true,
+                                            itemCount: options.length,
+                                            itemBuilder:
+                                                (BuildContext context, int index) {
+                                              final option = options.elementAt(index);
+                                              return ListTile(
+                                                title: Text(option['name']),
+                                                onTap: () => onSelected(option),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _dateController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.date,
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.calendar_today),
+                                      onPressed: () => _selectDate(context),
+                                    ),
+                                  ),
+                                  readOnly: true,
+                                  onTap: () => _selectDate(context),
+                                ),
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedCurrency,
+                                  decoration: InputDecoration(
+                                    labelText: loc.currency,
+                                  ),
+                                  items: currencies.map((currency) {
+                                    return DropdownMenuItem(
+                                      value: currency,
+                                      child: Text(currency),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _selectedCurrency = value;
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _notesController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.notes,
+                                  ),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      loc.items,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: _addItem,
+                                      icon: const Icon(Icons.add),
+                                      label: Text(loc.addItem),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                ...List.generate(_items.length, (index) {
+                                  final item = _items[index];
+                                  final product = products.firstWhere(
+                                    (p) => p.id == item.productId,
+                                    orElse: () => products.first,
+                                  );
+
+                                  // Get product units for the selected product
+                                  final productUnits =
+                                      inventoryProvider.getProductUnits(product.id!);
+                                  final unit = productUnits.firstWhere(
+                                    (u) => u.id == item.unitId,
+                                    orElse: () => productUnits.first,
+                                  );
+
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                '${loc.item} ${index + 1}',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete),
+                                                onPressed: () => _removeItem(index),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          DropdownButtonFormField<int>(
+                                            value: product.id,
+                                            decoration: InputDecoration(
+                                              labelText: loc.product,
+                                            ),
+                                            items: products.map((p) {
+                                              return DropdownMenuItem(
+                                                value: p.id,
+                                                child: Text(p.name),
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              if (value != null) {
+                                                final selectedProduct = products
+                                                    .firstWhere((p) => p.id == value);
+                                                final selectedProductUnits =
+                                                    inventoryProvider.getProductUnits(
+                                                        selectedProduct.id!);
+                                                final selectedUnit =
+                                                    selectedProductUnits.first;
+                                                _updateItem(index, selectedProduct,
+                                                    selectedUnit);
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: DropdownButtonFormField<int>(
+                                                  value: unit.id,
+                                                  decoration: InputDecoration(
+                                                    labelText: loc.unit,
+                                                  ),
+                                                  items: productUnits.map((u) {
+                                                    return DropdownMenuItem(
+                                                      value: u.id,
+                                                      child: Text(inventoryProvider
+                                                          .getUnitName(u.id)),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (value) {
+                                                    if (value != null) {
+                                                      final selectedUnit =
+                                                          productUnits.firstWhere(
+                                                              (u) => u.id == value);
+                                                      _updateItem(
+                                                          index, product, selectedUnit);
+                                                    }
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller:
+                                                      _quantityControllers[index],
+                                                  decoration: InputDecoration(
+                                                    labelText: loc.quantity,
+                                                  ),
+                                                  keyboardType: TextInputType.number,
+                                                  onChanged: (value) {
+                                                    _updateItem(index, product, unit);
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller: _priceControllers[index],
+                                                  decoration: InputDecoration(
+                                                    labelText: loc.unitPrice,
+                                                  ),
+                                                  keyboardType: TextInputType.number,
+                                                  onChanged: (value) {
+                                                    _updateItem(index, product, unit);
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: DropdownButtonFormField<
+                                                    Map<String, dynamic>>(
+                                                  value: _warehouses.firstWhere(
+                                                    (w) => w['id'] == item.warehouseId,
+                                                    orElse: () => _warehouses.first,
+                                                  ),
+                                                  decoration: InputDecoration(
+                                                    labelText: loc.warehouse,
+                                                  ),
+                                                  items: _warehouses.map((w) {
+                                                    return DropdownMenuItem(
+                                                      value: w,
+                                                      child: Text(w['name']),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (value) {
+                                                    if (value != null) {
+                                                      _updateWarehouse(
+                                                          index, value['id']);
+                                                    }
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                  ),
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(loc.cancel),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _isLoadingSuppliers ? null : _savePurchase,
+                        child: Text(loc.save),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: _isLoadingSuppliers ? null : _savePurchase,
-              child: Text(loc.save),
-            ),
-          ],
+          ),
         );
       },
     );
