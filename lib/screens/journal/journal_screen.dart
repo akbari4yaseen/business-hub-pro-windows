@@ -343,6 +343,10 @@ void _showFilterModal() {
         actions: [
           if (!_isSearching) ...[
             IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshJournals,
+            ),
+            IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _isSearching = true),
             ),

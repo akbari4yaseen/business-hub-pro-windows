@@ -1,18 +1,27 @@
-import 'package:BusinessHubPro/utils/date_formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'exchange/exchange_details_widget.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/exchange.dart';
 import '../database/exchange_db.dart';
-import 'exchange/exchange_details_widget.dart';
+import '../../utils/date_formatters.dart';
 
 class ExchangeListWidget extends StatefulWidget {
   final Function(Exchange) onEdit;
   final Function(Exchange) onDelete;
+  final List<Exchange> exchanges;
+  final bool isLoading;
+  final bool hasMore;
+  final ScrollController scrollController;
 
   const ExchangeListWidget({
     Key? key,
     required this.onEdit,
     required this.onDelete,
+    required this.exchanges,
+    required this.isLoading,
+    required this.hasMore,
+    required this.scrollController,
   }) : super(key: key);
 
   @override
@@ -20,6 +29,8 @@ class ExchangeListWidget extends StatefulWidget {
 }
 
 class _ExchangeListWidgetState extends State<ExchangeListWidget> {
+  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
+
   final _exchangeDb = ExchangeDBHelper();
   final _scrollController = ScrollController();
   List<Exchange> _exchanges = [];
@@ -77,15 +88,16 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_exchanges.isEmpty && !_isLoading) {
+    final loc = AppLocalizations.of(context)!;
+    if (widget.exchanges.isEmpty && !widget.isLoading) {
       return const Center(child: Text('No exchanges found'));
     }
 
     return ListView.builder(
-      controller: _scrollController,
-      itemCount: _exchanges.length + (_hasMore ? 1 : 0),
+      controller: widget.scrollController,
+      itemCount: widget.exchanges.length + (widget.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == _exchanges.length) {
+        if (index == widget.exchanges.length) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
@@ -94,31 +106,31 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
           );
         }
 
-        final exchange = _exchanges[index];
+        final exchange = widget.exchanges[index];
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
           child: ListTile(
             onTap: () => _showDetails(exchange),
             title: Text(
-              '${exchange.fromCurrency} → ${exchange.toCurrency}',
+              '${exchange.fromCurrency} ${loc.to} ${exchange.toCurrency}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Amount: ${NumberFormat.currency(symbol: exchange.fromCurrency).format(exchange.amount)}',
+                  '${loc.amount}: \u200E${_numberFormatter.format(exchange.amount)} ${exchange.fromCurrency}',
                 ),
                 Text(
-                  'Rate: ${exchange.rate} (${exchange.operator})',
+                  '${loc.rate}: ${exchange.rate} (${exchange.operator})',
                 ),
                 Text(
-                  'Result: ${NumberFormat.currency(symbol: exchange.toCurrency).format(exchange.resultAmount)}',
+                  '${loc.resultAmount}: \u200E${_numberFormatter.format(exchange.resultAmount)} ${exchange.toCurrency}',
                 ),
                 if (exchange.profitLoss != 0)
                   Text(
-                    'Profit/Loss: ${NumberFormat.currency(symbol: exchange.toCurrency).format(exchange.profitLoss)}',
+                    '${loc.profitLoss}: \u200E${_numberFormatter.format(exchange.profitLoss)} ${exchange.toCurrency}',
                     style: TextStyle(
                       color:
                           exchange.profitLoss >= 0 ? Colors.green : Colors.red,
@@ -145,25 +157,25 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'details',
                   child: ListTile(
                     leading: Icon(Icons.info),
-                    title: Text('Details'),
+                    title: Text(loc.details),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: ListTile(
                     leading: Icon(Icons.edit),
-                    title: Text('Edit'),
+                    title: Text(loc.edit),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
                     leading: Icon(Icons.delete),
-                    title: Text('Delete'),
+                    title: Text(loc.delete),
                   ),
                 ),
               ],
