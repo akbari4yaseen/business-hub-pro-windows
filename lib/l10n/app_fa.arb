@@ -561,7 +561,7 @@
   "noPurchasesFound": "خریدی یافت نشد",
   "purchaseDeleted": "خرید با موفقیت حذف شد",
   "deletePurchase": "حذف خرید",
-  "confirmDeletePurchase": "آیا مطمئن هستید که می‌خواهید خرید {referenceNumber} را حذف کنید؟",
+  "deletePurchaseConfirmation": "آیا از حذف این خرید اطمینان دارید؟ این عمل قابل بازگشت نیست.",
   "referenceNumber": "شماره مرجع",
   "requiredField": "این فیلد الزامی است",
   "item": "قلم",

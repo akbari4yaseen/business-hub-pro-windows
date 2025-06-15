@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../models/purchase.dart';
 import '../../../models/purchase_item.dart';
 import '../../../providers/purchase_provider.dart';
@@ -24,6 +25,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
   late Future<List<PurchaseItem>> _itemsFuture;
   late Future<Map<String, dynamic>?> _supplierFuture;
   bool _isInitialized = false;
+  final _amountFormatter = NumberFormat('#,###.##');
 
   @override
   void initState() {
@@ -96,8 +98,10 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                                 context, widget.purchase.date.toString())),
                         _buildDetailRow(loc.supplier, supplier?['name'] ?? ''),
                         _buildDetailRow(loc.currency, widget.purchase.currency),
-                        _buildDetailRow(loc.total,
-                            widget.purchase.totalAmount.toStringAsFixed(2)),
+                        _buildDetailRow(
+                            loc.total,
+                            _amountFormatter
+                                .format(widget.purchase.totalAmount)),
                         if (widget.purchase.notes != null &&
                             widget.purchase.notes!.isNotEmpty)
                           _buildDetailRow(loc.notes, widget.purchase.notes!),
@@ -169,7 +173,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${item.quantity} ${item.unitName ?? 'units'}',
+                  '${_amountFormatter.format(item.quantity)} ${item.unitName ?? 'units'}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -177,7 +181,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  item.price.toStringAsFixed(2),
+                  _amountFormatter.format(item.price),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -190,7 +194,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  '${AppLocalizations.of(context)!.price}: ${item.unitPrice.toStringAsFixed(2)}',
+                  '${AppLocalizations.of(context)!.price}: ${_amountFormatter.format(item.unitPrice)}',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,

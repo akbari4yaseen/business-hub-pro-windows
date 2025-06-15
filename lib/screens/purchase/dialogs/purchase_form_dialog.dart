@@ -39,9 +39,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   String _selectedCurrency = 'AFN';
   Map<String, dynamic>? _selectedSupplier;
   List<Map<String, dynamic>> _suppliers = [];
-  List<Map<String, dynamic>> _warehouses = [];
   bool _isLoadingSuppliers = false;
-  bool _isLoadingWarehouses = false;
 
   @override
   void initState() {
@@ -67,7 +65,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         await inventoryProvider.initialize();
       }
       _loadSuppliers();
-      _loadWarehouses();
     });
   }
 
@@ -75,8 +72,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _dateController.text = dFormatter.formatLocalizedDate(
-          context, widget.purchase?.date.toString() ?? DateTime.now().toString());
+      _dateController.text = dFormatter.formatLocalizedDate(context,
+          widget.purchase?.date.toString() ?? DateTime.now().toString());
       _isInitialized = true;
     }
   }
@@ -109,31 +106,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       if (mounted) {
         setState(() {
           _isLoadingSuppliers = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadWarehouses() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingWarehouses = true;
-    });
-
-    try {
-      final inventoryProvider = context.read<InventoryProvider>();
-      await inventoryProvider.initialize(); // This will load warehouses
-      if (!mounted) return;
-
-      setState(() {
-        _warehouses =
-            inventoryProvider.warehouses.map((w) => w.toMap()).toList();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingWarehouses = false;
         });
       }
     }
@@ -221,7 +193,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         quantity: 0,
         unitId: productUnits.first.id!,
         unitPrice: 0,
-        warehouseId: _warehouses.isNotEmpty ? _warehouses.first['id'] : 0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       ));
@@ -251,23 +222,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         quantity: double.tryParse(_quantityControllers[index].text) ?? 0,
         unitId: unit.id!,
         unitPrice: double.tryParse(_priceControllers[index].text) ?? 0,
-        warehouseId: 0,
-        createdAt: _items[index].createdAt,
-        updatedAt: DateTime.now(),
-      );
-    });
-  }
-
-  void _updateWarehouse(int index, int warehouseId) {
-    setState(() {
-      _items[index] = PurchaseItem(
-        id: _items[index].id,
-        purchaseId: _items[index].purchaseId,
-        productId: _items[index].productId,
-        quantity: _items[index].quantity,
-        unitId: _items[index].unitId,
-        unitPrice: _items[index].unitPrice,
-        warehouseId: warehouseId,
         createdAt: _items[index].createdAt,
         updatedAt: DateTime.now(),
       );
@@ -297,19 +251,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         );
         return;
       }
-      if (item.warehouseId == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.warehouse),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
     }
 
     final provider = context.read<PurchaseProvider>();
-    final inventoryProvider = context.read<InventoryProvider>();
 
     // Update items before saving
     for (var i = 0; i < _items.length; i++) {
@@ -320,7 +264,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         quantity: _items[i].quantity,
         unitId: _items[i].unitId,
         unitPrice: _items[i].unitPrice,
-        warehouseId: _items[i].warehouseId,
         createdAt: _items[i].createdAt,
         updatedAt: DateTime.now(),
       );
@@ -378,7 +321,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.purchase == null ? loc.addPurchase : loc.editPurchase,
+                        widget.purchase == null
+                            ? loc.addPurchase
+                            : loc.editPurchase,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       IconButton(
@@ -413,7 +358,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                 ),
                                 const SizedBox(height: 16),
                                 Autocomplete<Map<String, dynamic>>(
-                                  optionsBuilder: (TextEditingValue textEditingValue) {
+                                  optionsBuilder:
+                                      (TextEditingValue textEditingValue) {
                                     if (textEditingValue.text.isEmpty) {
                                       return _suppliers;
                                     }
@@ -421,13 +367,16 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                       return supplier['name']
                                           .toString()
                                           .toLowerCase()
-                                          .contains(
-                                              textEditingValue.text.toLowerCase());
+                                          .contains(textEditingValue.text
+                                              .toLowerCase());
                                     });
                                   },
-                                  displayStringForOption: (option) => option['name'],
-                                  fieldViewBuilder: (context, textEditingController,
-                                      focusNode, onFieldSubmitted) {
+                                  displayStringForOption: (option) =>
+                                      option['name'],
+                                  fieldViewBuilder: (context,
+                                      textEditingController,
+                                      focusNode,
+                                      onFieldSubmitted) {
                                     return TextFormField(
                                       controller: textEditingController,
                                       focusNode: focusNode,
@@ -437,8 +386,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
-                                                    strokeWidth: 2),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        strokeWidth: 2),
                                               )
                                             : null,
                                       ),
@@ -453,24 +403,27 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                   onSelected: (Map<String, dynamic> supplier) {
                                     setState(() {
                                       _selectedSupplier = supplier;
-                                      _supplierNameController.text = supplier['name'];
+                                      _supplierNameController.text =
+                                          supplier['name'];
                                     });
                                   },
-                                  optionsViewBuilder: (context, onSelected, options) {
+                                  optionsViewBuilder:
+                                      (context, onSelected, options) {
                                     return Align(
                                       alignment: Alignment.topLeft,
                                       child: Material(
                                         elevation: 4,
                                         child: ConstrainedBox(
-                                          constraints:
-                                              const BoxConstraints(maxHeight: 200),
+                                          constraints: const BoxConstraints(
+                                              maxHeight: 200),
                                           child: ListView.builder(
                                             padding: EdgeInsets.zero,
                                             shrinkWrap: true,
                                             itemCount: options.length,
-                                            itemBuilder:
-                                                (BuildContext context, int index) {
-                                              final option = options.elementAt(index);
+                                            itemBuilder: (BuildContext context,
+                                                int index) {
+                                              final option =
+                                                  options.elementAt(index);
                                               return ListTile(
                                                 title: Text(option['name']),
                                                 onTap: () => onSelected(option),
@@ -525,7 +478,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                 ),
                                 const SizedBox(height: 24),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       loc.items,
@@ -550,8 +504,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                   );
 
                                   // Get product units for the selected product
-                                  final productUnits =
-                                      inventoryProvider.getProductUnits(product.id!);
+                                  final productUnits = inventoryProvider
+                                      .getProductUnits(product.id!);
                                   final unit = productUnits.firstWhere(
                                     (u) => u.id == item.unitId,
                                     orElse: () => productUnits.first,
@@ -562,7 +516,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             mainAxisAlignment:
@@ -577,7 +532,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                               ),
                                               IconButton(
                                                 icon: const Icon(Icons.delete),
-                                                onPressed: () => _removeItem(index),
+                                                onPressed: () =>
+                                                    _removeItem(index),
                                               ),
                                             ],
                                           ),
@@ -595,14 +551,19 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             }).toList(),
                                             onChanged: (value) {
                                               if (value != null) {
-                                                final selectedProduct = products
-                                                    .firstWhere((p) => p.id == value);
+                                                final selectedProduct =
+                                                    products.firstWhere(
+                                                        (p) => p.id == value);
                                                 final selectedProductUnits =
-                                                    inventoryProvider.getProductUnits(
-                                                        selectedProduct.id!);
+                                                    inventoryProvider
+                                                        .getProductUnits(
+                                                            selectedProduct
+                                                                .id!);
                                                 final selectedUnit =
                                                     selectedProductUnits.first;
-                                                _updateItem(index, selectedProduct,
+                                                _updateItem(
+                                                    index,
+                                                    selectedProduct,
                                                     selectedUnit);
                                               }
                                             },
@@ -611,7 +572,25 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                           Row(
                                             children: [
                                               Expanded(
-                                                child: DropdownButtonFormField<int>(
+                                                child: TextFormField(
+                                                  controller:
+                                                      _quantityControllers[
+                                                          index],
+                                                  decoration: InputDecoration(
+                                                    labelText: loc.quantity,
+                                                  ),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  onChanged: (value) {
+                                                    _updateItem(
+                                                        index, product, unit);
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Expanded(
+                                                child: DropdownButtonFormField<
+                                                    int>(
                                                   value: unit.id,
                                                   decoration: InputDecoration(
                                                     labelText: loc.unit,
@@ -619,32 +598,24 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                                   items: productUnits.map((u) {
                                                     return DropdownMenuItem(
                                                       value: u.id,
-                                                      child: Text(inventoryProvider
-                                                          .getUnitName(u.id)),
+                                                      child: Text(
+                                                          inventoryProvider
+                                                              .getUnitName(
+                                                                  u.id)),
                                                     );
                                                   }).toList(),
                                                   onChanged: (value) {
                                                     if (value != null) {
                                                       final selectedUnit =
-                                                          productUnits.firstWhere(
-                                                              (u) => u.id == value);
+                                                          productUnits
+                                                              .firstWhere((u) =>
+                                                                  u.id ==
+                                                                  value);
                                                       _updateItem(
-                                                          index, product, selectedUnit);
+                                                          index,
+                                                          product,
+                                                          selectedUnit);
                                                     }
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: TextFormField(
-                                                  controller:
-                                                      _quantityControllers[index],
-                                                  decoration: InputDecoration(
-                                                    labelText: loc.quantity,
-                                                  ),
-                                                  keyboardType: TextInputType.number,
-                                                  onChanged: (value) {
-                                                    _updateItem(index, product, unit);
                                                   },
                                                 ),
                                               ),
@@ -655,38 +626,17 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             children: [
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _priceControllers[index],
+                                                  controller:
+                                                      _priceControllers[index],
                                                   decoration: InputDecoration(
-                                                    labelText: loc.unitPrice,
-                                                  ),
-                                                  keyboardType: TextInputType.number,
+                                                      labelText: loc.unitPrice,
+                                                      suffixText:
+                                                          _selectedCurrency),
+                                                  keyboardType:
+                                                      TextInputType.number,
                                                   onChanged: (value) {
-                                                    _updateItem(index, product, unit);
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: DropdownButtonFormField<
-                                                    Map<String, dynamic>>(
-                                                  value: _warehouses.firstWhere(
-                                                    (w) => w['id'] == item.warehouseId,
-                                                    orElse: () => _warehouses.first,
-                                                  ),
-                                                  decoration: InputDecoration(
-                                                    labelText: loc.warehouse,
-                                                  ),
-                                                  items: _warehouses.map((w) {
-                                                    return DropdownMenuItem(
-                                                      value: w,
-                                                      child: Text(w['name']),
-                                                    );
-                                                  }).toList(),
-                                                  onChanged: (value) {
-                                                    if (value != null) {
-                                                      _updateWarehouse(
-                                                          index, value['id']);
-                                                    }
+                                                    _updateItem(
+                                                        index, product, unit);
                                                   },
                                                 ),
                                               ),

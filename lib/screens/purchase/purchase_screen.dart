@@ -2,6 +2,7 @@ import 'package:BusinessHubPro/models/purchase.dart';
 import 'package:BusinessHubPro/models/purchase_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dialogs/purchase_form_dialog.dart';
 import 'widgets/purchase_details_sheet.dart';
@@ -9,6 +10,8 @@ import '../../providers/purchase_provider.dart';
 import '../../themes/app_theme.dart';
 import '../../providers/account_provider.dart';
 import '../../../utils/date_formatters.dart';
+
+final _amountFormatter = NumberFormat('#,###.##');
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({Key? key}) : super(key: key);
@@ -271,6 +274,56 @@ class _PurchaseCardState extends State<PurchaseCard> {
     }
   }
 
+  Future<void> _deletePurchase() async {
+    final loc = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.deletePurchase),
+        content: Text(loc.deletePurchaseConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await context
+            .read<PurchaseProvider>()
+            .deletePurchase(widget.purchase.id!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.purchaseDeleted)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.error),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _editPurchase() {
+    showDialog(
+      context: context,
+      builder: (context) => PurchaseFormDialog(purchase: widget.purchase),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -289,9 +342,51 @@ class _PurchaseCardState extends State<PurchaseCard> {
               child: ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                title: Text(
-                  widget.purchase.invoiceNumber!,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.purchase.invoiceNumber!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            _editPurchase();
+                            break;
+                          case 'delete':
+                            _deletePurchase();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit, size: 20),
+                              const SizedBox(width: 8),
+                              Text(loc.edit),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.delete,
+                                  size: 20, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text(loc.delete,
+                                  style: const TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +396,7 @@ class _PurchaseCardState extends State<PurchaseCard> {
                         '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
                     Text('${loc.supplier}: ${supplier?['name'] ?? ''}'),
                     Text(
-                      '${loc.total}: ${widget.purchase.totalAmount.toStringAsFixed(2)}',
+                      '${loc.total}: \u200E${_amountFormatter.format(widget.purchase.totalAmount)} ${widget.purchase.currency}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         color: AppTheme.primaryColor,

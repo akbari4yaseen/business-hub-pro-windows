@@ -101,7 +101,6 @@ class PurchaseProvider with ChangeNotifier {
             unitName: item.unitName,
             unitPrice: item.unitPrice,
             expiryDate: item.expiryDate,
-            warehouseId: item.warehouseId,
             notes: item.notes,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),

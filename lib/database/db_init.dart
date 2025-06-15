@@ -270,14 +270,12 @@ class DbInit {
         unit_id INTEGER NOT NULL, -- e.g., Ton, Burlap, etc.
         unit_price REAL NOT NULL,
         expiry_date TEXT,
-        warehouse_id INTEGER NOT NULL,
         notes TEXT,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id),
-        FOREIGN KEY (unit_id) REFERENCES units(id),
-        FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
+        FOREIGN KEY (unit_id) REFERENCES units(id)
       ) 
 ''');
   }

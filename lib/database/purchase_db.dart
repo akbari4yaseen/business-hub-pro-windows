@@ -11,7 +11,8 @@ class PurchaseDBHelper {
   Future<Database> get _db async => await DatabaseHelper().database;
 
   // Transaction helper
-  Future<void> transaction(Future<void> Function(Transaction txn) action) async {
+  Future<void> transaction(
+      Future<void> Function(Transaction txn) action) async {
     final db = await _db;
     await db.transaction(action);
   }
@@ -81,7 +82,7 @@ class PurchaseDBHelper {
 
   Future<Map<String, dynamic>?> getPurchaseById(int? id) async {
     if (id == null) return null;
-    
+
     final db = await _db;
     final result = await db.rawQuery('''
       SELECT 
@@ -128,18 +129,16 @@ class PurchaseDBHelper {
 
   Future<List<Map<String, dynamic>>> getPurchaseItems(int? purchaseId) async {
     if (purchaseId == null) return [];
-    
+
     final db = await _db;
     return await db.rawQuery('''
       SELECT 
         pi.*,
         p.name as product_name,
-        u.name as unit_name,
-        w.name as warehouse_name
+        u.name as unit_name
       FROM purchase_items pi
       LEFT JOIN products p ON pi.product_id = p.id
       LEFT JOIN units u ON pi.unit_id = u.id
-      LEFT JOIN warehouses w ON pi.warehouse_id = w.id
       WHERE pi.purchase_id = ?
       ORDER BY pi.id
     ''', [purchaseId]);
@@ -163,4 +162,4 @@ class PurchaseDBHelper {
       whereArgs: [id],
     );
   }
-} 
+}

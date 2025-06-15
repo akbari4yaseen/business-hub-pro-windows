@@ -8,8 +8,6 @@ class PurchaseItem {
   final String? unitName;
   final double unitPrice;
   final DateTime? expiryDate;
-  final int warehouseId;
-  final String? warehouseName;
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -24,8 +22,6 @@ class PurchaseItem {
     this.unitName,
     required this.unitPrice,
     this.expiryDate,
-    required this.warehouseId,
-    this.warehouseName,
     this.notes,
     required this.createdAt,
     required this.updatedAt,
@@ -42,7 +38,6 @@ class PurchaseItem {
       'unit_id': unitId,
       'unit_price': unitPrice,
       'expiry_date': expiryDate?.toIso8601String(),
-      'warehouse_id': warehouseId,
       'notes': notes,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -62,8 +57,6 @@ class PurchaseItem {
       expiryDate: map['expiry_date'] != null
           ? DateTime.parse(map['expiry_date'] as String)
           : null,
-      warehouseId: map['warehouse_id'] as int,
-      warehouseName: map['warehouse_name'] as String?,
       notes: map['notes'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
