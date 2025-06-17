@@ -188,7 +188,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
     setState(() {
       _items.add(PurchaseItem(
-        purchaseId: widget.purchase?.id ?? 0,
+        purchaseId: 0,
         productId: product.id!,
         quantity: 0,
         unitId: productUnits.first.id!,
@@ -538,34 +538,60 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             ],
                                           ),
                                           const SizedBox(height: 16),
-                                          DropdownButtonFormField<int>(
-                                            value: product.id,
-                                            decoration: InputDecoration(
-                                              labelText: loc.product,
-                                            ),
-                                            items: products.map((p) {
-                                              return DropdownMenuItem(
-                                                value: p.id,
-                                                child: Text(p.name),
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
-                                              if (value != null) {
-                                                final selectedProduct =
-                                                    products.firstWhere(
-                                                        (p) => p.id == value);
-                                                final selectedProductUnits =
-                                                    inventoryProvider
-                                                        .getProductUnits(
-                                                            selectedProduct
-                                                                .id!);
-                                                final selectedUnit =
-                                                    selectedProductUnits.first;
-                                                _updateItem(
-                                                    index,
-                                                    selectedProduct,
-                                                    selectedUnit);
+                                          Autocomplete<Product>(
+                                            optionsBuilder: (TextEditingValue textEditingValue) {
+                                              if (textEditingValue.text.isEmpty) {
+                                                return products;
                                               }
+                                              return products.where((product) {
+                                                return product.name.toLowerCase().contains(
+                                                  textEditingValue.text.toLowerCase(),
+                                                );
+                                              });
+                                            },
+                                            displayStringForOption: (Product product) => product.name,
+                                            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                                              return TextFormField(
+                                                controller: textEditingController,
+                                                focusNode: focusNode,
+                                                decoration: InputDecoration(
+                                                  labelText: loc.product,
+                                                ),
+                                                validator: (value) {
+                                                  if (value == null || value.isEmpty) {
+                                                    return loc.requiredField;
+                                                  }
+                                                  return null;
+                                                },
+                                              );
+                                            },
+                                            onSelected: (Product selectedProduct) {
+                                              final selectedProductUnits = inventoryProvider.getProductUnits(selectedProduct.id!);
+                                              final selectedUnit = selectedProductUnits.first;
+                                              _updateItem(index, selectedProduct, selectedUnit);
+                                            },
+                                            optionsViewBuilder: (context, onSelected, options) {
+                                              return Align(
+                                                alignment: Alignment.topLeft,
+                                                child: Material(
+                                                  elevation: 4,
+                                                  child: ConstrainedBox(
+                                                    constraints: const BoxConstraints(maxHeight: 200),
+                                                    child: ListView.builder(
+                                                      padding: EdgeInsets.zero,
+                                                      shrinkWrap: true,
+                                                      itemCount: options.length,
+                                                      itemBuilder: (BuildContext context, int index) {
+                                                        final option = options.elementAt(index);
+                                                        return ListTile(
+                                                          title: Text(option.name),
+                                                          onTap: () => onSelected(option),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
                                             },
                                           ),
                                           const SizedBox(height: 16),

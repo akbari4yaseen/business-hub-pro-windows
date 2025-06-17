@@ -17,10 +17,41 @@ class PurchaseDBHelper {
     await db.transaction(action);
   }
 
-  // Purchase operations
+// Purchase operations
   Future<int> createPurchase(Purchase purchase) async {
     final db = await _db;
-    return await db.insert('purchases', purchase.toMap());
+    return await db.transaction((txn) async {
+      // Insert purchase and get ID
+      final purchaseId = await txn.insert('purchases', purchase.toMap());
+
+      // Fetch supplier name from accounts table
+      final supplierResult = await txn.query(
+        'accounts',
+        columns: ['name'],
+        where: 'id = ?',
+        whereArgs: [purchase.supplierId],
+        limit: 1,
+      );
+
+      final supplierName = supplierResult.isNotEmpty
+          ? supplierResult.first['name'] as String
+          : 'Unknown Supplier';
+
+      // Insert into account_details
+      await txn.insert('account_details', {
+        'date': purchase.date.toString(),
+        'account_id': purchase.supplierId,
+        'amount': purchase.totalAmount,
+        'currency': purchase.currency,
+        'transaction_type': 'credit',
+        'description':
+            'Purchase of Invoice ${purchase.invoiceNumber} from $supplierName',
+        'transaction_id': purchaseId,
+        'transaction_group': 'purchase',
+      });
+
+      return purchaseId;
+    });
   }
 
   Future<List<Map<String, dynamic>>> getPurchases({

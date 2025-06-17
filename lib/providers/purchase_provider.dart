@@ -89,7 +89,7 @@ class PurchaseProvider with ChangeNotifier {
 
       final purchaseId = await _db.createPurchase(purchase);
 
-      // Create purchase items
+      // Create purchase items with the correct purchaseId
       for (var item in items) {
         await _db.createPurchaseItem(
           PurchaseItem(
