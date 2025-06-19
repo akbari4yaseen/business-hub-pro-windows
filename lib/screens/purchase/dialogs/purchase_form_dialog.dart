@@ -36,6 +36,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
   final List<TextEditingController> _quantityControllers = [];
   final List<TextEditingController> _priceControllers = [];
+  final List<TextEditingController> _productNameControllers = [];
   String _selectedCurrency = 'AFN';
   Map<String, dynamic>? _selectedSupplier;
   List<Map<String, dynamic>> _suppliers = [];
@@ -46,8 +47,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     super.initState();
     _invoiceNumberController =
         TextEditingController(text: widget.purchase?.invoiceNumber ?? '');
-    _supplierNameController = TextEditingController(
-        text: widget.purchase?.supplierId.toString() ?? '');
+    _supplierNameController = TextEditingController();
     _dateController = TextEditingController();
     _notesController =
         TextEditingController(text: widget.purchase?.notes ?? '');
@@ -100,6 +100,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
             (s) => s['id'] == widget.purchase!.supplierId,
             orElse: () => suppliers.first,
           );
+          // Set the supplier name controller text
+          if (_selectedSupplier != null) {
+            _supplierNameController.text = _selectedSupplier!['name'];
+          }
         }
       });
     } finally {
@@ -118,13 +122,23 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     final items = await provider.getPurchaseItems(widget.purchase!.id);
     if (!mounted) return;
 
+    final inventoryProvider = context.read<InventoryProvider>();
+    final products = inventoryProvider.products;
+
     setState(() {
       _items.addAll(items);
       for (var item in _items) {
         _quantityControllers
             .add(TextEditingController(text: item.quantity.toString()));
         _priceControllers
-            .add(TextEditingController(text: item.price.toString()));
+            .add(TextEditingController(text: item.unitPrice.toString()));
+        
+        // Find the product name for this item
+        final product = products.firstWhere(
+          (p) => p.id == item.productId,
+          orElse: () => Product(id: 0, name: '', categoryId: 0, createdAt: DateTime.now(), updatedAt: DateTime.now()),
+        );
+        _productNameControllers.add(TextEditingController(text: product.name));
       }
     });
   }
@@ -139,6 +153,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       controller.dispose();
     }
     for (var controller in _priceControllers) {
+      controller.dispose();
+    }
+    for (var controller in _productNameControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -198,6 +215,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       ));
       _quantityControllers.add(TextEditingController());
       _priceControllers.add(TextEditingController());
+      _productNameControllers.add(TextEditingController(text: product.name));
     });
   }
 
@@ -208,6 +226,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       _quantityControllers.removeAt(index);
       _priceControllers[index].dispose();
       _priceControllers.removeAt(index);
+      _productNameControllers[index].dispose();
+      _productNameControllers.removeAt(index);
     });
   }
 
@@ -225,6 +245,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         createdAt: _items[index].createdAt,
         updatedAt: DateTime.now(),
       );
+      // Update the product name controller
+      _productNameControllers[index].text = product.name;
     });
   }
 
@@ -261,24 +283,25 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         id: _items[i].id,
         purchaseId: _items[i].purchaseId,
         productId: _items[i].productId,
-        quantity: _items[i].quantity,
+        quantity: double.tryParse(_quantityControllers[i].text) ?? 0,
         unitId: _items[i].unitId,
-        unitPrice: _items[i].unitPrice,
+        unitPrice: double.tryParse(_priceControllers[i].text) ?? 0,
         createdAt: _items[i].createdAt,
         updatedAt: DateTime.now(),
       );
     }
 
     final purchase = Purchase(
+      id: widget.purchase?.id,
       supplierId: _selectedSupplier?['id'] ?? 0,
       invoiceNumber: _invoiceNumberController.text,
       date: _selectedDate,
       currency: _selectedCurrency,
       notes: _notesController.text,
-      totalAmount: _items.fold(0, (sum, item) => sum + item.price),
-      paidAmount: 0,
-      dueDate: _selectedDate.add(Duration(days: 30)),
-      createdAt: DateTime.now(),
+      totalAmount: _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice)),
+      paidAmount: widget.purchase?.paidAmount ?? 0,
+      dueDate: widget.purchase?.dueDate ?? _selectedDate.add(Duration(days: 30)),
+      createdAt: widget.purchase?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
@@ -377,6 +400,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                       textEditingController,
                                       focusNode,
                                       onFieldSubmitted) {
+                                    // Set the initial text for edit mode
+                                    if (widget.purchase != null && textEditingController.text.isEmpty) {
+                                      textEditingController.text = _supplierNameController.text;
+                                    }
                                     return TextFormField(
                                       controller: textEditingController,
                                       focusNode: focusNode,
@@ -551,6 +578,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                             },
                                             displayStringForOption: (Product product) => product.name,
                                             fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                                              // Set the initial text for edit mode
+                                              if (widget.purchase != null && textEditingController.text.isEmpty) {
+                                                textEditingController.text = _productNameControllers[index].text;
+                                              }
                                               return TextFormField(
                                                 controller: textEditingController,
                                                 focusNode: focusNode,

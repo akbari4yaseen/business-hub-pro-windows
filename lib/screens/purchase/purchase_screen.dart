@@ -256,21 +256,63 @@ class PurchaseCard extends StatefulWidget {
 }
 
 class _PurchaseCardState extends State<PurchaseCard> {
-  late Future<List<PurchaseItem>> _itemsFuture;
-  late Future<Map<String, dynamic>?> _supplierFuture;
+  List<PurchaseItem> _items = [];
+  Map<String, dynamic>? _supplier;
+  bool _isLoadingItems = true;
+  bool _isLoadingSupplier = true;
 
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
     if (widget.purchase.id != null) {
-      _itemsFuture =
-          context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
-      _supplierFuture = context
-          .read<AccountProvider>()
-          .getAccountById(widget.purchase.supplierId);
+      // Load items and supplier data asynchronously
+      _loadItems();
+      _loadSupplier();
     } else {
-      _itemsFuture = Future.value([]);
-      _supplierFuture = Future.value(null);
+      setState(() {
+        _isLoadingItems = false;
+        _isLoadingSupplier = false;
+      });
+    }
+  }
+
+  Future<void> _loadItems() async {
+    try {
+      final items = await context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+      if (mounted) {
+        setState(() {
+          _items = items;
+          _isLoadingItems = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingItems = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSupplier() async {
+    try {
+      final supplier = await context.read<AccountProvider>().getAccountById(widget.purchase.supplierId);
+      if (mounted) {
+        setState(() {
+          _supplier = supplier;
+          _isLoadingSupplier = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSupplier = false;
+        });
+      }
     }
   }
 
@@ -328,103 +370,100 @@ class _PurchaseCardState extends State<PurchaseCard> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return FutureBuilder<List<PurchaseItem>>(
-      future: _itemsFuture,
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? [];
-
-        return FutureBuilder<Map<String, dynamic>?>(
-          future: _supplierFuture,
-          builder: (context, supplierSnapshot) {
-            final supplier = supplierSnapshot.data;
-
-            return Card(
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.purchase.invoiceNumber!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'edit':
-                            _editPurchase();
-                            break;
-                          case 'delete':
-                            _deletePurchase();
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.edit, size: 20),
-                              const SizedBox(width: 8),
-                              Text(loc.edit),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.delete,
-                                  size: 20, color: Colors.red),
-                              const SizedBox(width: 8),
-                              Text(loc.delete,
-                                  style: const TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                        '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
-                    Text('${loc.supplier}: ${supplier?['name'] ?? ''}'),
-                    Text(
-                      '${loc.total}: \u200E${_amountFormatter.format(widget.purchase.totalAmount)} ${widget.purchase.currency}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    if (items.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Wrap(
-                          spacing: 8,
-                          children: items.map((item) {
-                            return Chip(
-                              label:
-                                  Text(item.productName ?? 'Unknown Product'),
-                              backgroundColor:
-                                  AppTheme.primaryColor.withOpacity(0.1),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                  ],
-                ),
-                onTap: widget.onTap,
+    return Card(
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.purchase.invoiceNumber!,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-            );
-          },
-        );
-      },
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    _editPurchase();
+                    break;
+                  case 'delete':
+                    _deletePurchase();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit, size: 20),
+                      const SizedBox(width: 8),
+                      Text(loc.edit),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete,
+                          size: 20, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text(loc.delete,
+                          style: const TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+                '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
+            Text('${loc.supplier}: ${_supplier?['name'] ?? (_isLoadingSupplier ? 'Loading...' : '')}'),
+            Text(
+              '${loc.total}: \u200E${_amountFormatter.format(widget.purchase.totalAmount)} ${widget.purchase.currency}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            if (_items.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 8,
+                  children: _items.map((item) {
+                    return Chip(
+                      label:
+                          Text(item.productName ?? 'Unknown Product'),
+                      backgroundColor:
+                          AppTheme.primaryColor.withOpacity(0.1),
+                    );
+                  }).toList(),
+                ),
+              ),
+            if (_isLoadingItems)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Loading items...',
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        onTap: widget.onTap,
+      ),
     );
   }
 }

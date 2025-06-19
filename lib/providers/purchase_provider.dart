@@ -48,7 +48,7 @@ class PurchaseProvider with ChangeNotifier {
       _hasMore = true;
     }
 
-    if (!_hasMore || _isLoading) return;
+    if (!_hasMore || (_isLoading && !refresh)) return;
 
     _isLoading = true;
     notifyListeners();
@@ -130,48 +130,61 @@ class PurchaseProvider with ChangeNotifier {
       notifyListeners();
 
       await _db.transaction((txn) async {
-        // Update purchase
-        await txn.update(
-          'purchases',
-          purchase.toMap(),
-          where: 'id = ?',
-          whereArgs: [purchase.id],
-        );
+        try {
+          // Update purchase
+          await txn.update(
+            'purchases',
+            purchase.toMap(),
+            where: 'id = ?',
+            whereArgs: [purchase.id],
+          );
 
-        // Get existing items
-        final existingItems = await _db.getPurchaseItems(purchase.id);
+          // Get existing items within the same transaction
+          final existingItemsResult = await txn.rawQuery('''
+            SELECT id FROM purchase_items WHERE purchase_id = ?
+          ''', [purchase.id]);
+          
+          final existingItemIds = existingItemsResult.map((item) => item['id'] as int).toSet();
+          final newItemIds = items.where((item) => item.id != 0).map((item) => item.id!).toSet();
 
-        // Delete removed items
-        for (var item in existingItems) {
-          if (!items.any((i) => i.id == item['id'])) {
-            await txn.delete(
-              'purchase_items',
-              where: 'id = ?',
-              whereArgs: [item['id']],
-            );
+          // Delete removed items
+          for (var itemId in existingItemIds) {
+            if (!newItemIds.contains(itemId)) {
+              await txn.delete(
+                'purchase_items',
+                where: 'id = ?',
+                whereArgs: [itemId],
+              );
+            }
           }
-        }
 
-        // Update or insert items
-        for (var item in items) {
-          if (item.id == 0) {
-            // New item
-            await txn.insert('purchase_items', {
-              ...item.toMap(),
-              'purchase_id': purchase.id,
-            });
-          } else {
-            // Existing item
-            await txn.update(
-              'purchase_items',
-              item.toMap(),
-              where: 'id = ?',
-              whereArgs: [item.id],
-            );
+          // Update or insert items
+          for (var item in items) {
+            if (item.id == 0) {
+              // New item
+              await txn.insert('purchase_items', {
+                ...item.toMap(),
+                'purchase_id': purchase.id,
+              });
+            } else {
+              // Existing item
+              await txn.update(
+                'purchase_items',
+                item.toMap(),
+                where: 'id = ?',
+                whereArgs: [item.id],
+              );
+            }
           }
+        } catch (e) {
+          debugPrint('Error within transaction: $e');
+          rethrow; // This will cause the transaction to rollback
         }
       });
 
+      // Add a small delay to prevent database locks
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       await loadPurchases(refresh: true);
     } catch (e) {
       debugPrint('Error updating purchase: $e');
