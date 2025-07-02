@@ -3,10 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart'; // for compute
+import 'package:flutter/foundation.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../database/reports_db.dart';
+import '../../utils/date_formatters.dart';
 import '../../utils/account_types.dart';
 import '../../constants/currencies.dart';
 
@@ -20,22 +21,16 @@ class DailyBalancesChart extends StatefulWidget {
 class _DailyBalancesChartState extends State<DailyBalancesChart> {
   String _selectedAccountType = 'customer';
   String _selectedCurrency = currencies.first;
-  String _selectedPeriod = 'week';
+  String _selectedPeriod = 'month';
 
   final Map<String, _ChartData> _cache = {};
   Future<_ChartData>? _chartFuture;
   Timer? _debounce;
 
-  late final DateFormat _fmtShort;
-  late final DateFormat _fmtMonth;
-  late final DateFormat _fmtYear;
-
   @override
   void initState() {
     super.initState();
-    _fmtShort = DateFormat.Md();
-    _fmtMonth = DateFormat.MMMd();
-    _fmtYear = DateFormat.y();
+
     _loadChart();
   }
 
@@ -51,30 +46,57 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
   Future<_ChartData> _fetchChartData(String key) async {
     final now = DateTime.now();
     final startDate = _computeStartDate(now, _selectedPeriod);
-    final rows = await ReportsDBHelper().getDailyBalances(
+
+    final rows = await ReportsDBHelper().getAllDailyBalances(
       accountType: _selectedAccountType,
       currency: _selectedCurrency,
-      startDate: startDate,
-      endDate: now,
     );
-    final data = await compute(_processRows, rows);
-    _cache[key] = data;
+
+    final data = await compute(_processRows, {
+      'rows': rows,
+      'start': startDate.toIso8601String(),
+      'end': now.toIso8601String(),
+    });
+
     return data;
   }
 
-  static _ChartData _processRows(List<dynamic> rows) {
-    double cum = 0;
-    final dates = <DateTime>[];
-    final spots = <FlSpot>[];
-    for (var i = 0; i < rows.length; i++) {
-      final row = rows[i] as Map<String, dynamic>;
-      final date = DateTime.parse(row['date'] as String);
-      // Use absolute value so "net" is never negative
-      cum += (row['net'] as num).toDouble().abs();
-      dates.add(date);
-      spots.add(FlSpot(i.toDouble(), cum));
+  static _ChartData _processRows(Map<String, dynamic> args) {
+    final rows = args['rows'] as List<dynamic>;
+    final start = DateTime.parse(args['start'] as String);
+    final end = DateTime.parse(args['end'] as String);
+
+    final netMap = <String, double>{};
+    for (final row in rows) {
+      final date = row['date'] as String;
+      final net = (row['net'] as num).toDouble();
+      netMap[date] = net;
     }
-    return _ChartData(dates: dates, spots: spots);
+
+    final allDates = <DateTime>[];
+    final visibleSpots = <FlSpot>[];
+    double runningTotal = 0;
+    int visibleIndex = 0;
+
+    DateTime current = netMap.keys
+        .map((d) => DateTime.parse(d))
+        .fold(DateTime.now(), (a, b) => a.isBefore(b) ? a : b);
+
+    while (!current.isAfter(end)) {
+      final dateStr = current.toIso8601String().substring(0, 10);
+      final net = netMap[dateStr] ?? 0.0;
+      runningTotal += net;
+
+      if (!current.isBefore(start)) {
+        allDates.add(current);
+        visibleSpots.add(FlSpot(visibleIndex.toDouble(), runningTotal.abs()));
+        visibleIndex++;
+      }
+
+      current = current.add(const Duration(days: 1));
+    }
+
+    return _ChartData(dates: allDates, spots: visibleSpots);
   }
 
   static DateTime _computeStartDate(DateTime now, String period) {
@@ -129,228 +151,237 @@ class _DailyBalancesChartState extends State<DailyBalancesChart> {
 
     return Scaffold(
       appBar: AppBar(title: Text(loc.dailyBalances)),
-      body: ListView(children: [
-        Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedAccountType,
-                        decoration: InputDecoration(
-                          labelText: loc.accountLabel,
-                          filled: true,
-                          fillColor: cs.primary.withValues(alpha: 0.05),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                        ),
-                        items: accountTypes.entries
-                            .map((e) => DropdownMenuItem(
-                                value: e.key, child: Text(e.value)))
-                            .toList(),
-                        onChanged: (v) => _onFilter(v, null, null),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _FilterDropdown(
-                        label: loc.currency,
-                        value: _selectedCurrency,
-                        items: currencies,
-                        onChanged: (v) => _onFilter(null, v, null),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: periodOptions.map((p) {
-                    final sel = p['key'] == _selectedPeriod;
-                    return ChoiceChip(
-                      label: Text(p['label']!),
-                      selected: sel,
-                      checkmarkColor: Colors.white,
-                      onSelected: (_) => _onFilter(null, null, p['key']),
-                      selectedColor: cs.primary,
-                      backgroundColor: cs.primary.withValues(alpha: 0.1),
-                      labelStyle:
-                          TextStyle(color: sel ? cs.onPrimary : cs.primary),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<_ChartData>(
-                  future: _chartFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final data = snapshot.data!;
-                    final spots = data.spots;
-                    final dates = data.dates;
-                    if (spots.isEmpty) {
-                      return SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.insert_chart_outlined,
-                                size: 48,
-                                color:
-                                    cs.onSurfaceVariant.withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(loc.noDataAvailable,
-                                  style: theme.textTheme.bodyMedium),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    final current = spots.last.y;
-                    final minY = spots.map((e) => e.y).reduce(min) * 0.95;
-                    final maxY = spots.map((e) => e.y).reduce(max) * 1.05;
-                    final yInterval =
-                        ((maxY - minY) / 4).clamp(1.0, double.infinity);
-                    final xInterval = (spots.length > 1)
-                        ? ((spots.length - 1) / 4).ceilToDouble()
-                        : 1.0;
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
                       children: [
-                        _Metric(
-                            label: loc.currentLabel,
-                            value: current,
-                            currency: _selectedCurrency),
-                        const SizedBox(height: 16),
-                        AspectRatio(
-                          aspectRatio: 1.7,
-                          child: LineChart(
-                            LineChartData(
-                              minY: minY,
-                              maxY: maxY,
-                              gridData: FlGridData(
-                                show: true,
-                                horizontalInterval: yInterval,
-                                getDrawingHorizontalLine: (_) => FlLine(
-                                  color: cs.onSurfaceVariant
-                                      .withValues(alpha: 0.2),
-                                  strokeWidth: 1,
-                                ),
+                        SizedBox(
+                          width: 300,
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedAccountType,
+                            decoration: InputDecoration(
+                              labelText: loc.accountLabel,
+                              filled: true,
+                              fillColor: cs.primary.withValues(alpha: 0.05),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
                               ),
-                              titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    interval: yInterval,
-                                    reservedSize: 48,
-                                    getTitlesWidget: (val, meta) => Text(
-                                      NumberFormat.compactCurrency(
-                                              symbol: '', decimalDigits: 0)
-                                          .format(val),
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    interval: xInterval,
-                                    getTitlesWidget: (val, meta) {
-                                      final idx = val
-                                          .toInt()
-                                          .clamp(0, dates.length - 1);
-                                      final date = dates[idx];
-                                      late DateFormat fmt;
-                                      switch (_selectedPeriod) {
-                                        case 'week':
-                                        case 'month':
-                                          fmt = _fmtShort;
-                                          break;
-                                        case '3months':
-                                          fmt = _fmtMonth;
-                                          break;
-                                        default:
-                                          fmt = _fmtYear;
-                                      }
-                                      return Text(fmt.format(date),
-                                          style: theme.textTheme.bodySmall);
-                                    },
-                                  ),
-                                ),
-                                topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false)),
-                                rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false)),
-                              ),
-                              lineTouchData: LineTouchData(
-                                touchTooltipData: LineTouchTooltipData(
-                                  getTooltipItems: (spots) => spots.map((s) {
-                                    final date = dates[s.spotIndex];
-                                    return LineTooltipItem(
-                                      '${DateFormat.yMMMd().format(date)}\n${s.y.toStringAsFixed(2)}',
-                                      Theme.of(context)
-                                          .textTheme
-                                          .bodySmall!
-                                          .copyWith(color: cs.onSurface),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                              borderData: FlBorderData(show: false),
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: spots,
-                                  isCurved: true,
-                                  barWidth: 3,
-                                  dotData: FlDotData(show: false),
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withValues(alpha: 0.4),
-                                        Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withValues(alpha: 0.05),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                  color: cs.primary,
-                                ),
-                              ],
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
+                            items: accountTypes.entries
+                                .map((e) => DropdownMenuItem(
+                                    value: e.key, child: Text(e.value)))
+                                .toList(),
+                            onChanged: (v) => _onFilter(v, null, null),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 200,
+                          child: _FilterDropdown(
+                            label: loc.currency,
+                            value: _selectedCurrency,
+                            items: currencies,
+                            onChanged: (v) => _onFilter(null, v, null),
                           ),
                         ),
                       ],
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 12,
+                      children: periodOptions.map((p) {
+                        final sel = p['key'] == _selectedPeriod;
+                        return ChoiceChip(
+                          label: Text(p['label']!),
+                          selected: sel,
+                          checkmarkColor: Colors.white,
+                          onSelected: (_) => _onFilter(null, null, p['key']),
+                          selectedColor: cs.primary,
+                          backgroundColor: cs.primary.withValues(alpha: 0.1),
+                          labelStyle:
+                              TextStyle(color: sel ? cs.onPrimary : cs.primary),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 32),
+                    FutureBuilder<_ChartData>(
+                      future: _chartFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        final data = snapshot.data!;
+                        final spots = data.spots;
+                        final dates = data.dates;
+                        if (spots.isEmpty) {
+                          return SizedBox(
+                            height: 250,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.insert_chart_outlined,
+                                      size: 48,
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.5)),
+                                  const SizedBox(height: 8),
+                                  Text(loc.noDataAvailable,
+                                      style: theme.textTheme.bodyMedium),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final current = spots.last.y;
+                        final minY = spots.map((e) => e.y).reduce(min) * 0.95;
+                        final maxY = spots.map((e) => e.y).reduce(max) * 1.05;
+                        final yInterval =
+                            ((maxY - minY) / 4).clamp(1.0, double.infinity);
+                        final xInterval = (spots.length > 1)
+                            ? ((spots.length - 1) / 4).ceilToDouble()
+                            : 1.0;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _Metric(
+                                label: loc.currentLabel,
+                                value: current,
+                                currency: _selectedCurrency),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: 400,
+                              child: LineChart(
+                                LineChartData(
+                                  minY: minY,
+                                  maxY: maxY,
+                                  gridData: FlGridData(
+                                    show: true,
+                                    horizontalInterval: yInterval,
+                                    getDrawingHorizontalLine: (_) => FlLine(
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.2),
+                                      strokeWidth: 1,
+                                    ),
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        interval: yInterval,
+                                        reservedSize: 48,
+                                        getTitlesWidget: (val, meta) => Text(
+                                          NumberFormat.compactCurrency(
+                                                  symbol: '', decimalDigits: 0)
+                                              .format(val),
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      ),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        interval: xInterval,
+                                        getTitlesWidget: (val, meta) {
+                                          final idx = val
+                                              .toInt()
+                                              .clamp(0, dates.length - 1);
+                                          final date = dates[idx];
+
+                                          String label;
+                                          switch (_selectedPeriod) {
+                                            case 'week':
+                                            case 'month':
+                                              label = formatLocalizedDateShort(
+                                                  context, date);
+                                              break;
+                                            case '3months':
+                                              label = formatLocalizedMonthDay(
+                                                  context, date);
+                                              break;
+                                            default:
+                                              label = formatLocalizedYear(
+                                                  context, date);
+                                          }
+                                          return Text(label,
+                                              style: theme.textTheme.bodySmall);
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                    rightTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                  ),
+                                  lineTouchData: LineTouchData(
+                                    touchTooltipData: LineTouchTooltipData(
+                                      getTooltipItems: (spots) =>
+                                          spots.map((s) {
+                                        final date = dates[s.spotIndex];
+                                        return LineTooltipItem(
+                                          '${formatLocalizedDate(context, date.toString())}\n${s.y.toStringAsFixed(2)}',
+                                          theme.textTheme.bodySmall!
+                                              .copyWith(color: cs.onSurface),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots,
+                                      isCurved: true,
+                                      barWidth: 3,
+                                      dotData: FlDotData(show: false),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            cs.primary.withValues(alpha: 0.4),
+                                            cs.primary.withValues(alpha: 0.05),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                      color: cs.primary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ]),
+      ),
     );
   }
 
@@ -376,7 +407,7 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###.##');
+    final formatter = NumberFormat('#,##0.##');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,11 +433,12 @@ class _FilterDropdown extends StatelessWidget {
   final String value;
   final List<String> items;
   final ValueChanged<String?> onChanged;
-  const _FilterDropdown(
-      {required this.label,
-      required this.value,
-      required this.items,
-      required this.onChanged});
+  const _FilterDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -67,41 +67,30 @@ class ReportsDBHelper {
     }).toList();
   }
 
-  /// Returns daily net change (credits minus debits) per date for the given filters.
-  Future<List<Map<String, dynamic>>> getDailyBalances({
+  Future<List<Map<String, dynamic>>> getAllDailyBalances({
     required String accountType,
     required String currency,
-    required DateTime startDate,
-    required DateTime endDate,
   }) async {
     final db = await database;
-    final sql = '''
-      SELECT 
-        DATE(ad.date) AS date,
-        SUM(
-          CASE 
-            WHEN ad.transaction_type = 'credit' THEN ad.amount
-            WHEN ad.transaction_type = 'debit' THEN -ad.amount
-            ELSE 0
-          END
-        ) AS net
-      FROM account_details AS ad
-      JOIN accounts AS a
-        ON ad.account_id = a.id
-      WHERE a.account_type = ?
-        AND a.active = 1
-        AND ad.currency = ?
-        AND ad.date BETWEEN ? AND ?
-      GROUP BY DATE(ad.date)
-      ORDER BY DATE(ad.date);
-    ''';
 
-    final rows = await db.rawQuery(sql, [
-      accountType,
-      currency,
-      startDate.toIso8601String(),
-      endDate.toIso8601String(),
-    ]);
+    final rows = await db.rawQuery('''
+    SELECT 
+      DATE(ad.date) AS date,
+      SUM(
+        CASE 
+          WHEN ad.transaction_type = 'credit' THEN ad.amount
+          WHEN ad.transaction_type = 'debit' THEN -ad.amount
+          ELSE 0
+        END
+      ) AS net
+    FROM account_details AS ad
+    JOIN accounts AS a ON ad.account_id = a.id
+    WHERE a.account_type = ?
+      AND a.active = 1
+      AND ad.currency = ?
+    GROUP BY DATE(ad.date)
+    ORDER BY DATE(ad.date);
+  ''', [accountType, currency]);
 
     return rows;
   }
