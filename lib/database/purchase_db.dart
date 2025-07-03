@@ -145,11 +145,28 @@ class PurchaseDBHelper {
 
   Future<void> deletePurchase(int id) async {
     final db = await _db;
-    await db.delete(
-      'purchases',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.transaction((txn) async {
+      // Delete purchase items first
+      await txn.delete(
+        'purchase_items',
+        where: 'purchase_id = ?',
+        whereArgs: [id],
+      );
+
+      // Delete account details for this purchase
+      await txn.delete(
+        'account_details',
+        where: 'transaction_group = ? AND transaction_id = ?',
+        whereArgs: ['purchase', id],
+      );
+
+      // Delete the purchase
+      await txn.delete(
+        'purchases',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
   }
 
   // Purchase item operations

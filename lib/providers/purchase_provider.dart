@@ -139,6 +139,39 @@ class PurchaseProvider with ChangeNotifier {
             whereArgs: [purchase.id],
           );
 
+          // Fetch supplier name from accounts table
+          final supplierResult = await txn.query(
+            'accounts',
+            columns: ['name'],
+            where: 'id = ?',
+            whereArgs: [purchase.supplierId],
+            limit: 1,
+          );
+
+          final supplierName = supplierResult.isNotEmpty
+              ? supplierResult.first['name'] as String
+              : 'Unknown Supplier';
+
+          // Delete existing account details for this purchase
+          await txn.delete(
+            'account_details',
+            where: 'transaction_group = ? AND transaction_id = ?',
+            whereArgs: ['purchase', purchase.id],
+          );
+
+          // Insert updated account details
+          await txn.insert('account_details', {
+            'date': purchase.date.toString(),
+            'account_id': purchase.supplierId,
+            'amount': purchase.totalAmount,
+            'currency': purchase.currency,
+            'transaction_type': 'credit',
+            'description':
+                'Purchase of Invoice ${purchase.invoiceNumber} from $supplierName',
+            'transaction_id': purchase.id,
+            'transaction_group': 'purchase',
+          });
+
           // Get existing items within the same transaction
           final existingItemsResult = await txn.rawQuery('''
             SELECT id FROM purchase_items WHERE purchase_id = ?
