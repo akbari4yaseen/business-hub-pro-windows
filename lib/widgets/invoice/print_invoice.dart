@@ -24,7 +24,7 @@ Future<void> printInvoice({
   await infoProvider.loadInfo();
   final info = infoProvider.info;
 
-  final customer = accountProvider.customers.firstWhere(
+  final customer = accountProvider.accounts.firstWhere(
     (c) => c['id'] == invoice.accountId,
     orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
   );
@@ -62,12 +62,11 @@ Future<void> printInvoice({
 
   // Table data rows
   final itemRows = invoice.items.map((item) {
-    final product = inventoryProvider.currentStock.firstWhere(
-      (p) => p['id'] == item.productId,
-      orElse: () => {'product_name': loc.unknownProduct},
+    final product = inventoryProvider.products.firstWhere(
+      (p) => p.id == item.productId,
     );
     return [
-      product['product_name'] ?? loc.unknownProduct,
+      product.name,
       item.description ?? '',
       (item.quantity).toString(),
       _currencyFormat.format(item.unitPrice),

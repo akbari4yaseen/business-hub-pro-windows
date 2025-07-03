@@ -254,7 +254,7 @@ class PurchaseProvider with ChangeNotifier {
   }
 
   // Add purchase
-  Future<void> addPurchase(Purchase purchase, List<PurchaseItem> items) async {
-    await createPurchase(purchase, items);
+  Future<int> addPurchase(Purchase purchase, List<PurchaseItem> items) async {
+    return await createPurchase(purchase, items);
   }
 }

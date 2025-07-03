@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../providers/inventory_provider.dart';
+
 import '../models/unit.dart';
 
 class UnitConversionDialog extends StatefulWidget {
@@ -116,4 +116,4 @@ class _UnitConversionDialogState extends State<UnitConversionDialog> {
       ],
     );
   }
-} 
+}

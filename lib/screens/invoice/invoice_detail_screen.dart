@@ -276,12 +276,11 @@ class InvoiceDetailScreen extends StatelessWidget {
               final item = invoice.items[index];
               return Consumer<InventoryProvider>(
                 builder: (_, provider, __) {
-                  final product = provider.currentStock.firstWhere(
-                    (p) => p['id'] == item.productId,
-                    orElse: () => {'product_name': 'Unknown Product'},
+                  final product = provider.products.firstWhere(
+                    (p) => p.id == item.productId,
                   );
                   return ListTile(
-                    title: Text(product['product_name'] as String),
+                    title: Text(product.name),
                     subtitle: item.description?.isNotEmpty == true
                         ? Text(item.description!)
                         : null,

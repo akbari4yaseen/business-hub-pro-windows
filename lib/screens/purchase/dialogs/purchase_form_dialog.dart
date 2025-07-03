@@ -128,12 +128,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     setState(() {
       _items.addAll(items);
       for (var item in _items) {
-        _quantityControllers
-            .add(TextEditingController(text: item.quantity.toString()));
-        _priceControllers
-            .add(TextEditingController(text: item.unitPrice.toString()));
-        
-        // Find the product name for this item
+        _quantityControllers.add(TextEditingController(text: item.quantity.toString()));
+        _priceControllers.add(TextEditingController(text: item.unitPrice.toString()));
         final product = products.firstWhere(
           (p) => p.id == item.productId,
           orElse: () => Product(id: 0, name: '', categoryId: 0, createdAt: DateTime.now(), updatedAt: DateTime.now()),

@@ -407,7 +407,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             const SizedBox(height: 16),
             Consumer<AccountProvider>(
               builder: (context, accountProvider, child) {
-                final customers = accountProvider.customers;
+                final customers = accountProvider.accounts;
 
                 if (customers.isEmpty) {
                   return Center(

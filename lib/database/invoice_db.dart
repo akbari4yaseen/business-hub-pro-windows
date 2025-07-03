@@ -171,12 +171,33 @@ class InvoiceDBHelper {
     final db = await _db;
     try {
       final year = DateTime.now().year;
+
+      // Get the max invoice number for current year
       final result = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE ?',
+        '''
+      SELECT invoice_number FROM invoices
+      WHERE invoice_number LIKE ?
+      ORDER BY invoice_number DESC
+      LIMIT 1
+      ''',
         ['INV-$year-%'],
       );
-      final count = (result.first['count'] as int) + 1;
-      return 'INV-$year-${count.toString().padLeft(4, '0')}';
+
+      int nextNumber = 1;
+
+      if (result.isNotEmpty) {
+        final lastInvoiceNumber = result.first['invoice_number'] as String;
+
+        // Extract the last 4 digits
+        final match =
+            RegExp(r'INV-\d{4}-(\d{4})').firstMatch(lastInvoiceNumber);
+        if (match != null) {
+          final lastNumber = int.tryParse(match.group(1)!) ?? 0;
+          nextNumber = lastNumber + 1;
+        }
+      }
+
+      return 'INV-$year-${nextNumber.toString().padLeft(4, '0')}';
     } catch (e) {
       debugPrint('Error generating invoice number: $e');
       rethrow;

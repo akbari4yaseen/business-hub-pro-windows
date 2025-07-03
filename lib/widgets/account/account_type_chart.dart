@@ -1,10 +1,10 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../database/reports_db.dart';
 import '../../utils/utilities.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../themes/app_theme.dart';
+import '../../utils/account_types.dart';
 
 class AccountTypeChart extends StatefulWidget {
   const AccountTypeChart({Key? key}) : super(key: key);
@@ -15,19 +15,6 @@ class AccountTypeChart extends StatefulWidget {
 
 class _AccountTypeChartState extends State<AccountTypeChart> {
   late Future<List<Map<String, dynamic>>> _accountTypeCountsFuture;
-
-  // Predefined mapping of account types to colors
-  static const Map<String, Color> _typeColors = {
-    'customer': AppTheme.primaryColor,
-    'supplier': Colors.orange,
-    'exchanger': Colors.teal,
-    'bank': Colors.indigo,
-    'income': Colors.green,
-    'expense': Colors.red,
-    'company': Colors.brown,
-    'owner': Colors.lime,
-    'employee': Colors.yellow,
-  };
 
   @override
   void initState() {
@@ -92,7 +79,8 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
                         sections: data.map((item) {
                           final cnt = item['count'] as int;
                           final color =
-                              _typeColors[item['account_type']] ?? Colors.grey;
+                              getAccountTypeColors[item['account_type']] ??
+                                  Colors.grey;
 
                           // calculate percentage
                           final pct = total > 0 ? cnt / total : 0.0;
@@ -133,7 +121,7 @@ class _AccountTypeChartState extends State<AccountTypeChart> {
       children: data.map((item) {
         final cnt = item['count'] as int;
         final pct = total > 0 ? cnt / total : 0.0;
-        final color = _typeColors[item['account_type']] ?? Colors.grey;
+        final color = getAccountTypeColors[item['account_type']] ?? Colors.grey;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),

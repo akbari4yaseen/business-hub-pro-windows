@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import '../../themes/app_theme.dart';
 import '../../utils/account_share_helper.dart';
 
-import '../../../utils/utilities.dart';
+import '../../utils/utilities.dart';
+import '../../utils/account_types.dart';
 
 class AccountTile extends StatelessWidget {
   final Map<String, dynamic> account;
@@ -14,19 +15,6 @@ class AccountTile extends StatelessWidget {
   final void Function(String) onActionSelected;
 
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
-  // Predefined mapping of account types to colors
-  static const Map<String, Color> _typeColors = {
-    'system': Colors.pink,
-    'customer': AppTheme.primaryColor,
-    'supplier': Colors.orange,
-    'exchanger': Colors.teal,
-    'bank': Colors.indigo,
-    'income': Colors.green,
-    'expense': Colors.red,
-    'company': Colors.brown,
-    'owner': Colors.lime,
-    'employee': Colors.yellow,
-  };
 
   const AccountTile({
     Key? key,
@@ -38,7 +26,7 @@ class AccountTile extends StatelessWidget {
   // Returns the appropriate icon color based on type and active state
   static Color _iconColor(String? type, bool isActive) {
     if (!isActive) return Colors.grey;
-    return _typeColors[type] ?? AppTheme.primaryColor;
+    return getAccountTypeColors[type] ?? AppTheme.primaryColor;
   }
 
   @override
