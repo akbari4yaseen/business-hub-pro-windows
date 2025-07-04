@@ -60,6 +60,11 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
           future: _itemsFuture,
           builder: (context, snapshot) {
             final items = snapshot.data ?? [];
+            final totalPurchase = widget.purchase.totalAmount;
+            final additionalCost = widget.purchase.additionalCost;
+            final totalCost = totalPurchase + additionalCost;
+            final totalQuantity = items.fold<double>(0, (sum, i) => sum + i.quantity);
+            final costPerUnit = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
             return FutureBuilder<Map<String, dynamic>?>(
               future: _supplierFuture,
@@ -100,8 +105,10 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                         _buildDetailRow(loc.currency, widget.purchase.currency),
                         _buildDetailRow(
                             loc.total,
-                            _amountFormatter
-                                .format(widget.purchase.totalAmount)),
+                            _amountFormatter.format(widget.purchase.totalAmount)),
+                        _buildDetailRow(loc.additionalCost, _amountFormatter.format(additionalCost)),
+                        _buildDetailRow(loc.totalCost, _amountFormatter.format(totalCost), isTotal: true),
+                        _buildDetailRow(loc.costPerUnit, _amountFormatter.format(costPerUnit)),
                         if (widget.purchase.notes != null &&
                             widget.purchase.notes!.isNotEmpty)
                           _buildDetailRow(loc.notes, widget.purchase.notes!),

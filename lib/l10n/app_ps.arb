@@ -603,5 +603,8 @@
   "deleteExchangeTitle": "تبادله ړنګول",
   "deleteExchangeConfirm": "ایا تاسو ډاډه یاست چې دا تبادله ړنګ کړئ؟",
   "exchangeDeleted": "تبادله په بریالیتوب سره ړنګ شوه",
-  "errorDeletingExchange": "د تبادلې ړنګولو تېروتنه"
+  "errorDeletingExchange": "د تبادلې ړنګولو تېروتنه",
+  "additionalCost": "اضافي لګښت",
+  "totalCost": "ټول لګښت",
+  "costPerUnit": "د هر واحد لګښت"
 }

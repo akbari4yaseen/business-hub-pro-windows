@@ -600,5 +600,8 @@
   "deleteExchangeTitle": "حذف تبادله",
   "deleteExchangeConfirm": "آیا از حذف این تبادله اطمینان دارید؟",
   "exchangeDeleted": "تبادله با موفقیت حذف شد",
-  "errorDeletingExchange": "خطا در حذف تبهادل"
+  "errorDeletingExchange": "خطا در حذف تبهادل",
+  "additionalCost": "هزینه اضافی",
+  "totalCost": "هزینه کل",
+  "costPerUnit": "هزینه هر واحد"
 }

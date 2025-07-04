@@ -253,6 +253,7 @@ class DbInit {
       notes TEXT,
       total_amount REAL DEFAULT 0,
       paid_amount REAL DEFAULT 0,
+      additional_cost REAL DEFAULT 0,
       due_date TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

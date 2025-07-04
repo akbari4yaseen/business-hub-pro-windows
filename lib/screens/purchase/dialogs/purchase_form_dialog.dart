@@ -41,6 +41,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   Map<String, dynamic>? _selectedSupplier;
   List<Map<String, dynamic>> _suppliers = [];
   bool _isLoadingSuppliers = false;
+  late TextEditingController _additionalCostController;
 
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         TextEditingController(text: widget.purchase?.notes ?? '');
     _selectedDate = widget.purchase?.date ?? DateTime.now();
     _selectedCurrency = widget.purchase?.currency ?? 'AFN';
+    _additionalCostController = TextEditingController(text: widget.purchase?.additionalCost != null ? widget.purchase!.additionalCost.toString() : '0');
 
     if (widget.purchase != null) {
       _loadPurchaseItems();
@@ -136,6 +138,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         );
         _productNameControllers.add(TextEditingController(text: product.name));
       }
+      if (widget.purchase != null) {
+        _additionalCostController.text = widget.purchase!.additionalCost.toString();
+      }
     });
   }
 
@@ -145,6 +150,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     _supplierNameController.dispose();
     _dateController.dispose();
     _notesController.dispose();
+    _additionalCostController.dispose();
     for (var controller in _quantityControllers) {
       controller.dispose();
     }
@@ -296,6 +302,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       notes: _notesController.text,
       totalAmount: _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice)),
       paidAmount: widget.purchase?.paidAmount ?? 0,
+      additionalCost: double.tryParse(_additionalCostController.text) ?? 0,
       dueDate: widget.purchase?.dueDate ?? _selectedDate.add(Duration(days: 30)),
       createdAt: widget.purchase?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
@@ -374,6 +381,14 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                     }
                                     return null;
                                   },
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _additionalCostController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.additionalCost,
+                                  ),
+                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
                                 ),
                                 const SizedBox(height: 16),
                                 Autocomplete<Map<String, dynamic>>(
