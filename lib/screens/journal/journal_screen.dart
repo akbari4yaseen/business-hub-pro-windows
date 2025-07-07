@@ -26,7 +26,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
-  final _amountFormatter = NumberFormat('#,###.##');
+  final _amountFormatter = NumberFormat('#,##0.##');
   late final SearchManager _searchManager;
 
   final List<Map<String, dynamic>> _journals = [];

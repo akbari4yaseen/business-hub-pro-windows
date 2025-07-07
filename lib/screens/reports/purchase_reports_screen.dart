@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../database/purchase_db.dart';
+import '../../utils/date_time_picker_helper.dart';
+import '../../utils/date_formatters.dart' as dFormatter;
+
+final _amountFormatter = NumberFormat('#,##0.##');
 
 class PurchaseReportsScreen extends StatefulWidget {
   const PurchaseReportsScreen({Key? key}) : super(key: key);
@@ -13,7 +17,6 @@ class PurchaseReportsScreen extends StatefulWidget {
 class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
     with TickerProviderStateMixin {
   final PurchaseDBHelper _db = PurchaseDBHelper();
-  final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
   // Filters
   DateTime? _startDate;
@@ -33,7 +36,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
   Map<String, int> _supplierCounts = {};
   Map<String, double> _supplierTotals = {};
   Map<String, int> _productCounts = {};
-  Map<String, double> _productTotals = {};
+  Map<String, Map<String, double>> _productTotals = {};
 
   // Tab controller
   late TabController _tabController;
@@ -134,6 +137,8 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
   }
 
   Future<void> _analyzeProducts(List<Map<String, dynamic>> purchases) async {
+    _productCounts.clear();
+    _productTotals.clear();
     for (final purchase in purchases) {
       final purchaseId = purchase['id'] as int?;
       if (purchaseId != null) {
@@ -141,11 +146,15 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
         for (final item in items) {
           final productName =
               item['product_name'] as String? ?? 'Unknown Product';
-          final totalCost = (item['total_cost'] as num?)?.toDouble() ?? 0;
-
+          final quantity = (item['quantity'] as num?)?.toDouble() ?? 0;
+          final unitPrice = (item['unit_price'] as num?)?.toDouble() ?? 0;
+          final currency = item['currency'] as String? ??
+              (purchase['currency'] as String? ?? '');
+          final totalCost = quantity * unitPrice;
           _productCounts[productName] = (_productCounts[productName] ?? 0) + 1;
-          _productTotals[productName] =
-              (_productTotals[productName] ?? 0) + totalCost;
+          _productTotals[productName] ??= {};
+          _productTotals[productName]![currency] =
+              (_productTotals[productName]![currency] ?? 0) + totalCost;
         }
       }
     }
@@ -154,11 +163,9 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     final now = DateTime.now();
     final initial = isStart ? (_startDate ?? now) : (_endDate ?? now);
-    final picked = await showDatePicker(
+    final picked = await pickLocalizedDate(
       context: context,
       initialDate: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
     );
     if (picked != null) {
       setState(() {
@@ -210,7 +217,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
               color: theme.cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: Offset(0, 2),
                 ),
@@ -229,7 +236,8 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                             border: OutlineInputBorder(),
                           ),
                           child: Text(_startDate != null
-                              ? _dateFormat.format(_startDate!)
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _startDate.toString())
                               : '-'),
                         ),
                       ),
@@ -244,7 +252,8 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                             border: OutlineInputBorder(),
                           ),
                           child: Text(_endDate != null
-                              ? _dateFormat.format(_endDate!)
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _endDate.toString())
                               : '-'),
                         ),
                       ),
@@ -409,7 +418,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                   leading: Icon(Icons.monetization_on, color: Colors.green),
                   title: Text(entry.key),
                   trailing: Text(
-                    entry.value.toStringAsFixed(2),
+                    _amountFormatter.format(entry.value),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.green,
@@ -440,7 +449,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.blue.withOpacity(0.1),
+              backgroundColor: Colors.blue.withValues(alpha: 0.1),
               child: Icon(Icons.shopping_cart, color: Colors.blue),
             ),
             title: Text(purchase['invoice_number'] ?? '-'),
@@ -448,7 +457,8 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(purchase['supplier_name'] ?? '-'),
-                Text(purchase['date'] ?? '-'),
+                Text(dFormatter.formatLocalizedDateTime(
+                    context, purchase['date'])),
                 if (purchase['notes'] != null && purchase['notes'].isNotEmpty)
                   Text(purchase['notes'], style: theme.textTheme.bodySmall),
               ],
@@ -458,7 +468,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${purchase['total_amount'] ?? 0} ${purchase['currency'] ?? ''}',
+                  '${_amountFormatter.format(purchase['total_amount'])} ${purchase['currency'] ?? ''}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -466,13 +476,12 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                 if (purchase['additional_cost'] != null &&
                     purchase['additional_cost'] > 0)
                   Text(
-                    '+${purchase['additional_cost']} ${loc.additionalCost}',
+                    '+${_amountFormatter.format(purchase['additional_cost'])} ${loc.additionalCost}',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: Colors.orange),
                   ),
               ],
             ),
-            onTap: () => _showPurchaseDetails(purchase),
           ),
         );
       },
@@ -502,13 +511,13 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.orange.withOpacity(0.1),
+              backgroundColor: Colors.orange.withValues(alpha: 0.1),
               child: Icon(Icons.people, color: Colors.orange),
             ),
             title: Text(entry.key),
             subtitle: Text('${loc.purchases}: $count'),
             trailing: Text(
-              entry.value.toStringAsFixed(2),
+              _amountFormatter.format(entry.value),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.orange,
@@ -530,7 +539,12 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
     }
 
     final sortedProducts = _productTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        // Sort by total of all currencies descending
+        final aTotal = a.value.values.fold(0.0, (sum, v) => sum + v);
+        final bTotal = b.value.values.fold(0.0, (sum, v) => sum + v);
+        return bTotal.compareTo(aTotal);
+      });
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -538,22 +552,44 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         final entry = sortedProducts[index];
-        final count = _productCounts[entry.key] ?? 0;
-
+        final productName = entry.key;
+        final currencyMap = entry.value;
+        final count = _productCounts[productName] ?? 0;
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.purple.withOpacity(0.1),
+              backgroundColor: Colors.purple.withValues(alpha: 0.1),
               child: Icon(Icons.inventory, color: Colors.purple),
             ),
-            title: Text(entry.key),
-            subtitle: Text('${loc.purchases}: $count'),
-            trailing: Text(
-              entry.value.toStringAsFixed(2),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.purple,
-              ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(productName),
+                      Text('${loc.purchases}: $count',
+                          style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...currencyMap.entries.map((e) => Padding(
+                          padding:
+                              const EdgeInsets.only(left: 12.0, bottom: 2.0),
+                          child: Text(
+                            '${_amountFormatter.format(e.value)} ${e.key}',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.right,
+                          ),
+                        )),
+                  ],
+                ),
+              ],
             ),
           ),
         );
@@ -593,14 +629,6 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
           ],
         ),
       ),
-    );
-  }
-
-  void _showPurchaseDetails(Map<String, dynamic> purchase) {
-    // TODO: Implement purchase details dialog/sheet
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('Purchase details: ${purchase['invoice_number']}')),
     );
   }
 }
