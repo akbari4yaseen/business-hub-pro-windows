@@ -210,4 +210,30 @@ class PurchaseDBHelper {
       whereArgs: [id],
     );
   }
+
+  // Report helper methods
+  Future<List<Map<String, dynamic>>> getSuppliers() async {
+    final db = await _db;
+    return await db.rawQuery('''
+      SELECT DISTINCT 
+        a.id,
+        a.name
+      FROM accounts a
+      JOIN purchases p ON a.id = p.supplier_id
+      WHERE a.account_type = 'supplier'
+      ORDER BY a.name
+    ''');
+  }
+
+  Future<List<String>> getCurrencies() async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT DISTINCT currency
+      FROM purchases
+      WHERE currency IS NOT NULL AND currency != ''
+      ORDER BY currency
+    ''');
+    
+    return result.map((row) => row['currency'] as String).toList();
+  }
 }

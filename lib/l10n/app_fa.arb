@@ -603,5 +603,10 @@
   "errorDeletingExchange": "خطا در حذف تبهادل",
   "additionalCost": "هزینه اضافی",
   "totalCost": "هزینه کل",
-  "costPerUnit": "هزینه هر واحد"
+  "costPerUnit": "هزینه هر واحد",
+  "purchaseReports": "گزارش خریدها",
+  "purchaseReportsDesc": "مشاهده و تحلیل تمام معاملات خرید با فیلترها و خلاصه‌ها.",
+  "totalPurchases": "تعداد خریدها: {count}",
+  "totalAmount": "مبلغ کل: {amount}",
+  "suppliers": "فراهم کنندگان"
 }

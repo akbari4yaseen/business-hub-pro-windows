@@ -603,5 +603,10 @@
   "errorDeletingExchange": "Error deleting exchange",
   "additionalCost": "Additional Cost",
   "totalCost": "Total Cost",
-  "costPerUnit": "Cost per Unit"
+  "costPerUnit": "Cost per Unit",
+  "purchaseReports": "Purchase Reports",
+  "purchaseReportsDesc": "View and analyze all purchase transactions with filters and summaries.",
+  "totalPurchases": "Total Purchases: {count}",
+  "totalAmount": "Total Amount: {amount}",
+  "suppliers": "Suppliers"
 }

@@ -606,5 +606,10 @@
   "errorDeletingExchange": "د تبادلې ړنګولو تېروتنه",
   "additionalCost": "اضافي لګښت",
   "totalCost": "ټول لګښت",
-  "costPerUnit": "د هر واحد لګښت"
+  "costPerUnit": "د هر واحد لګښت",
+  "purchaseReports": "د پېرود راپورونه",
+  "purchaseReportsDesc": "ټول د پېرود معاملې د فلټرونو او لنډیزونو سره وګورئ او تحلیل کړئ.",
+  "totalPurchases": "ټول پېرودونه: {count}",
+  "totalAmount": "ټول مقدار: {amount}",
+  "suppliers": "عرضه کوونکي"
 }
