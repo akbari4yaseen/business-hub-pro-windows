@@ -34,7 +34,7 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
   // Summary data
   Map<String, double> _currencyTotals = {};
   Map<String, int> _supplierCounts = {};
-  Map<String, double> _supplierTotals = {};
+  Map<String, Map<String, double>> _supplierTotals = {};
   Map<String, int> _productCounts = {};
   Map<String, Map<String, double>> _productTotals = {};
 
@@ -127,8 +127,9 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
       if (supplierId != null) {
         _supplierCounts[supplierName] =
             (_supplierCounts[supplierName] ?? 0) + 1;
-        _supplierTotals[supplierName] =
-            (_supplierTotals[supplierName] ?? 0) + amount;
+        _supplierTotals[supplierName] ??= {};
+        _supplierTotals[supplierName]![currency] =
+            (_supplierTotals[supplierName]![currency] ?? 0) + amount;
       }
     }
 
@@ -498,7 +499,12 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
     }
 
     final sortedSuppliers = _supplierTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        // Sort by total of all currencies descending
+        final aTotal = a.value.values.fold(0.0, (sum, v) => sum + v);
+        final bTotal = b.value.values.fold(0.0, (sum, v) => sum + v);
+        return bTotal.compareTo(aTotal);
+      });
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -506,22 +512,41 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         final entry = sortedSuppliers[index];
-        final count = _supplierCounts[entry.key] ?? 0;
-
+        final supplierName = entry.key;
+        final currencyMap = entry.value;
+        final count = _supplierCounts[supplierName] ?? 0;
         return Card(
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.orange.withValues(alpha: 0.1),
               child: Icon(Icons.people, color: Colors.orange),
             ),
-            title: Text(entry.key),
-            subtitle: Text('${loc.purchases}: $count'),
-            trailing: Text(
-              _amountFormatter.format(entry.value),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(supplierName),
+                      Text('${loc.purchases}: $count', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...currencyMap.entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(left: 12.0, bottom: 2.0),
+                      child: Text(
+                        '${_amountFormatter.format(e.value)} ${e.key}',
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.right,
+                      ),
+                    )),
+                  ],
+                ),
+              ],
             ),
           ),
         );

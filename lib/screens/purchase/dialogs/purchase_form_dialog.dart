@@ -54,7 +54,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         TextEditingController(text: widget.purchase?.notes ?? '');
     _selectedDate = widget.purchase?.date ?? DateTime.now();
     _selectedCurrency = widget.purchase?.currency ?? 'AFN';
-    _additionalCostController = TextEditingController(text: widget.purchase?.additionalCost != null ? widget.purchase!.additionalCost.toString() : '0');
+    _additionalCostController = TextEditingController(
+        text: widget.purchase?.additionalCost != null
+            ? widget.purchase!.additionalCost.toString()
+            : '0');
 
     if (widget.purchase != null) {
       _loadPurchaseItems();
@@ -130,16 +133,24 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     setState(() {
       _items.addAll(items);
       for (var item in _items) {
-        _quantityControllers.add(TextEditingController(text: item.quantity.toString()));
-        _priceControllers.add(TextEditingController(text: item.unitPrice.toString()));
+        _quantityControllers
+            .add(TextEditingController(text: item.quantity.toString()));
+        _priceControllers
+            .add(TextEditingController(text: item.unitPrice.toString()));
         final product = products.firstWhere(
           (p) => p.id == item.productId,
-          orElse: () => Product(id: 0, name: '', categoryId: 0, createdAt: DateTime.now(), updatedAt: DateTime.now()),
+          orElse: () => Product(
+              id: 0,
+              name: '',
+              categoryId: 0,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now()),
         );
         _productNameControllers.add(TextEditingController(text: product.name));
       }
       if (widget.purchase != null) {
-        _additionalCostController.text = widget.purchase!.additionalCost.toString();
+        _additionalCostController.text =
+            widget.purchase!.additionalCost.toString();
       }
     });
   }
@@ -300,10 +311,12 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       date: _selectedDate,
       currency: _selectedCurrency,
       notes: _notesController.text,
-      totalAmount: _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice)),
+      totalAmount:
+          _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice)),
       paidAmount: widget.purchase?.paidAmount ?? 0,
       additionalCost: double.tryParse(_additionalCostController.text) ?? 0,
-      dueDate: widget.purchase?.dueDate ?? _selectedDate.add(Duration(days: 30)),
+      dueDate:
+          widget.purchase?.dueDate ?? _selectedDate.add(Duration(days: 30)),
       createdAt: widget.purchase?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -336,6 +349,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       builder: (context, inventoryProvider, child) {
         final products = inventoryProvider.products;
         return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
             child: Column(
@@ -388,7 +404,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                   decoration: InputDecoration(
                                     labelText: loc.additionalCost,
                                   ),
-                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                  keyboardType: TextInputType.numberWithOptions(
+                                      decimal: true),
                                 ),
                                 const SizedBox(height: 16),
                                 Autocomplete<Map<String, dynamic>>(
@@ -412,8 +429,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                       focusNode,
                                       onFieldSubmitted) {
                                     // Set the initial text for edit mode
-                                    if (widget.purchase != null && textEditingController.text.isEmpty) {
-                                      textEditingController.text = _supplierNameController.text;
+                                    if (widget.purchase != null &&
+                                        textEditingController.text.isEmpty) {
+                                      textEditingController.text =
+                                          _supplierNameController.text;
                                     }
                                     return TextFormField(
                                       controller: textEditingController,
@@ -577,57 +596,91 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                           ),
                                           const SizedBox(height: 16),
                                           Autocomplete<Product>(
-                                            optionsBuilder: (TextEditingValue textEditingValue) {
-                                              if (textEditingValue.text.isEmpty) {
+                                            optionsBuilder: (TextEditingValue
+                                                textEditingValue) {
+                                              if (textEditingValue
+                                                  .text.isEmpty) {
                                                 return products;
                                               }
                                               return products.where((product) {
-                                                return product.name.toLowerCase().contains(
-                                                  textEditingValue.text.toLowerCase(),
-                                                );
+                                                return product.name
+                                                    .toLowerCase()
+                                                    .contains(
+                                                      textEditingValue.text
+                                                          .toLowerCase(),
+                                                    );
                                               });
                                             },
-                                            displayStringForOption: (Product product) => product.name,
-                                            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                                            displayStringForOption:
+                                                (Product product) =>
+                                                    product.name,
+                                            fieldViewBuilder: (context,
+                                                textEditingController,
+                                                focusNode,
+                                                onFieldSubmitted) {
                                               // Set the initial text for edit mode
-                                              if (widget.purchase != null && textEditingController.text.isEmpty) {
-                                                textEditingController.text = _productNameControllers[index].text;
+                                              if (widget.purchase != null &&
+                                                  textEditingController
+                                                      .text.isEmpty) {
+                                                textEditingController.text =
+                                                    _productNameControllers[
+                                                            index]
+                                                        .text;
                                               }
                                               return TextFormField(
-                                                controller: textEditingController,
+                                                controller:
+                                                    textEditingController,
                                                 focusNode: focusNode,
                                                 decoration: InputDecoration(
                                                   labelText: loc.product,
                                                 ),
                                                 validator: (value) {
-                                                  if (value == null || value.isEmpty) {
+                                                  if (value == null ||
+                                                      value.isEmpty) {
                                                     return loc.requiredField;
                                                   }
                                                   return null;
                                                 },
                                               );
                                             },
-                                            onSelected: (Product selectedProduct) {
-                                              final selectedProductUnits = inventoryProvider.getProductUnits(selectedProduct.id!);
-                                              final selectedUnit = selectedProductUnits.first;
-                                              _updateItem(index, selectedProduct, selectedUnit);
+                                            onSelected:
+                                                (Product selectedProduct) {
+                                              final selectedProductUnits =
+                                                  inventoryProvider
+                                                      .getProductUnits(
+                                                          selectedProduct.id!);
+                                              final selectedUnit =
+                                                  selectedProductUnits.first;
+                                              _updateItem(
+                                                  index,
+                                                  selectedProduct,
+                                                  selectedUnit);
                                             },
-                                            optionsViewBuilder: (context, onSelected, options) {
+                                            optionsViewBuilder:
+                                                (context, onSelected, options) {
                                               return Align(
                                                 alignment: Alignment.topLeft,
                                                 child: Material(
                                                   elevation: 4,
                                                   child: ConstrainedBox(
-                                                    constraints: const BoxConstraints(maxHeight: 200),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            maxHeight: 200),
                                                     child: ListView.builder(
                                                       padding: EdgeInsets.zero,
                                                       shrinkWrap: true,
                                                       itemCount: options.length,
-                                                      itemBuilder: (BuildContext context, int index) {
-                                                        final option = options.elementAt(index);
+                                                      itemBuilder:
+                                                          (BuildContext context,
+                                                              int index) {
+                                                        final option = options
+                                                            .elementAt(index);
                                                         return ListTile(
-                                                          title: Text(option.name),
-                                                          onTap: () => onSelected(option),
+                                                          title:
+                                                              Text(option.name),
+                                                          onTap: () =>
+                                                              onSelected(
+                                                                  option),
                                                         );
                                                       },
                                                     ),
