@@ -611,5 +611,9 @@
   "purchaseReportsDesc": "ټول د پېرود معاملې د فلټرونو او لنډیزونو سره وګورئ او تحلیل کړئ.",
   "totalPurchases": "ټول پېرودونه: {count}",
   "totalAmount": "ټول مقدار: {amount}",
-  "suppliers": "عرضه کوونکي"
+  "suppliers": "عرضه کوونکي",
+  "customers": "پیرودونکي",
+  "salesReports": "د پلور راپورونه",
+  "salesReportsDesc": "ټول د پلور معاملې د فلټرونو او لنډیزونو سره وګورئ او تحلیل کړئ.",
+  "totalInvoices": "ټول فاکتورونه: {count}"
 }

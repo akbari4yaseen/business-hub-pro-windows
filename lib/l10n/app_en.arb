@@ -608,5 +608,9 @@
   "purchaseReportsDesc": "View and analyze all purchase transactions with filters and summaries.",
   "totalPurchases": "Total Purchases: {count}",
   "totalAmount": "Total Amount: {amount}",
-  "suppliers": "Suppliers"
+  "suppliers": "Suppliers",
+  "customers": "Customers",
+  "salesReports": "Sales Reports",
+  "salesReportsDesc": "View and analyze all sales transactions with filters and summaries.",
+  "totalInvoices": "Total Invoices: {count}"
 }

@@ -5,6 +5,7 @@ import 'daily_balances_chart.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'periodic_reports_screen.dart';
 import 'purchase_reports_screen.dart';
+import 'sales_reports_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -84,6 +85,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const PurchaseReportsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt),
+              title: Text(loc.salesReports),
+              subtitle: Text(loc.salesReportsDesc),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SalesReportsScreen(),
                   ),
                 );
               },

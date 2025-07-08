@@ -729,4 +729,29 @@ class InvoiceDBHelper {
       rethrow;
     }
   }
+
+  Future<List<String>> getCurrencies() async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT DISTINCT currency
+      FROM invoices
+      WHERE currency IS NOT NULL AND currency != ''
+      ORDER BY currency
+    ''');
+    
+    return result.map((row) => row['currency'] as String).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getCustomers() async {
+    final db = await _db;
+    return await db.rawQuery('''
+      SELECT DISTINCT 
+        a.id,
+        a.name
+      FROM accounts a
+      JOIN invoices i ON a.id = i.account_id
+      WHERE a.account_type = 'customer'
+      ORDER BY a.name
+    ''');
+  }
 }
