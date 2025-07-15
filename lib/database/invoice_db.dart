@@ -485,6 +485,17 @@ class InvoiceDBHelper {
             'transaction_group': 'invoice_payment',
           },
         );
+
+        await txn.insert('account_details', {
+          'date': DateTime.now().toIso8601String(),
+          'account_id': 1, // treasury
+          'amount': amount,
+          'currency': currency,
+          'transaction_type': 'credit',
+          'description': '${localizedDescription} $invoiceNumber',
+          'transaction_id': invoiceId,
+          'transaction_group': 'invoice_payment',
+        });
       });
     } catch (e) {
       debugPrint('Error recording payment: $e');
@@ -738,7 +749,7 @@ class InvoiceDBHelper {
       WHERE currency IS NOT NULL AND currency != ''
       ORDER BY currency
     ''');
-    
+
     return result.map((row) => row['currency'] as String).toList();
   }
 

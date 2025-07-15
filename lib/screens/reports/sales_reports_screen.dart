@@ -470,7 +470,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                 ),
               ],
             ),
-            onTap: () => _showInvoiceDetails(invoice),
+            // onTap: () => _showInvoiceDetails(invoice),
           ),
         );
       },
@@ -628,10 +628,10 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     }
   }
 
-  void _showInvoiceDetails(Map<String, dynamic> invoice) {
-    // TODO: Implement invoice details dialog/sheet
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Invoice details: ${invoice['invoice_number']}')),
-    );
-  }
+  // void _showInvoiceDetails(Map<String, dynamic> invoice) {
+  //   // TODO: Implement invoice details dialog/sheet
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text('Invoice details: ${invoice['invoice_number']}')),
+  //   );
+  // }
 } 

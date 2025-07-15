@@ -172,13 +172,32 @@ class PurchaseProvider with ChangeNotifier {
             'transaction_group': 'purchase',
           });
 
+          // If additional cost is greater than zero, insert into account_details for treasury (account_id = 1)
+          if (purchase.additionalCost > 0) {
+            await txn.insert('account_details', {
+              'date': purchase.date.toString(),
+              'account_id': 1, // treasury
+              'amount': purchase.additionalCost,
+              'currency': purchase.currency,
+              'transaction_type': 'debit',
+              'description':
+                  'Additional cost for Purchase of Invoice ${purchase.invoiceNumber}',
+              'transaction_id': purchase.id,
+              'transaction_group': 'purchase',
+            });
+          }
+
           // Get existing items within the same transaction
           final existingItemsResult = await txn.rawQuery('''
             SELECT id FROM purchase_items WHERE purchase_id = ?
           ''', [purchase.id]);
-          
-          final existingItemIds = existingItemsResult.map((item) => item['id'] as int).toSet();
-          final newItemIds = items.where((item) => item.id != 0).map((item) => item.id!).toSet();
+
+          final existingItemIds =
+              existingItemsResult.map((item) => item['id'] as int).toSet();
+          final newItemIds = items
+              .where((item) => item.id != 0)
+              .map((item) => item.id!)
+              .toSet();
 
           // Delete removed items
           for (var itemId in existingItemIds) {
@@ -217,7 +236,7 @@ class PurchaseProvider with ChangeNotifier {
 
       // Add a small delay to prevent database locks
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       await loadPurchases(refresh: true);
     } catch (e) {
       debugPrint('Error updating purchase: $e');

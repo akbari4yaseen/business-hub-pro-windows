@@ -529,7 +529,7 @@
   "hasExpiryDate": "دارای تاریخ انقضا",
   "categoryDeleted": "کتگوری با موفقیت حذف شد.",
   "paymentForInvoice": "رسید برای فاکتور",
-  "status": "وضعبت",
+  "status": "وضعیت",
   "backupCanceledNoLocation": "پشتیبان‌گیری لغو شد. موقعیت انتخاب نشده است",
   "selectBackupLocation": "انتخاب مکان پشتیبان‌گیری",
   "copyBalance": "کاپی بیلانس",
