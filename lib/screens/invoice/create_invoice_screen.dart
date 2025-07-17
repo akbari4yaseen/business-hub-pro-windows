@@ -613,6 +613,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
       }
 
+      // Get the total from the controller (either calculated or manually entered)
+      final totalText = _totalController.text.replaceAll(RegExp(r'[^\d.]'), '');
+      final total = double.parse(totalText);
+
+      // Determine if we should store a user-entered total
+      final calculatedTotal = _items.fold(
+        0.0,
+        (sum, item) => sum + (item.quantity * item.unitPrice),
+      );
+
+      // Only store userEnteredTotal if it's different from calculated total
+      final userEnteredTotal =
+          _isTotalManuallyEdited && total != calculatedTotal ? total : null;
+
       final invoice = Invoice(
         id: widget.invoice?.id,
         accountId: _selectedAccountId!,
@@ -621,6 +635,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currency: _currency,
         notes: _notesController.text,
         dueDate: _dueDate,
+        userEnteredTotal: userEnteredTotal,
         items: _items
             .map((item) => InvoiceItem(
                   productId: item.selectedProductId!,

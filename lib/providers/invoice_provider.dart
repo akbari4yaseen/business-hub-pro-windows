@@ -47,13 +47,11 @@ class InvoiceProvider with ChangeNotifier {
 
   // Initialize provider
   Future<void> initialize() async {
-   
     try {
       await Future.wait([
         loadInvoices(),
         loadOverdueInvoices(),
       ]);
-    
     } catch (e) {
       debugPrint('Error initializing InvoiceProvider: $e');
       _error = e.toString();
@@ -63,8 +61,6 @@ class InvoiceProvider with ChangeNotifier {
 
   // Load all invoices with pagination
   Future<void> loadInvoices({bool refresh = false}) async {
-  
-    
     if (refresh) {
       _currentPage = 0;
       _invoices.clear();
@@ -73,7 +69,6 @@ class InvoiceProvider with ChangeNotifier {
     }
 
     if (!_hasMore || _isLoading) {
-    
       return;
     }
 
@@ -81,7 +76,6 @@ class InvoiceProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-     
       final invoiceMaps = await _db.getInvoices(
         limit: _pageSize,
         offset: _currentPage * _pageSize,
@@ -92,23 +86,21 @@ class InvoiceProvider with ChangeNotifier {
         endDate: _selectedEndDate,
         accountId: _selectedAccountId,
       );
-     
+
       final newInvoices = invoiceMaps.map((map) {
         final invoice = _convertMapToInvoice(map);
         _invoiceCache[invoice.id!] = invoice;
         return invoice;
       }).toList();
-      
+
       if (refresh) {
         _invoices = newInvoices;
       } else {
         _invoices.addAll(newInvoices);
       }
-      
+
       _currentPage++;
       _hasMore = newInvoices.length == _pageSize;
-      
-    
     } catch (e) {
       debugPrint('Error loading invoices: $e');
       _error = e.toString();
@@ -120,7 +112,6 @@ class InvoiceProvider with ChangeNotifier {
 
   // Load overdue invoices
   Future<void> loadOverdueInvoices() async {
-  
     try {
       final overdueMaps = await _db.getOverdueInvoices();
       _overdueInvoices = overdueMaps.map((map) {
@@ -128,7 +119,7 @@ class InvoiceProvider with ChangeNotifier {
         _invoiceCache[invoice.id!] = invoice;
         return invoice;
       }).toList();
-  
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading overdue invoices: $e');
@@ -137,7 +128,6 @@ class InvoiceProvider with ChangeNotifier {
 
   // Create new invoice
   Future<void> createInvoice(Invoice invoice) async {
-   
     try {
       _isLoading = true;
       _error = null;
@@ -153,10 +143,9 @@ class InvoiceProvider with ChangeNotifier {
         status: invoice.status.toString().split('.').last,
         paidAmount: invoice.paidAmount,
         dueDate: invoice.dueDate,
+        userEnteredTotal: invoice.userEnteredTotal,
         items: invoice.items.map((item) => item.toMap()).toList(),
       );
-
-    
 
       // 2. Add to cache
       final createdInvoice = invoice.copyWith(id: invoiceId);
@@ -166,16 +155,14 @@ class InvoiceProvider with ChangeNotifier {
       _currentPage = 0;
       _invoices.clear();
       _hasMore = true;
-      
+
       // 4. Clear loading state before loading fresh data
       _isLoading = false;
       notifyListeners();
-      
+
       // 5. Load fresh data
       await loadInvoices(refresh: true);
       await loadOverdueInvoices();
-
-
     } catch (e) {
       debugPrint('Error creating invoice: $e');
       _error = e.toString();
@@ -198,12 +185,13 @@ class InvoiceProvider with ChangeNotifier {
         status: invoice.status.toString().split('.').last,
         paidAmount: invoice.paidAmount,
         dueDate: invoice.dueDate,
+        userEnteredTotal: invoice.userEnteredTotal,
         items: invoice.items.map((item) => item.toMap()).toList(),
       );
-      
+
       // Update cache
       _invoiceCache[invoice.id!] = invoice;
-      
+
       // Reset pagination and refresh data
       await _refreshData();
     } finally {
@@ -248,7 +236,7 @@ class InvoiceProvider with ChangeNotifier {
 
       await _db.recordPayment(invoiceId, amount,
           localizedDescription: localizedDescription);
-      
+
       // Update cache if exists
       if (_invoiceCache.containsKey(invoiceId)) {
         final invoice = _invoiceCache[invoiceId]!;
@@ -260,7 +248,7 @@ class InvoiceProvider with ChangeNotifier {
         );
         _invoiceCache[invoiceId] = updatedInvoice;
       }
-      
+
       // Reset pagination and refresh data
       await _refreshData();
     } finally {
@@ -292,10 +280,10 @@ class InvoiceProvider with ChangeNotifier {
       await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
       await _db.finalizeInvoice(invoice.id!,
           localizedDescription: localizedDescription);
-          
+
       // Update cache
       _invoiceCache[invoice.id!] = updatedInvoice;
-      
+
       // Reset pagination and refresh data
       await _refreshData();
     } catch (e) {
@@ -331,10 +319,10 @@ class InvoiceProvider with ChangeNotifier {
     if (_invoiceCache.containsKey(id)) {
       return _invoiceCache[id];
     }
-    
+
     final invoice = await _db.getInvoiceById(id, includeItems: true);
     if (invoice == null) return null;
-    
+
     final convertedInvoice = _convertMapToInvoice(invoice);
     _invoiceCache[id] = convertedInvoice;
     return convertedInvoice;
@@ -368,7 +356,6 @@ class InvoiceProvider with ChangeNotifier {
   Future<void> searchInvoices(String query) async {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
-     
       _searchQuery = query;
       _currentPage = 0;
       _invoices.clear();
@@ -384,18 +371,17 @@ class InvoiceProvider with ChangeNotifier {
     DateTime? endDate,
     int? accountId,
   }) async {
-
     _selectedStatus = status;
     _selectedStartDate = startDate;
     _selectedEndDate = endDate;
     _selectedAccountId = accountId;
-    
+
     // Reset pagination
     _currentPage = 0;
     _invoices.clear();
     _hasMore = true;
     _invoiceCache.clear();
-    
+
     // Load fresh data
     await loadInvoices(refresh: true);
     await loadOverdueInvoices();
@@ -403,19 +389,18 @@ class InvoiceProvider with ChangeNotifier {
 
   // Reset filters
   Future<void> resetFilters() async {
-  
     _selectedStatus = null;
     _selectedStartDate = null;
     _selectedEndDate = null;
     _selectedAccountId = null;
     _searchQuery = null;
-    
+
     // Reset pagination
     _currentPage = 0;
     _invoices.clear();
     _hasMore = true;
     _invoiceCache.clear();
-    
+
     // Load fresh data
     await loadInvoices(refresh: true);
     await loadOverdueInvoices();
@@ -423,7 +408,6 @@ class InvoiceProvider with ChangeNotifier {
 
   // Helper method to refresh all data
   Future<void> _refreshData() async {
-   
     try {
       _isLoading = true;
       notifyListeners();
@@ -439,8 +423,6 @@ class InvoiceProvider with ChangeNotifier {
 
       await loadInvoices(refresh: true);
       await loadOverdueInvoices();
-      
-      
     } catch (e) {
       debugPrint('Error refreshing data: $e');
       _error = e.toString();
@@ -481,6 +463,7 @@ class InvoiceProvider with ChangeNotifier {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      userEnteredTotal: map['user_entered_total'] as double?,
     );
   }
 
@@ -547,13 +530,15 @@ class InvoiceProvider with ChangeNotifier {
       }
 
       // Only allow cancellation of finalized or partially paid invoices
-      if (invoice.status != InvoiceStatus.finalized && 
+      if (invoice.status != InvoiceStatus.finalized &&
           invoice.status != InvoiceStatus.partiallyPaid) {
-        throw Exception('Only finalized or partially paid invoices can be cancelled');
+        throw Exception(
+            'Only finalized or partially paid invoices can be cancelled');
       }
 
       // Cancel the invoice
-      await _db.cancelInvoice(invoiceId, localizedDescription: localizedDescription);
+      await _db.cancelInvoice(invoiceId,
+          localizedDescription: localizedDescription);
 
       // Update cache if exists
       if (_invoiceCache.containsKey(invoiceId)) {
