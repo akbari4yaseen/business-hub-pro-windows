@@ -30,13 +30,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _notesController = TextEditingController();
   final _dateController = TextEditingController();
   final _dueDateController = TextEditingController();
+  final _totalController = TextEditingController();
   final List<InvoiceItemFormData> _items = [];
   DateTime _date = DateTime.now();
   DateTime? _dueDate;
   late String _currency;
   int? _selectedAccountId;
-  static final _currencyFormat = NumberFormat('#,###.##');
+  static final _currencyFormat = NumberFormat('#,##0.##');
   bool _isSubmitting = false;
+  bool _isTotalManuallyEdited = false;
   final ValueNotifier<double> _totalNotifier = ValueNotifier<double>(0);
 
   @override
@@ -50,6 +52,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       } else {
         // Add initial item by default for better UX
         _addItem();
+        // Initialize total controller
+        _totalController.text = _currencyFormat.format(0);
       }
     });
 
@@ -98,6 +102,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         formData.descriptionController.text = item.description ?? '';
         _items.add(formData);
       }
+
+      // Initialize total controller with invoice total
+      final invoiceTotal = invoice.items.fold(
+        0.0,
+        (sum, item) => sum + (item.quantity * item.unitPrice),
+      );
+
+      // Use user-entered total if available, otherwise use calculated total
+      final displayTotal = invoice.userEnteredTotal ?? invoiceTotal;
+      _totalController.text = _currencyFormat.format(displayTotal);
+      _totalNotifier.value = displayTotal;
+
+      // Set manual edit flag if user-entered total exists
+      _isTotalManuallyEdited = invoice.userEnteredTotal != null;
     });
   }
 
@@ -106,6 +124,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _notesController.dispose();
     _dateController.dispose();
     _dueDateController.dispose();
+    _totalController.dispose();
     _totalNotifier.dispose();
     for (final item in _items) {
       item.dispose();
@@ -129,10 +148,26 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void _updateTotal() {
-    _totalNotifier.value = _items.fold(
-      0,
+    final calculatedTotal = _items.fold(
+      0.0,
       (sum, item) => sum + (item.quantity * item.unitPrice),
     );
+    _totalNotifier.value = calculatedTotal;
+
+    // Only update the controller if total hasn't been manually edited
+    if (!_isTotalManuallyEdited) {
+      _totalController.text = _currencyFormat.format(calculatedTotal);
+    }
+  }
+
+  void _resetTotalToCalculated() {
+    final calculatedTotal = _items.fold(
+      0.0,
+      (sum, item) => sum + (item.quantity * item.unitPrice),
+    );
+    _totalController.text = _currencyFormat.format(calculatedTotal);
+    _totalNotifier.value = calculatedTotal;
+    _isTotalManuallyEdited = false;
   }
 
   Future<void> _selectDate(BuildContext context, bool isDueDate) async {
@@ -361,26 +396,135 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Widget _buildTotalCard(AppLocalizations loc) {
-    return Card(
+    return // Total
+        Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(loc.total,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ValueListenableBuilder<double>(
-              valueListenable: _totalNotifier,
-              builder: (context, total, child) {
-                return Text(
-                  '${_currencyFormat.format(total)} $_currency',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  loc.total,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
                   ),
+                ),
+                if (_isTotalManuallyEdited)
+                  TextButton.icon(
+                    onPressed: _resetTotalToCalculated,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text(loc.reset),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _totalController,
+                    decoration: InputDecoration(
+                      labelText: loc.total,
+                      suffixText: _currency,
+                    ),
+                    keyboardType:
+                        TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (value) {
+                      setState(() {
+                        _isTotalManuallyEdited = true;
+                      });
+                      // Parse the input value and update the total notifier
+                      try {
+                        final cleanValue =
+                            value.replaceAll(RegExp(r'[^\d.]'), '');
+                        if (cleanValue.isNotEmpty) {
+                          final parsedValue = double.parse(cleanValue);
+                          _totalNotifier.value = parsedValue;
+                        }
+                      } catch (e) {
+                        // If parsing fails, keep the previous value
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return loc.totalIsRequired;
+                      }
+                      try {
+                        final cleanValue =
+                            value.replaceAll(RegExp(r'[^\d.]'), '');
+                        if (cleanValue.isEmpty) {
+                          return loc.totalIsRequired;
+                        }
+                        final parsedValue = double.parse(cleanValue);
+                        if (parsedValue < 0) {
+                          return loc.totalMustBePositive;
+                        }
+                      } catch (e) {
+                        return loc.invalidTotalFormat;
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ValueListenableBuilder<double>(
+              valueListenable: _totalNotifier,
+              builder: (context, total, child) {
+                final calculatedTotal = _items.fold(
+                  0.0,
+                  (sum, item) => sum + (item.quantity * item.unitPrice),
                 );
+                final difference = total - calculatedTotal;
+
+                if (_isTotalManuallyEdited && difference != 0) {
+                  return Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: difference > 0
+                          ? Colors.red.shade50
+                          : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: difference > 0
+                            ? Colors.red.shade200
+                            : Colors.green.shade200,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          difference > 0
+                              ? Icons.trending_up
+                              : Icons.trending_down,
+                          color: difference > 0 ? Colors.red : Colors.green,
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            difference > 0
+                                ? '${loc.adjustedUp} ${_currencyFormat.format(difference.abs())}'
+                                : '${loc.adjustedDown} ${_currencyFormat.format(difference.abs())}',
+                            style: TextStyle(
+                              color: difference > 0 ? Colors.red : Colors.green,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SizedBox.shrink();
               },
             ),
           ],

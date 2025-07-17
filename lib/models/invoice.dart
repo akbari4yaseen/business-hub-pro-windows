@@ -13,6 +13,7 @@ class Invoice {
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final double? userEnteredTotal;
 
   Invoice({
     this.id,
@@ -27,12 +28,14 @@ class Invoice {
     this.dueDate,
     DateTime? createdAt,
     this.updatedAt,
+    this.userEnteredTotal,
   }) : createdAt = createdAt ?? DateTime.now();
 
-  double get subtotal => items.fold(0, (sum, item) => sum + item.total);
+  double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
 
-  double get total =>
-      subtotal; // Can be extended to include tax, discounts etc.
+  double get calculatedTotal => subtotal;
+
+  double get total => userEnteredTotal ?? calculatedTotal;
 
   double get balance => total - (paidAmount ?? 0.0);
 
@@ -43,6 +46,11 @@ class Invoice {
       status != InvoiceStatus.cancelled &&
       dueDate != null &&
       dueDate!.isBefore(DateTime.now());
+
+  bool get hasManualAdjustment => userEnteredTotal != null;
+
+  double? get adjustmentAmount =>
+      userEnteredTotal != null ? userEnteredTotal! - calculatedTotal : null;
 
   Map<String, dynamic> toMap() {
     return {
@@ -57,6 +65,7 @@ class Invoice {
       'due_date': dueDate?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'user_entered_total': userEnteredTotal,
     };
   }
 
@@ -81,6 +90,7 @@ class Invoice {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      userEnteredTotal: map['user_entered_total'] as double?,
     );
   }
 
@@ -97,6 +107,7 @@ class Invoice {
     DateTime? dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? userEnteredTotal,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -111,6 +122,7 @@ class Invoice {
       dueDate: dueDate ?? this.dueDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      userEnteredTotal: userEnteredTotal ?? this.userEnteredTotal,
     );
   }
 }

@@ -186,6 +186,7 @@
   "recentTransactions": "معاملات اخیر",
   "noRecentTransactions": "معامله اخیر وجود ندارد",
   "noTransactionsFound": "معامله‌ای وجود ندارد",
+  "noExchangesFound": "تبادله اسعار یافت نشد",
   "transactionEditError": "خطا در ویرایش روزنامچه",
   "transactionNotFound": "معامله‌ای وجود ندارد",
   "transactionDeleteError": "خطا در حذف معامله",
@@ -612,5 +613,13 @@
   "customers": "مشتریان",
   "salesReports": "گزارش فروشات",
   "salesReportsDesc": "مشاهده و تحلیل تمام معاملات فروش با فیلترها و خلاصه‌ها.",
-  "totalInvoices": "تعداد فاکتورها: {count}"
+  "totalInvoices": "تعداد فاکتورها: {count}",
+  "totalIsRequired": "مجموع الزامی است",
+  "totalMustBePositive": "مجموع باید مثبت باشد",
+  "invalidTotalFormat": "فرمت مجموع نامعتبر است",
+  "adjustedUp": "افزایش یافته به میزان",
+  "adjustedDown": "کاهش یافته به میزان",
+  "manualTotalAdjustment": "تنظیم دستی مجموع",
+  "calculatedTotal": "مجموع محاسبه شده",
+  "finalTotal": "مجموع نهایی"
 }

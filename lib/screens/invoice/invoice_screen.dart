@@ -254,6 +254,11 @@ class _InvoiceScreenState extends State<InvoiceScreen>
               },
             ),
             IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => context.read<InvoiceProvider>().loadInvoices(refresh: true),
+              tooltip: loc.refresh,
+            ),
+            IconButton(
               icon: const Icon(Icons.filter_list),
               onPressed: _showFilterModal,
             ),

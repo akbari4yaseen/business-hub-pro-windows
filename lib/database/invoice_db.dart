@@ -67,12 +67,15 @@ class InvoiceDBHelper {
         SELECT 
           i.*,
           a.name as account_name,
-          CAST(COALESCE(
-            (SELECT SUM(quantity * unit_price)
-            FROM invoice_items
-            WHERE invoice_id = i.id),
-            0
-          ) AS REAL) as total_amount
+          CASE 
+            WHEN i.user_entered_total IS NOT NULL THEN i.user_entered_total
+            ELSE CAST(COALESCE(
+              (SELECT SUM(quantity * unit_price)
+              FROM invoice_items
+              WHERE invoice_id = i.id),
+              0
+            ) AS REAL)
+          END as total_amount
         FROM invoices i
         JOIN accounts a ON i.account_id = a.id
         $whereClause
@@ -130,12 +133,15 @@ class InvoiceDBHelper {
         SELECT 
           i.*,
           a.name as account_name,
-          COALESCE(
-            (SELECT SUM(quantity * unit_price)
-            FROM invoice_items
-            WHERE invoice_id = i.id),
-            0
-          ) as total_amount
+          CASE 
+            WHEN i.user_entered_total IS NOT NULL THEN i.user_entered_total
+            ELSE COALESCE(
+              (SELECT SUM(quantity * unit_price)
+              FROM invoice_items
+              WHERE invoice_id = i.id),
+              0
+            )
+          END as total_amount
         FROM invoices i
         JOIN accounts a ON i.account_id = a.id
         WHERE i.id = ?
@@ -213,6 +219,7 @@ class InvoiceDBHelper {
     required String status,
     double? paidAmount,
     DateTime? dueDate,
+    double? userEnteredTotal,
     required List<Map<String, dynamic>> items,
   }) async {
     final db = await _db;
@@ -229,6 +236,7 @@ class InvoiceDBHelper {
             'status': status,
             'paid_amount': paidAmount ?? 0.0,
             'due_date': dueDate?.toIso8601String(),
+            'user_entered_total': userEnteredTotal,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           },
@@ -269,6 +277,7 @@ class InvoiceDBHelper {
     String? status,
     double? paidAmount,
     DateTime? dueDate,
+    double? userEnteredTotal,
     List<Map<String, dynamic>>? items,
   }) async {
     final db = await _db;
@@ -285,6 +294,9 @@ class InvoiceDBHelper {
         if (status != null) updates['status'] = status;
         if (paidAmount != null) updates['paid_amount'] = paidAmount;
         if (dueDate != null) updates['due_date'] = dueDate.toIso8601String();
+
+        // Always update userEnteredTotal (can be null to remove manual adjustment)
+        updates['user_entered_total'] = userEnteredTotal;
 
         await txn.update(
           'invoices',
@@ -360,12 +372,15 @@ class InvoiceDBHelper {
         SELECT 
           i.*,
           a.name as account_name,
-          CAST(COALESCE(
-            (SELECT SUM(quantity * unit_price)
-            FROM invoice_items
-            WHERE invoice_id = i.id),
-            0
-          ) AS REAL) as total_amount
+          CASE 
+            WHEN i.user_entered_total IS NOT NULL THEN i.user_entered_total
+            ELSE CAST(COALESCE(
+              (SELECT SUM(quantity * unit_price)
+              FROM invoice_items
+              WHERE invoice_id = i.id),
+              0
+            ) AS REAL)
+          END as total_amount
         FROM invoices i
         JOIN accounts a ON i.account_id = a.id
         WHERE i.due_date < ? 
@@ -440,14 +455,20 @@ class InvoiceDBHelper {
         final currency = invoice['currency'] as String;
         final invoiceNumber = invoice['invoice_number'] as String;
 
-        // Get total amount
-        final totalResult = await txn.rawQuery('''
-          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
-          FROM invoice_items 
-          WHERE invoice_id = ?
-        ''', [invoiceId]);
+        // Get total amount - use userEnteredTotal if available, otherwise calculate from items
+        double totalAmount;
+        final userEnteredTotal = invoice['user_entered_total'] as double?;
 
-        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        if (userEnteredTotal != null) {
+          totalAmount = userEnteredTotal;
+        } else {
+          final totalResult = await txn.rawQuery('''
+            SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
+            FROM invoice_items 
+            WHERE invoice_id = ?
+          ''', [invoiceId]);
+          totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        }
 
         // Determine new status
         String newStatus;
@@ -485,17 +506,6 @@ class InvoiceDBHelper {
             'transaction_group': 'invoice_payment',
           },
         );
-
-        await txn.insert('account_details', {
-          'date': DateTime.now().toIso8601String(),
-          'account_id': 1, // treasury
-          'amount': amount,
-          'currency': currency,
-          'transaction_type': 'credit',
-          'description': '${localizedDescription} $invoiceNumber',
-          'transaction_id': invoiceId,
-          'transaction_group': 'invoice_payment',
-        });
       });
     } catch (e) {
       debugPrint('Error recording payment: $e');
@@ -526,14 +536,20 @@ class InvoiceDBHelper {
         final currency = invoice['currency'] as String;
         final invoiceNumber = invoice['invoice_number'] as String;
 
-        // Get total amount
-        final totalResult = await txn.rawQuery('''
-          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
-          FROM invoice_items 
-          WHERE invoice_id = ?
-        ''', [invoiceId]);
+        // Get total amount - use userEnteredTotal if available, otherwise calculate from items
+        double totalAmount;
+        final userEnteredTotal = invoice['user_entered_total'] as double?;
 
-        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        if (userEnteredTotal != null) {
+          totalAmount = userEnteredTotal;
+        } else {
+          final totalResult = await txn.rawQuery('''
+            SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
+            FROM invoice_items 
+            WHERE invoice_id = ?
+          ''', [invoiceId]);
+          totalAmount = totalResult.first['total'] as double? ?? 0.0;
+        }
 
         // Update invoice status
         await txn.update(
@@ -650,15 +666,6 @@ class InvoiceDBHelper {
               'Only finalized or partially paid invoices can be cancelled');
         }
 
-        // Get total amount
-        final totalResult = await txn.rawQuery('''
-          SELECT COALESCE(SUM(quantity * unit_price), 0) as total 
-          FROM invoice_items 
-          WHERE invoice_id = ?
-        ''', [invoiceId]);
-
-        final totalAmount = totalResult.first['total'] as double? ?? 0.0;
-
         // Update invoice status to cancelled
         await txn.update(
           'invoices',
@@ -723,7 +730,6 @@ class InvoiceDBHelper {
             final stock = stockResult.first;
             final currentQuantity = stock['quantity'] as double;
             final stockId = stock['id'] as int;
-            final warehouseId = stock['warehouse_id'] as int;
 
             // Update stock quantity
             await txn.update(

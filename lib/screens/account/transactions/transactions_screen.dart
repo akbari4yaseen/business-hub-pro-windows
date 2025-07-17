@@ -332,6 +332,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               onPressed: () => setState(() => _isSearching = true),
               tooltip: loc.search,
             ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshTransactions,
+              tooltip: loc.refresh,
+            ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {

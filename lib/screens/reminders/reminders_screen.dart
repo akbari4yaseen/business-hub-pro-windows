@@ -229,6 +229,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
               onPressed: () => setState(() => _isSearching = true),
               tooltip: loc.search,
             ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchReminders,
+            tooltip: loc.refresh,
+          ),
         ],
       ),
       body: RefreshIndicator(

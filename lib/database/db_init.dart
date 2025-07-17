@@ -221,6 +221,7 @@ class DbInit {
         status TEXT NOT NULL,
         paid_amount REAL DEFAULT 0.0,
         due_date TEXT,
+        user_entered_total REAL,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (account_id) REFERENCES accounts (id)

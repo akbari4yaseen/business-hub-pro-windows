@@ -241,14 +241,14 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
               )
             : Text(loc.exchange),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => setState(() => _isSearching = true),
+          ),
           if (!_isSearching) ...[
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _refreshData,
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => setState(() => _isSearching = true),
             ),
             IconButton(
               icon: const Icon(Icons.filter_list),

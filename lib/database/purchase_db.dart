@@ -45,7 +45,7 @@ class PurchaseDBHelper {
         'currency': purchase.currency,
         'transaction_type': 'credit',
         'description':
-            'Purchase of Invoice ${purchase.invoiceNumber} from $supplierName',
+            'خرید فاکتور ${purchase.invoiceNumber} از $supplierName',
         'transaction_id': purchaseId,
         'transaction_group': 'purchase',
       });

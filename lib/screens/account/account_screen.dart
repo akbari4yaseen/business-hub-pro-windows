@@ -470,17 +470,17 @@ class _AccountScreenState extends State<AccountScreen>
               )
             : Text(loc.accounts, style: const TextStyle(fontSize: 20)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => setState(() => _isSearching = true),
+            tooltip: loc.search,
+          ),
           if (!_isSearching)
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadAccounts,
               tooltip: loc.refresh,
             ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => setState(() => _isSearching = true),
-            tooltip: loc.search,
-          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {

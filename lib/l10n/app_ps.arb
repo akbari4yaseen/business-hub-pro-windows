@@ -190,6 +190,7 @@
   "recentTransactions": "وروستۍ معاملې",
   "noRecentTransactions": "هیڅ وروستۍ معاملې نشته",
   "noTransactionsFound": "هیڅ معامله ونه موندل شوه",
+  "noExchangesFound": "هیڅ تبادله اسعار ونه موندل شول",
   "transactionEditError": "معامله ایډیټ نشوه",
   "transactionNotFound": "د روزنامچی معامله ونه موندل شوه",
   "transactionDeleteError": "معامله حذف ناکامه شول",
@@ -615,5 +616,13 @@
   "customers": "پیرودونکي",
   "salesReports": "د پلور راپورونه",
   "salesReportsDesc": "ټول د پلور معاملې د فلټرونو او لنډیزونو سره وګورئ او تحلیل کړئ.",
-  "totalInvoices": "ټول فاکتورونه: {count}"
+  "totalInvoices": "ټول فاکتورونه: {count}",
+  "totalIsRequired": "مجموع اړین دی",
+  "totalMustBePositive": "مجموع باید مثبت وي",
+  "invalidTotalFormat": "د مجموع بڼه ناسمه ده",
+  "adjustedUp": "د زیاتوالي له مخې برابر شوی",
+  "adjustedDown": "د کمښت له مخې برابر شوی",
+  "manualTotalAdjustment": "د مجموع لاسي تنظیم",
+  "calculatedTotal": "محاسبه شوی مجموع",
+  "finalTotal": "وروستی مجموع"
 }

@@ -187,6 +187,7 @@
   "recentTransactions": "Recent Transactions",
   "noRecentTransactions": "No recent transactions",
   "noTransactionsFound": "No transactions",
+  "noExchangesFound": "No exchanges found",
   "transactionEditError": "Failed to edit Transaction",
   "transactionNotFound": "Journal transaction not found",
   "transactionDeleteError": "Failed to delete Transaction",
@@ -612,5 +613,13 @@
   "customers": "Customers",
   "salesReports": "Sales Reports",
   "salesReportsDesc": "View and analyze all sales transactions with filters and summaries.",
-  "totalInvoices": "Total Invoices: {count}"
+  "totalInvoices": "Total Invoices: {count}",
+  "totalIsRequired": "Total is required",
+  "totalMustBePositive": "Total must be positive",
+  "invalidTotalFormat": "Invalid total format",
+  "adjustedUp": "Adjusted up by",
+  "adjustedDown": "Adjusted down by",
+  "manualTotalAdjustment": "Manual total adjustment",
+  "calculatedTotal": "Calculated total",
+  "finalTotal": "Final total"
 }

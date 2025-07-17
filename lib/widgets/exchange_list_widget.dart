@@ -29,7 +29,7 @@ class ExchangeListWidget extends StatefulWidget {
 }
 
 class _ExchangeListWidgetState extends State<ExchangeListWidget> {
-  static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
+  static final NumberFormat _numberFormatter = NumberFormat('#,##0.##');
 
   final _exchangeDb = ExchangeDBHelper();
   final _scrollController = ScrollController();
@@ -90,7 +90,7 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     if (widget.exchanges.isEmpty && !widget.isLoading) {
-      return const Center(child: Text('No exchanges found'));
+      return Center(child: Text(loc.noExchangesFound));
     }
 
     return ListView.builder(
