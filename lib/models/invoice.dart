@@ -14,6 +14,7 @@ class Invoice {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final double? userEnteredTotal;
+  final bool isPreSale;
 
   Invoice({
     this.id,
@@ -29,6 +30,7 @@ class Invoice {
     DateTime? createdAt,
     this.updatedAt,
     this.userEnteredTotal,
+    this.isPreSale = false,
   }) : createdAt = createdAt ?? DateTime.now();
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
@@ -66,6 +68,7 @@ class Invoice {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'user_entered_total': userEnteredTotal,
+      'is_pre_sale': isPreSale,
     };
   }
 
@@ -91,6 +94,7 @@ class Invoice {
           ? DateTime.parse(map['updated_at'] as String)
           : null,
       userEnteredTotal: map['user_entered_total'] as double?,
+      isPreSale: map['is_pre_sale'] as bool? ?? false,
     );
   }
 
@@ -108,6 +112,7 @@ class Invoice {
     DateTime? createdAt,
     DateTime? updatedAt,
     double? userEnteredTotal,
+    bool? isPreSale,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -123,6 +128,7 @@ class Invoice {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       userEnteredTotal: userEnteredTotal ?? this.userEnteredTotal,
+      isPreSale: isPreSale ?? this.isPreSale,
     );
   }
 }

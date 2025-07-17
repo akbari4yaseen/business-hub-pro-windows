@@ -40,10 +40,29 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   // Tab controller
   late TabController _tabController;
   
+  // Pagination state for invoices
+  final int _invoicePageSize = 30;
+  int _invoicePage = 0;
+  bool _hasMoreInvoices = true;
+  bool _isLoadingMoreInvoices = false;
+  final ScrollController _invoiceScrollController = ScrollController();
+
+  // Pagination state for customers
+  final int _customerPageSize = 30;
+  int _customerPage = 0;
+  bool _hasMoreCustomers = true;
+  bool _isLoadingMoreCustomers = false;
+  final ScrollController _customerScrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    _startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
     _tabController = TabController(length: 3, vsync: this);
+    _invoiceScrollController.addListener(_onInvoiceScroll);
+    _customerScrollController.addListener(_onCustomerScroll);
     _loadInitialData();
   }
 
@@ -71,30 +90,58 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     }
   }
 
-  Future<void> _fetchInvoices() async {
-    setState(() => _isLoading = true);
-    
+  Future<void> _fetchInvoices({bool reset = false}) async {
+    if (_isLoadingMoreInvoices) return;
+    setState(() {
+      _isLoading = reset ? true : _isLoading;
+      _isLoadingMoreInvoices = !reset;
+      if (reset) {
+        _customerPage = 0;
+      }
+    });
     try {
+      if (reset) {
+        _invoicePage = 0;
+        _hasMoreInvoices = true;
+        _invoices.clear();
+      }
+      if (!_hasMoreInvoices) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMoreInvoices = false;
+        });
+        return;
+      }
       final invoices = await _db.getInvoices(
         startDate: _startDate,
         endDate: _endDate,
         searchQuery: _searchQuery,
         status: _selectedStatus,
+        limit: _invoicePageSize,
+        offset: _invoicePage * _invoicePageSize,
       );
-      
       // Filter by currency if selected
       final filteredInvoices = _selectedCurrency != null
           ? invoices.where((i) => i['currency'] == _selectedCurrency).toList()
           : invoices;
-      
-      _calculateSummaries(filteredInvoices);
-      
-      setState(() {
+      if (reset) {
         _invoices = filteredInvoices;
+      } else {
+        _invoices.addAll(filteredInvoices);
+      }
+      _calculateSummaries(_invoices);
+      setState(() {
+        _hasMoreInvoices = filteredInvoices.length == _invoicePageSize;
+        _invoicePage++;
+        _hasMoreCustomers = _customerTotals.length > (_customerPage + 1) * _customerPageSize;
         _isLoading = false;
+        _isLoadingMoreInvoices = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isLoadingMoreInvoices = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching invoices: $e')),
       );
@@ -142,7 +189,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
           _endDate = picked;
         }
       });
-      _fetchInvoices();
+      _fetchInvoices(reset: true);
     }
   }
 
@@ -153,8 +200,9 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       _searchQuery = null;
       _selectedCurrency = null;
       _selectedStatus = null;
+      _customerPage = 0;
     });
-    _fetchInvoices();
+    _fetchInvoices(reset: true);
   }
 
   @override
@@ -232,7 +280,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                         ),
                         onChanged: (val) {
                           _searchQuery = val;
-                          _fetchInvoices();
+                          _fetchInvoices(reset: true);
                         },
                       ),
                     ),
@@ -253,7 +301,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                         ],
                         onChanged: (value) {
                           setState(() => _selectedCurrency = value);
-                          _fetchInvoices();
+                          _fetchInvoices(reset: true);
                         },
                       ),
                     ),
@@ -278,7 +326,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                         ],
                         onChanged: (value) {
                           setState(() => _selectedStatus = value);
-                          _fetchInvoices();
+                          _fetchInvoices(reset: true);
                         },
                       ),
                     ),
@@ -414,7 +462,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   }
 
   Widget _buildInvoicesTab(AppLocalizations loc, ThemeData theme) {
-    if (_isLoading) {
+    if (_isLoading && _invoices.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -423,10 +471,17 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     }
 
     return ListView.separated(
+      controller: _invoiceScrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _invoices.length,
+      itemCount: _invoices.length + (_hasMoreInvoices ? 1 : 0),
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
+        if (index == _invoices.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         final invoice = _invoices[index];
         return Card(
           child: ListTile(
@@ -477,8 +532,42 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     );
   }
 
+  List<MapEntry<String, Map<String, double>>> get _paginatedCustomers {
+    final sortedCustomers = _customerTotals.entries.toList()
+      ..sort((a, b) {
+        final aTotal = a.value.values.fold(0.0, (sum, v) => sum + v);
+        final bTotal = b.value.values.fold(0.0, (sum, v) => sum + v);
+        return bTotal.compareTo(aTotal);
+      });
+    final start = _customerPage * _customerPageSize;
+    final end = (_customerPage + 1) * _customerPageSize;
+    return sortedCustomers.sublist(
+      start,
+      end > sortedCustomers.length ? sortedCustomers.length : end,
+    );
+  }
+
+  void _fetchMoreCustomers() {
+    if (_isLoadingMoreCustomers || !_hasMoreCustomers) return;
+    setState(() => _isLoadingMoreCustomers = true);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      setState(() {
+        _customerPage++;
+        final totalCustomers = _customerTotals.length;
+        final start = _customerPage * _customerPageSize;
+        // If the next page would be empty, there are no more customers
+        if (start >= totalCustomers) {
+          _hasMoreCustomers = false;
+        } else {
+          _hasMoreCustomers = true;
+        }
+        _isLoadingMoreCustomers = false;
+      });
+    });
+  }
+
   Widget _buildCustomersTab(AppLocalizations loc, ThemeData theme) {
-    if (_isLoading) {
+    if (_isLoading && _customerTotals.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -486,20 +575,21 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       return Center(child: Text(loc.noDataAvailable));
     }
 
-    final sortedCustomers = _customerTotals.entries.toList()
-      ..sort((a, b) {
-        // Sort by total of all currencies descending
-        final aTotal = a.value.values.fold(0.0, (sum, v) => sum + v);
-        final bTotal = b.value.values.fold(0.0, (sum, v) => sum + v);
-        return bTotal.compareTo(aTotal);
-      });
+    final paginatedCustomers = _paginatedCustomers;
 
     return ListView.separated(
+      controller: _customerScrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: sortedCustomers.length,
+      itemCount: paginatedCustomers.length + ((_hasMoreCustomers && paginatedCustomers.isNotEmpty) ? 1 : 0),
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
-        final entry = sortedCustomers[index];
+        if (index == paginatedCustomers.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final entry = paginatedCustomers[index];
         final customerName = entry.key;
         final currencyMap = entry.value;
         final count = _customerCounts[customerName] ?? 0;
@@ -625,6 +715,22 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  void _onInvoiceScroll() {
+    if (_invoiceScrollController.position.pixels >= _invoiceScrollController.position.maxScrollExtent - 200) {
+      if (_hasMoreInvoices && !_isLoadingMoreInvoices) {
+        _fetchInvoices();
+      }
+    }
+  }
+
+  void _onCustomerScroll() {
+    if (_customerScrollController.position.pixels >= _customerScrollController.position.maxScrollExtent - 200) {
+      if (_hasMoreCustomers && !_isLoadingMoreCustomers) {
+        _fetchMoreCustomers();
+      }
     }
   }
 

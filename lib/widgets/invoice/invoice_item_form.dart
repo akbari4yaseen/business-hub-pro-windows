@@ -28,12 +28,14 @@ class InvoiceItemForm extends StatefulWidget {
   final InvoiceItemFormData formData;
   final VoidCallback onRemove;
   final VoidCallback onUpdate;
+  final bool isPreSale;
 
   const InvoiceItemForm({
     Key? key,
     required this.formData,
     required this.onRemove,
     required this.onUpdate,
+    this.isPreSale = false,
   }) : super(key: key);
 
   @override
@@ -129,11 +131,11 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         final totalStock = stock.fold<double>(0,
                             (sum, item) => sum + (item['quantity'] as double));
 
-                        if (totalStock <= 0) {
+                        if (totalStock <= 0 && !widget.isPreSale) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  '${loc.warningNoStockFor(product.name)}'),
+                                loc.warningNoStockFor(product.name)),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -226,7 +228,7 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                       }
 
                       // Check if we have enough stock
-                      if (widget.formData.selectedProductId != null) {
+                      if (widget.formData.selectedProductId != null && !widget.isPreSale) {
                         final provider = Provider.of<InventoryProvider>(context,
                             listen: false);
                         final stock = provider.getCurrentStockForProduct(
@@ -300,6 +302,17 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
   Widget _buildStockInfo(InventoryProvider provider, int productId) {
     final stock = provider.getCurrentStockForProduct(productId);
     final loc = AppLocalizations.of(context)!;
+
+    if (widget.isPreSale) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          loc.preSaleWarning,
+          style: TextStyle(
+              color: Colors.orange.shade700, fontStyle: FontStyle.italic),
+        ),
+      );
+    }
 
     if (stock.isEmpty) {
       return Padding(

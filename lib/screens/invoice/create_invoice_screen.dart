@@ -39,6 +39,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   static final _currencyFormat = NumberFormat('#,##0.##');
   bool _isSubmitting = false;
   bool _isTotalManuallyEdited = false;
+  bool _isPreSale = false;
   final ValueNotifier<double> _totalNotifier = ValueNotifier<double>(0);
 
   @override
@@ -86,6 +87,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _dueDate = invoice.dueDate;
       _currency = invoice.currency;
       _notesController.text = invoice.notes ?? '';
+      _isPreSale = invoice.isPreSale;
 
       // Clear existing items and add invoice items
       for (final item in _items) {
@@ -258,6 +260,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 ],
                               ),
                         const SizedBox(height: 24),
+                        if (_isPreSale)
+                          Card(
+                            color: Colors.orange.shade50,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.orange.shade700,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      loc.preSaleWarning,
+                                      style: TextStyle(
+                                        color: Colors.orange.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (_isPreSale) const SizedBox(height: 24),
                         _buildItemsCard(loc),
                         const SizedBox(height: 24),
                         _buildNotesCard(loc),
@@ -324,6 +353,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 if (value != null) setState(() => _currency = value);
               },
             ),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              title: Text(loc.isPreSale),
+              subtitle: Text(loc.preSaleDescription),
+              value: _isPreSale,
+              onChanged: (value) {
+                setState(() {
+                  _isPreSale = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
           ],
         ),
       ),
@@ -365,6 +406,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   formData: item,
                   onRemove: () => _removeItem(index),
                   onUpdate: _updateTotal,
+                  isPreSale: _isPreSale,
                 );
               }),
           ],
@@ -636,6 +678,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         notes: _notesController.text,
         dueDate: _dueDate,
         userEnteredTotal: userEnteredTotal,
+        isPreSale: _isPreSale,
         items: _items
             .map((item) => InvoiceItem(
                   productId: item.selectedProductId!,

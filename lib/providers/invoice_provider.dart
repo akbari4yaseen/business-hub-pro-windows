@@ -145,6 +145,7 @@ class InvoiceProvider with ChangeNotifier {
         dueDate: invoice.dueDate,
         userEnteredTotal: invoice.userEnteredTotal,
         items: invoice.items.map((item) => item.toMap()).toList(),
+        isPreSale: invoice.isPreSale,
       );
 
       // 2. Add to cache
@@ -187,6 +188,7 @@ class InvoiceProvider with ChangeNotifier {
         dueDate: invoice.dueDate,
         userEnteredTotal: invoice.userEnteredTotal,
         items: invoice.items.map((item) => item.toMap()).toList(),
+        isPreSale: invoice.isPreSale,
       );
 
       // Update cache
@@ -276,8 +278,10 @@ class InvoiceProvider with ChangeNotifier {
       // Update invoice status
       await updateInvoice(updatedInvoice);
 
-      // Update warehouse inventory
-      await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
+      // Update warehouse inventory (skip for pre-sale invoices)
+      if (!invoice.isPreSale) {
+        await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
+      }
       await _db.finalizeInvoice(invoice.id!,
           localizedDescription: localizedDescription);
 
@@ -464,6 +468,7 @@ class InvoiceProvider with ChangeNotifier {
           ? DateTime.parse(map['updated_at'] as String)
           : null,
       userEnteredTotal: map['user_entered_total'] as double?,
+      isPreSale: (map['is_pre_sale'] as int?) == 1,
     );
   }
 

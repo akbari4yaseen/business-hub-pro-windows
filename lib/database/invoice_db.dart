@@ -221,6 +221,7 @@ class InvoiceDBHelper {
     DateTime? dueDate,
     double? userEnteredTotal,
     required List<Map<String, dynamic>> items,
+    bool isPreSale = false,
   }) async {
     final db = await _db;
     try {
@@ -237,6 +238,7 @@ class InvoiceDBHelper {
             'paid_amount': paidAmount ?? 0.0,
             'due_date': dueDate?.toIso8601String(),
             'user_entered_total': userEnteredTotal,
+            'is_pre_sale': isPreSale ? 1 : 0,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           },
@@ -279,6 +281,7 @@ class InvoiceDBHelper {
     DateTime? dueDate,
     double? userEnteredTotal,
     List<Map<String, dynamic>>? items,
+    bool? isPreSale,
   }) async {
     final db = await _db;
     try {
@@ -297,6 +300,9 @@ class InvoiceDBHelper {
 
         // Always update userEnteredTotal (can be null to remove manual adjustment)
         updates['user_entered_total'] = userEnteredTotal;
+        
+        // Update isPreSale if provided
+        if (isPreSale != null) updates['is_pre_sale'] = isPreSale ? 1 : 0;
 
         await txn.update(
           'invoices',
@@ -498,6 +504,19 @@ class InvoiceDBHelper {
           {
             'date': DateTime.now().toIso8601String(),
             'account_id': accountId,
+            'amount': amount,
+            'currency': currency,
+            'transaction_type': 'credit',
+            'description': '${localizedDescription} $invoiceNumber',
+            'transaction_id': invoiceId,
+            'transaction_group': 'invoice_payment',
+          },
+        );
+        await txn.insert(
+          'account_details',
+          {
+            'date': DateTime.now().toIso8601String(),
+            'account_id': 1,
             'amount': amount,
             'currency': currency,
             'transaction_type': 'credit',
