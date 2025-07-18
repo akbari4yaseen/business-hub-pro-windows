@@ -122,12 +122,21 @@ class DbInit {
     ''');
 
     await db.execute('''
+      CREATE TABLE unit_conversions (
+        id INTEGER PRIMARY KEY,
+        from_unit_id INTEGER,
+        to_unit_id INTEGER,
+        factor REAL
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
         category_id INTEGER NOT NULL,
-        unit_id INTEGER NOT NULL,
+        base_unit_id INTEGER NOT NULL,
         minimum_stock REAL NOT NULL,
         reorder_point REAL DEFAULT 0,
         maximum_stock REAL,
@@ -140,7 +149,7 @@ class DbInit {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (category_id) REFERENCES categories (id),
-        FOREIGN KEY (unit_id) REFERENCES units (id)
+        FOREIGN KEY (base_unit_id) REFERENCES units (id)
       )
     ''');
 
