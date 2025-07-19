@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _transactionsFuture = AccountDBHelper().getRecentTransactions(5);
+    _transactionsFuture = AccountDBHelper().getRecentTransactions(10);
 
     Future.microtask(() async {
       final notificationProvider =

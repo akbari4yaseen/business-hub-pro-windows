@@ -68,7 +68,7 @@ class ProductDetailsSheet extends StatelessWidget {
                       _buildDetailRow(loc.category,
                           provider.getCategoryName(product.categoryId)),
                       _buildDetailRow(
-                          loc.unit, provider.getUnitName(product.unitId)),
+                          loc.unit, provider.getUnitName(product.baseUnitId)),
                       if (product.sku != null)
                         _buildDetailRow(loc.sku, product.sku),
                       if (product.barcode != null)
@@ -121,7 +121,7 @@ class ProductDetailsSheet extends StatelessWidget {
                                               BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          '${_numberFormatter.format(stock['quantity'])} ${provider.getUnitName(product.unitId)}',
+                                          '${_numberFormatter.format(stock['quantity'])} ${provider.getUnitName(product.baseUnitId)}',
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold),
                                         ),

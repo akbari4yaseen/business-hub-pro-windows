@@ -12,7 +12,7 @@ import '../../providers/info_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/account_provider.dart';
 
-final _currencyFormat = NumberFormat('#,###.##');
+final _currencyFormat = NumberFormat('#,##0.##');
 
 Future<void> printInvoice({
   required BuildContext context,
@@ -65,10 +65,39 @@ Future<void> printInvoice({
     final product = inventoryProvider.products.firstWhere(
       (p) => p.id == item.productId,
     );
+    // Get unit name for the item
+    String unitName = '';
+    if (item.unitId != null) {
+      try {
+        final unit =
+            inventoryProvider.units.firstWhere((u) => u.id == item.unitId);
+        unitName = unit.name;
+      } catch (e) {
+        // If unit not found, try to get base unit
+        if (product.baseUnitId != null) {
+          try {
+            final baseUnit = inventoryProvider.units
+                .firstWhere((u) => u.id == product.baseUnitId);
+            unitName = baseUnit.name;
+          } catch (e) {
+            unitName = '';
+          }
+        }
+      }
+    } else if (product.baseUnitId != null) {
+      try {
+        final baseUnit = inventoryProvider.units
+            .firstWhere((u) => u.id == product.baseUnitId);
+        unitName = baseUnit.name;
+      } catch (e) {
+        unitName = '';
+      }
+    }
+
     return [
       product.name,
       item.description ?? '',
-      (item.quantity).toString(),
+      '${_currencyFormat.format(item.quantity)} ${unitName}',
       _currencyFormat.format(item.unitPrice),
       _currencyFormat.format(item.total),
     ];

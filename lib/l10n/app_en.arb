@@ -625,5 +625,16 @@
   "adjustedDown": "Adjusted down by",
   "manualTotalAdjustment": "Manual total adjustment",
   "calculatedTotal": "Calculated total",
-  "finalTotal": "Final total"
+  "finalTotal": "Final total",
+  "unit_conversion_management": "Unit Conversions",
+  "add_unit_conversion": "Add Unit Conversion",
+  "edit_unit_conversion": "Edit Unit Conversion",
+  "delete_unit_conversion": "Delete Unit Conversion",
+  "unit_conversion_delete_confirm": "Are you sure you want to delete this unit conversion? This action cannot be undone.",
+  "unit_conversion_deleted": "Unit conversion deleted successfully.",
+  "no_unit_conversions": "No unit conversions found.",
+  "from_unit": "From Unit",
+  "to_unit": "To Unit",
+  "conversion_rate": "Conversion Rate",
+  "pleaseSelectUnit": "Please select a unit"
 }

@@ -95,10 +95,11 @@ class InvoiceDBHelper {
         SELECT 
           ii.*,
           p.name as product_name,
-          u.name as unit_name
+          u.name as unit_name,
+          u.id as unit_id
         FROM invoice_items ii
         JOIN products p ON ii.product_id = p.id
-        LEFT JOIN units u ON p.unit_id = u.id
+        LEFT JOIN units u ON ii.unit_id = u.id
         WHERE ii.invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')})
       ''', invoiceIds);
 
@@ -156,10 +157,11 @@ class InvoiceDBHelper {
         SELECT 
           ii.*,
           p.name as product_name,
-          u.name as unit_name
+          u.name as unit_name,
+          u.id as unit_id
         FROM invoice_items ii
         JOIN products p ON ii.product_id = p.id
-        LEFT JOIN units u ON p.unit_id = u.id
+        LEFT JOIN units u ON ii.unit_id = u.id
         WHERE ii.invoice_id = ?
       ''', [id]);
 
@@ -254,6 +256,7 @@ class InvoiceDBHelper {
               'product_id': item['product_id'],
               'quantity': item['quantity'],
               'unit_price': item['unit_price'],
+              'unit_id': item['unit_id'],
               'description': item['description'],
               'created_at': DateTime.now().toIso8601String(),
               'updated_at': DateTime.now().toIso8601String(),
@@ -329,6 +332,7 @@ class InvoiceDBHelper {
                 'product_id': item['product_id'],
                 'quantity': item['quantity'],
                 'unit_price': item['unit_price'],
+                'unit_id': item['unit_id'],
                 'description': item['description'],
                 'created_at': DateTime.now().toIso8601String(),
                 'updated_at': DateTime.now().toIso8601String(),
@@ -405,10 +409,11 @@ class InvoiceDBHelper {
         SELECT 
           ii.*,
           p.name as product_name,
-          u.name as unit_name
+          u.name as unit_name,
+          u.id as unit_id
         FROM invoice_items ii
         JOIN products p ON ii.product_id = p.id
-        LEFT JOIN units u ON p.unit_id = u.id
+        LEFT JOIN units u ON ii.unit_id = u.id
         WHERE ii.invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')})
       ''', invoiceIds);
 

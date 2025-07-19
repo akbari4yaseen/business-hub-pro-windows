@@ -220,7 +220,7 @@ class InventoryDB {
         dw.name as destination_warehouse_name
       FROM stock_movements sm
       JOIN products p ON sm.product_id = p.id
-      LEFT JOIN units u ON p.unit_id = u.id
+      LEFT JOIN units u ON p.base_unit_id = u.id
       LEFT JOIN warehouses sw ON sm.source_warehouse_id = sw.id
       LEFT JOIN warehouses dw ON sm.destination_warehouse_id = dw.id
       ORDER BY sm.created_at DESC
@@ -246,13 +246,14 @@ class InventoryDB {
         p.sku,
         p.brand,
         c.name as category_name,
+        u.id as unit_id,
         u.name as unit_name,
         u.symbol as unit_symbol,
         w.name as warehouse_name
       FROM current_stock cs
       JOIN products p ON cs.product_id = p.id
       JOIN categories c ON p.category_id = c.id
-      JOIN units u ON p.unit_id = u.id
+      JOIN units u ON p.base_unit_id = u.id
       LEFT JOIN warehouses w ON cs.warehouse_id = w.id
       WHERE p.is_active = 1
     ''');
@@ -352,5 +353,50 @@ class InventoryDB {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query('units');
     return List.generate(maps.length, (i) => Unit.fromMap(maps[i]));
+  }
+
+  // Unit Conversion operations
+  Future<int> insertUnitConversion(UnitConversion conversion) async {
+    final db = await _db;
+    return await db.insert('unit_conversions', conversion.toMap());
+  }
+
+  Future<int> updateUnitConversion(UnitConversion conversion) async {
+    final db = await _db;
+    return await db.update(
+      'unit_conversions',
+      conversion.toMap(),
+      where: 'id = ?',
+      whereArgs: [conversion.id],
+    );
+  }
+
+  Future<int> deleteUnitConversion(int id) async {
+    final db = await _db;
+    return await db.delete(
+      'unit_conversions',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<List<UnitConversion>> getUnitConversions() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query('unit_conversions');
+    return List.generate(maps.length, (i) => UnitConversion.fromMap(maps[i]));
+  }
+
+  Future<UnitConversion?> getUnitConversionBetweenUnits(
+      int fromUnitId, int toUnitId) async {
+    final db = await _db;
+    final maps = await db.query(
+      'unit_conversions',
+      where: 'from_unit_id = ? AND to_unit_id = ?',
+      whereArgs: [fromUnitId, toUnitId],
+    );
+    if (maps.isNotEmpty) {
+      return UnitConversion.fromMap(maps.first);
+    }
+    return null;
   }
 }

@@ -55,4 +55,36 @@ class Unit {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+class UnitConversion {
+  final int? id;
+  final int fromUnitId;
+  final int toUnitId;
+  final double factor;
+
+  UnitConversion({
+    this.id,
+    required this.fromUnitId,
+    required this.toUnitId,
+    required this.factor,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'from_unit_id': fromUnitId,
+      'to_unit_id': toUnitId,
+      'factor': factor,
+    };
+  }
+
+  factory UnitConversion.fromMap(Map<String, dynamic> map) {
+    return UnitConversion(
+      id: map['id'] as int?,
+      fromUnitId: map['from_unit_id'] as int,
+      toUnitId: map['to_unit_id'] as int,
+      factor: (map['factor'] as num).toDouble(),
+    );
+  }
 } 

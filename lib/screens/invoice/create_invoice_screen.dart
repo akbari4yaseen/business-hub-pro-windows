@@ -684,6 +684,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   productId: item.selectedProductId!,
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
+                  unitId: item.selectedUnitId,
                   description: item.description,
                 ))
             .toList(),

@@ -625,5 +625,16 @@
   "adjustedDown": "کاهش یافته به میزان",
   "manualTotalAdjustment": "تنظیم دستی مجموع",
   "calculatedTotal": "مجموع محاسبه شده",
-  "finalTotal": "مجموع نهایی"
+  "finalTotal": "مجموع نهایی",
+  "unit_conversion_management": "مدیریت تبدیل واحدها",
+  "add_unit_conversion": "افزودن تبدیل واحد",
+  "edit_unit_conversion": "ویرایش تبدیل واحد",
+  "delete_unit_conversion": "حذف تبدیل واحد",
+  "unit_conversion_delete_confirm": "آیا مطمئن هستید که می‌خواهید این تبدیل واحد را حذف کنید؟ این عمل قابل بازگشت نیست.",
+  "unit_conversion_deleted": "تبدیل واحد با موفقیت حذف شد.",
+  "no_unit_conversions": "هیچ تبدیل واحدی یافت نشد.",
+  "from_unit": "از واحد",
+  "to_unit": "به واحد",
+  "conversion_rate": "ضریب تبدیل",
+  "pleaseSelectUnit": "لطفاً یک واحد انتخاب کنید"
 }

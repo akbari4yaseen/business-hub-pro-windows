@@ -3,7 +3,7 @@ class Product {
   final String name;
   final String? description;
   final int? categoryId;
-  final int? unitId;
+  final int? baseUnitId;
   final double minimumStock;
   final double? maximumStock;
   final double? reorderPoint;
@@ -19,7 +19,7 @@ class Product {
     required this.name,
     this.description,
     this.categoryId,
-    this.unitId,
+    this.baseUnitId,
     this.minimumStock = 0,
     this.maximumStock,
     this.reorderPoint,
@@ -37,7 +37,7 @@ class Product {
       'name': name,
       'description': description,
       'category_id': categoryId,
-      'unit_id': unitId,
+      'base_unit_id': baseUnitId,
       'minimum_stock': minimumStock,
       'maximum_stock': maximumStock,
       'reorder_point': reorderPoint,
@@ -63,7 +63,7 @@ class Product {
       name: map['name'] as String,
       description: map['description'] as String?,
       categoryId: map['category_id'] as int?,
-      unitId: map['unit_id'] as int?,
+      baseUnitId: map['base_unit_id'] as int?,
       minimumStock: (map['minimum_stock'] as num?)?.toDouble() ?? 0,
       maximumStock: (map['maximum_stock'] as num?)?.toDouble(),
       reorderPoint: (map['reorder_point'] as num?)?.toDouble(),
@@ -81,7 +81,7 @@ class Product {
     String? name,
     String? description,
     int? categoryId,
-    int? unitId,
+    int? baseUnitId,
     double? minimumStock,
     double? maximumStock,
     double? reorderPoint,
@@ -97,7 +97,7 @@ class Product {
       name: name ?? this.name,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
-      unitId: unitId ?? this.unitId,
+      baseUnitId: baseUnitId ?? this.baseUnitId,
       minimumStock: minimumStock ?? this.minimumStock,
       maximumStock: maximumStock ?? this.maximumStock,
       reorderPoint: reorderPoint ?? this.reorderPoint,

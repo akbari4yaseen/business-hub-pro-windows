@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../manage_categories_screen.dart';
 import '../manage_units_screen.dart';
+import '../manage_unit_conversions_screen.dart';
 import '../../../providers/inventory_provider.dart';
 import '../widgets/product_details_sheet.dart';
 import '../../../themes/app_theme.dart';
@@ -117,6 +118,16 @@ class _ProductsTabState extends State<ProductsTab> {
                           onPressed: () => _showManageUnitsDialog(context),
                           icon: const Icon(Icons.straighten, size: 16),
                           label: Text(loc.units),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 0),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        ElevatedButton.icon(
+                          onPressed: () => _showManageUnitConversionsDialog(context),
+                          icon: const Icon(Icons.swap_horiz, size: 16),
+                          label: Text(loc.unit_conversion_management ?? 'Unit Conversions'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),
@@ -295,7 +306,7 @@ class _ProductsTabState extends State<ProductsTab> {
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 const SizedBox(width: 8),
-                Text('${loc.unit}: ${provider.getUnitName(product.unitId)}'),
+                Text('${loc.unit}: ${provider.getUnitName(product.baseUnitId)}'),
               ],
             ),
             if (product.sku != null)
@@ -375,6 +386,13 @@ class _ProductsTabState extends State<ProductsTab> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ManageUnitsScreen()),
+    );
+  }
+
+  void _showManageUnitConversionsDialog(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ManageUnitConversionsScreen()),
     );
   }
 

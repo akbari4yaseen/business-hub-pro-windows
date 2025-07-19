@@ -27,7 +27,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   final _barcodeController = TextEditingController();
   bool _hasExpiryDate = false;
   int? _selectedCategoryId;
-  int? _selectedUnitId;
+  int? _selectedBaseUnitId;
   bool _isSubmitting = false;
 
   @override
@@ -37,7 +37,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       _nameController.text = widget.product!.name;
       _descriptionController.text = widget.product!.description!;
       _selectedCategoryId = widget.product!.categoryId;
-      _selectedUnitId = widget.product!.unitId;
+      _selectedBaseUnitId = widget.product!.baseUnitId;
       _minimumStockController.text = widget.product!.minimumStock.toString();
       _barcodeController.text = widget.product!.barcode ?? '';
       _hasExpiryDate = widget.product!.hasExpiryDate;
@@ -64,7 +64,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
         name: _nameController.text,
         description: _descriptionController.text,
         categoryId: _selectedCategoryId,
-        unitId: _selectedUnitId,
+        baseUnitId: _selectedBaseUnitId,
         minimumStock: double.parse(_minimumStockController.text),
         reorderPoint: widget.product?.reorderPoint,
         hasExpiryDate: _hasExpiryDate,
@@ -194,7 +194,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                             labelText: loc.unit,
                             border: const OutlineInputBorder(),
                           ),
-                          value: _selectedUnitId,
+                          value: _selectedBaseUnitId,
                           items: provider.units.map((unit) {
                             return DropdownMenuItem(
                               value: unit.id,
@@ -209,7 +209,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                           },
                           onChanged: (value) {
                             setState(() {
-                              _selectedUnitId = value;
+                              _selectedBaseUnitId = value;
                             });
                           },
                         );

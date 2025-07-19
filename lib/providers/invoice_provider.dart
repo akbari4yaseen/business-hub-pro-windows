@@ -442,6 +442,7 @@ class InvoiceProvider with ChangeNotifier {
             productId: itemMap['product_id'] as int,
             quantity: itemMap['quantity'] as double,
             unitPrice: itemMap['unit_price'] as double,
+            unitId: itemMap['unit_id'] as int?,
             description: itemMap['description'] as String?,
           );
         }).toList() ??
@@ -479,7 +480,22 @@ class InvoiceProvider with ChangeNotifier {
 
     for (final item in items) {
       final productId = item.productId;
-      final quantityToDeduct = item.quantity;
+      // Convert quantity to base unit if different unit was used
+      double quantityToDeduct = item.quantity;
+      
+      if (item.unitId != null) {
+        final product = _inventoryProvider.products.firstWhere((p) => p.id == productId);
+        if (product.baseUnitId != null && item.unitId != product.baseUnitId) {
+          // Convert from selected unit to base unit
+          quantityToDeduct = _inventoryProvider.convertQuantity(
+            productId: productId,
+            quantity: item.quantity,
+            fromUnitId: item.unitId!,
+            toUnitId: product.baseUnitId!,
+          );
+        }
+      }
+      
       var remainingQuantity = quantityToDeduct;
 
       final productStock = currentStock

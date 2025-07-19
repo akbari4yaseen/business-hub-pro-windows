@@ -45,10 +45,24 @@ class PurchaseDBHelper {
         'currency': purchase.currency,
         'transaction_type': 'credit',
         'description':
-            'خرید فاکتور ${purchase.invoiceNumber} از $supplierName',
+            'خرید فاکتور  ${purchase.invoiceNumber} از $supplierName',
         'transaction_id': purchaseId,
         'transaction_group': 'purchase',
       });
+
+      // If additional cost is greater than zero, insert into account_details for treasury (account_id = 1)
+      if (purchase.additionalCost > 0) {
+        await txn.insert('account_details', {
+          'date': purchase.date.toString(),
+          'account_id': 1, // treasury
+          'amount': purchase.additionalCost,
+          'currency': purchase.currency,
+          'transaction_type': 'debit',
+          'description': 'مصارف خرید فاکتور ${purchase.invoiceNumber}',
+          'transaction_id': purchaseId,
+          'transaction_group': 'purchase',
+        });
+      }
 
       return purchaseId;
     });
@@ -233,7 +247,7 @@ class PurchaseDBHelper {
       WHERE currency IS NOT NULL AND currency != ''
       ORDER BY currency
     ''');
-    
+
     return result.map((row) => row['currency'] as String).toList();
   }
 }

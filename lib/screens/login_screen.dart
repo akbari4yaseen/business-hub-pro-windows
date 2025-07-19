@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen>
         localizedReason: loc.biometricReason,
         options: const AuthenticationOptions(biometricOnly: true),
       );
-    } on PlatformException catch (e) {
+    } on PlatformException {
       if (!mounted) return;
       setState(() {
         _errorMessage = loc.biometricError;

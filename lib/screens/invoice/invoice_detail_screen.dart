@@ -17,7 +17,7 @@ import 'create_invoice_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final Invoice invoice;
-  static final _currencyFormat = NumberFormat('#,###.##');
+  static final _currencyFormat = NumberFormat('#,##0.##');
 
   const InvoiceDetailScreen({Key? key, required this.invoice})
       : super(key: key);
@@ -288,10 +288,43 @@ class InvoiceDetailScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          '${_currencyFormat.format(item.unitPrice)} × ${item.quantity}',
-                          style:
-                              const TextStyle(color: Colors.grey, fontSize: 12),
+                        // Get unit name for the item
+                        Builder(
+                          builder: (context) {
+                            String unitName = '';
+                            if (item.unitId != null) {
+                              try {
+                                final unit = provider.units
+                                    .firstWhere((u) => u.id == item.unitId);
+                                unitName = unit.name;
+                              } catch (e) {
+                                // If unit not found, try to get base unit
+                                if (product.baseUnitId != null) {
+                                  try {
+                                    final baseUnit = provider.units.firstWhere(
+                                        (u) => u.id == product.baseUnitId);
+                                    unitName = baseUnit.name;
+                                  } catch (e) {
+                                    unitName = '';
+                                  }
+                                }
+                              }
+                            } else if (product.baseUnitId != null) {
+                              try {
+                                final baseUnit = provider.units.firstWhere(
+                                    (u) => u.id == product.baseUnitId);
+                                unitName = baseUnit.name;
+                              } catch (e) {
+                                unitName = '';
+                              }
+                            }
+
+                            return Text(
+                              '${_currencyFormat.format(item.unitPrice)} × ${_currencyFormat.format(item.quantity)} ${unitName}',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
+                            );
+                          },
                         ),
                         Text(
                           _currencyFormat.format(item.total),

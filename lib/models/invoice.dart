@@ -139,6 +139,7 @@ class InvoiceItem {
   final int productId;
   final double quantity;
   final double unitPrice;
+  final int? unitId;
   final String? description;
 
   InvoiceItem({
@@ -147,6 +148,7 @@ class InvoiceItem {
     required this.productId,
     required this.quantity,
     required this.unitPrice,
+    this.unitId,
     this.description,
   });
 
@@ -159,6 +161,7 @@ class InvoiceItem {
       'product_id': productId,
       'quantity': quantity,
       'unit_price': unitPrice,
+      'unit_id': unitId,
       'description': description,
     };
   }
@@ -170,6 +173,7 @@ class InvoiceItem {
       productId: map['product_id'] as int,
       quantity: map['quantity'] as double,
       unitPrice: map['unit_price'] as double,
+      unitId: map['unit_id'] as int?,
       description: map['description'] as String?,
     );
   }
@@ -180,6 +184,7 @@ class InvoiceItem {
     int? productId,
     double? quantity,
     double? unitPrice,
+    int? unitId,
     String? description,
   }) {
     return InvoiceItem(
@@ -188,6 +193,7 @@ class InvoiceItem {
       productId: productId ?? this.productId,
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
+      unitId: unitId ?? this.unitId,
       description: description ?? this.description,
     );
   }

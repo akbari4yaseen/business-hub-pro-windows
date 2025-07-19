@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../providers/inventory_provider.dart';
+import '../../models/unit.dart';
 
 class InvoiceItemFormData {
   final quantityController = TextEditingController(text: '');
   final unitPriceController = TextEditingController(text: '');
   final descriptionController = TextEditingController();
   int? selectedProductId;
+  int? selectedUnitId;
 
   double get quantity => double.tryParse(quantityController.text) ?? 0;
   double get unitPrice =>
@@ -44,6 +46,10 @@ class InvoiceItemForm extends StatefulWidget {
 
 class _InvoiceItemFormState extends State<InvoiceItemForm> {
   static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  List<Unit> _availableUnits = [];
+  double _convertedQuantity = 0;
+  String _conversionInfo = '';
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -115,9 +121,17 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                       onSelected: (option) {
                         setState(() {
                           widget.formData.selectedProductId = option['id'];
+                          // Reset unit selection when product changes
+                          widget.formData.selectedUnitId = null;
+                          _availableUnits = [];
+                          _convertedQuantity = 0;
+                          _conversionInfo = '';
                         });
                         final product =
                             products.firstWhere((p) => p.id == option['id']);
+
+                        // Load available units for this product
+                        _loadAvailableUnits(provider, product.id!);
 
                         // Set description if the product has one
                         if (product.description != null && product.description!.isNotEmpty) {
@@ -197,6 +211,45 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         );
                       },
                     ),
+                    if (widget.formData.selectedProductId != null && _availableUnits.isNotEmpty)
+                      const SizedBox(height: 8),
+                    if (widget.formData.selectedProductId != null && _availableUnits.isNotEmpty)
+                      DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          labelText: loc.unit ?? 'Unit',
+                        ),
+                        value: widget.formData.selectedUnitId,
+                        items: _availableUnits.map((unit) {
+                          return DropdownMenuItem(
+                            value: unit.id,
+                            child: Text(unit.name),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            widget.formData.selectedUnitId = value;
+                            _updateConversionInfo();
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return loc.pleaseSelectUnit ?? 'Please select a unit';
+                          }
+                          return null;
+                        },
+                      ),
+                    if (_conversionInfo.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          _conversionInfo,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },
@@ -217,7 +270,10 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                       FilteringTextInputFormatter.allow(
                           RegExp(r'^\d*\.?\d{0,2}')),
                     ],
-                    onChanged: (_) => widget.onUpdate(),
+                    onChanged: (_) {
+                      _updateConversionInfo();
+                      widget.onUpdate();
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return loc.required;
@@ -236,7 +292,9 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         final totalStock = stock.fold<double>(0,
                             (sum, item) => sum + (item['quantity'] as double));
 
-                        if (quantity > totalStock) {
+                        // Use converted quantity for stock check
+                        final quantityToCheck = _convertedQuantity > 0 ? _convertedQuantity : quantity;
+                        if (quantityToCheck > totalStock) {
                           return '${loc.notEnoughStock} (${_amountFormatter.format(totalStock)})';
                         }
                       }
@@ -297,6 +355,73 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
         ),
       ),
     );
+  }
+
+  void _loadAvailableUnits(InventoryProvider provider, int productId) {
+    final product = provider.products.firstWhere((p) => p.id == productId);
+    if (product.baseUnitId != null) {
+      final baseUnit = provider.units.firstWhere((u) => u.id == product.baseUnitId);
+      setState(() {
+        _availableUnits = [baseUnit];
+        // Add other units that have conversions to/from base unit
+        for (final unit in provider.units) {
+          if (unit.id != product.baseUnitId) {
+            // Check if there's a conversion path to/from base unit
+            final factor = provider.getMultiStepConversionFactor(unit.id!, product.baseUnitId!);
+            if (factor != null) {
+              _availableUnits.add(unit);
+            }
+          }
+        }
+        // Set default unit to base unit
+        widget.formData.selectedUnitId = product.baseUnitId;
+        _updateConversionInfo();
+      });
+    }
+  }
+
+  void _updateConversionInfo() {
+    if (widget.formData.selectedProductId == null || 
+        widget.formData.selectedUnitId == null || 
+        widget.formData.quantity <= 0) {
+      setState(() {
+        _convertedQuantity = 0;
+        _conversionInfo = '';
+      });
+      return;
+    }
+
+    final provider = Provider.of<InventoryProvider>(context, listen: false);
+    final product = provider.products.firstWhere((p) => p.id == widget.formData.selectedProductId);
+    
+    if (product.baseUnitId == widget.formData.selectedUnitId) {
+      setState(() {
+        _convertedQuantity = widget.formData.quantity;
+        _conversionInfo = '';
+      });
+      return;
+    }
+
+    final factor = provider.getMultiStepConversionFactor(
+      widget.formData.selectedUnitId!, 
+      product.baseUnitId!
+    );
+
+    if (factor != null) {
+      final converted = widget.formData.quantity * factor;
+      final fromUnit = provider.units.firstWhere((u) => u.id == widget.formData.selectedUnitId);
+      final toUnit = provider.units.firstWhere((u) => u.id == product.baseUnitId);
+      
+      setState(() {
+        _convertedQuantity = converted;
+        _conversionInfo = '${widget.formData.quantity} ${fromUnit.name} = ${_amountFormatter.format(converted)} ${toUnit.name}';
+      });
+    } else {
+      setState(() {
+        _convertedQuantity = widget.formData.quantity;
+        _conversionInfo = 'No conversion available';
+      });
+    }
   }
 
   Widget _buildStockInfo(InventoryProvider provider, int productId) {

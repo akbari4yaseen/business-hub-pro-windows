@@ -362,7 +362,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     }
 
     // Get unit name
-    final unitName = provider.getUnitName(product.unitId);
+    final unitName = provider.getUnitName(product.baseUnitId);
 
     return Card(
       child: ListTile(
@@ -398,7 +398,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
     );
 
     // Get unit
-    final unitName = provider.getUnitName(product.unitId);
+    final unitName = provider.getUnitName(product.baseUnitId);
 
     // Get locations
     String sourceLocation = loc.notAvailable;

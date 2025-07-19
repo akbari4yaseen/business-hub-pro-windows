@@ -14,6 +14,7 @@ class InventoryProvider with ChangeNotifier {
   List<Map<String, dynamic>> _expiringProducts = [];
   List<inventory_models.Category> _categories = [];
   List<Unit> _units = [];
+  List<UnitConversion> _unitConversions = [];
   List<Warehouse> _warehouses = [];
   List<StockMovement> _stockMovements = [];
   List<Product> _allProducts = [];
@@ -29,6 +30,7 @@ class InventoryProvider with ChangeNotifier {
   List<Map<String, dynamic>> get expiringProducts => _expiringProducts;
   List<inventory_models.Category> get categories => _categories;
   List<Unit> get units => _units;
+  List<UnitConversion> get unitConversions => _unitConversions;
   List<Warehouse> get warehouses => _warehouses;
   List<StockMovement> get stockMovements => _stockMovements;
   bool get isLoading => _isLoading;
@@ -74,7 +76,7 @@ class InventoryProvider with ChangeNotifier {
             id: productId,
             name: item['product_name'] as String,
             categoryId: item['category_id'] as int? ?? 0,
-            unitId: item['unit_id'] as int? ?? 0,
+            baseUnitId: item['unit_id'] as int? ?? 0, // This is correct - the query returns unit_id from the join
             description: item['product_description'] as String? ?? '',
             minimumStock: item['minimum_stock'] as double? ?? 0,
             hasExpiryDate: item['has_expiry_date'] == 1,
@@ -306,6 +308,78 @@ class InventoryProvider with ChangeNotifier {
     }
   }
 
+  // Unit Conversion operations
+  Future<void> addUnitConversion(UnitConversion conversion) async {
+    await _db.insertUnitConversion(conversion);
+    await refreshUnitConversions();
+    notifyListeners();
+  }
+
+  Future<void> updateUnitConversion(UnitConversion conversion) async {
+    await _db.updateUnitConversion(conversion);
+    await refreshUnitConversions();
+    notifyListeners();
+  }
+
+  Future<void> deleteUnitConversion(int id) async {
+    await _db.deleteUnitConversion(id);
+    await refreshUnitConversions();
+    notifyListeners();
+  }
+
+  Future<void> refreshUnitConversions() async {
+    _unitConversions = await _db.getUnitConversions();
+    notifyListeners();
+  }
+
+  /// Returns the conversion factor from fromUnitId to toUnitId, using multi-step path if needed.
+  /// Returns null if no path exists.
+  double? getMultiStepConversionFactor(int fromUnitId, int toUnitId) {
+    if (fromUnitId == toUnitId) return 1.0;
+    // Build adjacency list
+    final Map<int, List<Map<String, dynamic>>> graph = {};
+    for (final conv in _unitConversions) {
+      graph
+          .putIfAbsent(conv.fromUnitId, () => [])
+          .add({'to': conv.toUnitId, 'factor': conv.factor});
+      // Add reverse edge
+      graph
+          .putIfAbsent(conv.toUnitId, () => [])
+          .add({'to': conv.fromUnitId, 'factor': 1 / conv.factor});
+    }
+    // BFS
+    final queue = <MapEntry<int, double>>[MapEntry(fromUnitId, 1.0)];
+    final visited = <int>{fromUnitId};
+    while (queue.isNotEmpty) {
+      final entry = queue.removeAt(0);
+      final current = entry.key;
+      final factorSoFar = entry.value;
+      if (current == toUnitId) return factorSoFar;
+      for (final edge in graph[current] ?? []) {
+        final next = edge['to'] as int;
+        final nextFactor = edge['factor'] as double;
+        if (!visited.contains(next)) {
+          visited.add(next);
+          queue.add(MapEntry(next, factorSoFar * nextFactor));
+        }
+      }
+    }
+    return null;
+  }
+
+  // Convert quantity between units (multi-step)
+  double convertQuantity({
+    required int productId,
+    required double quantity,
+    required int fromUnitId,
+    required int toUnitId,
+  }) {
+    if (fromUnitId == toUnitId) return quantity;
+    final factor = getMultiStepConversionFactor(fromUnitId, toUnitId);
+    if (factor != null) return quantity * factor;
+    return quantity;
+  }
+
   // Individual refresh methods to reduce memory pressure
   Future<void> _refreshCurrentStock() async {
     try {
@@ -398,6 +472,7 @@ class InventoryProvider with ChangeNotifier {
   // Initialize data
   Future<void> initialize() async {
     await refreshData();
+    await refreshUnitConversions();
   }
 
   // Public method to refresh warehouses
@@ -450,26 +525,15 @@ class InventoryProvider with ChangeNotifier {
   // Get product units
   List<Unit> getProductUnits(int productId) {
     final product = _allProducts.firstWhere((p) => p.id == productId);
-    if (product.unitId == null) return [];
-    final unit = _units.firstWhere((u) => u.id == product.unitId);
+    if (product.baseUnitId == null) return [];
+    final unit = _units.firstWhere((u) => u.id == product.baseUnitId);
     return [unit];
   }
 
   // Get base unit for a product
   Unit? getBaseUnit(int productId) {
     final product = _allProducts.firstWhere((p) => p.id == productId);
-    if (product.unitId == null) return null;
-    return _units.firstWhere((u) => u.id == product.unitId);
-  }
-
-  // Convert quantity between units
-  double convertQuantity({
-    required int productId,
-    required double quantity,
-    required int fromUnitId,
-    required int toUnitId,
-  }) {
-    // Since we no longer support unit conversion, just return the original quantity
-    return quantity;
+    if (product.baseUnitId == null) return null;
+    return _units.firstWhere((u) => u.id == product.baseUnitId);
   }
 }
