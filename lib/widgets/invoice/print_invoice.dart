@@ -137,7 +137,8 @@ Future<void> printInvoice({
                         pw.Text(info.address!,
                             style: pw.TextStyle(fontSize: 10)),
                       if (info.phone != null)
-                        pw.Text(info.phone!, style: pw.TextStyle(fontSize: 10)),
+                        pw.Text('${info.phone!}  ${info.whatsApp}',
+                            style: pw.TextStyle(fontSize: 10)),
                     ],
                   ),
                 ),
@@ -175,7 +176,7 @@ Future<void> printInvoice({
                       fontSize: 14, fontWeight: pw.FontWeight.bold),
                 ),
                 pw.Text(
-                  '${loc.printed(formatLocalizedDateTime(context, currentDateTime.toString()))}',
+                  '${formatLocalizedDateTime(context, currentDateTime.toString())}',
                   style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                 ),
               ],
@@ -188,7 +189,7 @@ Future<void> printInvoice({
               children: [
                 pw.Text('${loc.customer}: ${customerName}'),
                 pw.Text(
-                    '${loc.invoiceDate}: ${formatLocalizedDate(context, invoice.date.toString())}'),
+                    '${formatLocalizedDate(context, invoice.date.toString())}'),
                 if (invoice.dueDate != null)
                   pw.Text(
                     '${loc.dueDate}: ${formatLocalizedDate(context, invoice.dueDate.toString())}',

@@ -45,39 +45,27 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure accounts are loaded
-    Future.microtask(() {
-      // If editing an existing invoice, populate the form
-      if (widget.invoice != null) {
-        _populateForm(widget.invoice!);
-      } else {
-        // Add initial item by default for better UX
-        _addItem();
-        // Initialize total controller
-        _totalController.text = _currencyFormat.format(0);
-      }
-    });
-
+    if (widget.invoice != null) {
+      _populateForm(widget.invoice!);
+    } else {
+      _addItem();
+      _totalController.text = _currencyFormat.format(0);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settingsProvider =
-          Provider.of<SettingsProvider>(context, listen: false);
-      setState(() {
-        _currency = settingsProvider.defaultCurrency;
-      });
-      _dateController.text =
-          dFormatter.formatLocalizedDateTime(context, _date.toString());
+      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      _currency = settingsProvider.defaultCurrency;
+      _dateController.text = dFormatter.formatLocalizedDateTime(context, _date.toString());
       if (_dueDate != null) {
-        _dueDateController.text =
-            dFormatter.formatLocalizedDateTime(context, _dueDate.toString());
+        _dueDateController.text = dFormatter.formatLocalizedDateTime(context, _dueDate.toString());
       }
+      setState(() {}); // Only if needed
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final settings = context.read<SettingsProvider>();
-    _currency = settings.defaultCurrency;
+    // No need to set _currency here, already handled in initState
   }
 
   void _populateForm(Invoice invoice) {
@@ -197,13 +185,75 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
   }
 
+  // Extracted widget for pre-sale warning
+  Widget _buildPreSaleWarning(AppLocalizations loc) {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                loc.preSaleWarning,
+                style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Extracted main form for readability
+  Widget _buildForm(AppLocalizations loc, bool isWide) {
+    return Form(
+      key: _formKey,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildAccountSelection(context)),
+                        const SizedBox(width: 24),
+                        Expanded(child: _buildInvoiceMeta(loc)),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        _buildAccountSelection(context),
+                        const SizedBox(height: 16),
+                        _buildInvoiceMeta(loc),
+                      ],
+                    ),
+              const SizedBox(height: 24),
+              if (_isPreSale) _buildPreSaleWarning(loc),
+              if (_isPreSale) const SizedBox(height: 24),
+              _buildItemsCard(loc),
+              const SizedBox(height: 24),
+              _buildNotesCard(loc),
+              const SizedBox(height: 24),
+              _buildTotalCard(loc),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text(widget.invoice != null ? loc.editInvoice : loc.createInvoice),
+        title: Text(widget.invoice != null ? loc.editInvoice : loc.createInvoice),
         actions: [
           if (widget.invoice != null)
             IconButton(
@@ -231,73 +281,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 1000;
-
           return Scrollbar(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        isWide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                      child: _buildAccountSelection(context)),
-                                  const SizedBox(width: 24),
-                                  Expanded(child: _buildInvoiceMeta(loc)),
-                                ],
-                              )
-                            : Column(
-                                children: [
-                                  _buildAccountSelection(context),
-                                  const SizedBox(height: 16),
-                                  _buildInvoiceMeta(loc),
-                                ],
-                              ),
-                        const SizedBox(height: 24),
-                        if (_isPreSale)
-                          Card(
-                            color: Colors.orange.shade50,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: Colors.orange.shade700,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      loc.preSaleWarning,
-                                      style: TextStyle(
-                                        color: Colors.orange.shade700,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (_isPreSale) const SizedBox(height: 24),
-                        _buildItemsCard(loc),
-                        const SizedBox(height: 24),
-                        _buildNotesCard(loc),
-                        const SizedBox(height: 24),
-                        _buildTotalCard(loc),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: _buildForm(loc, isWide),
             ),
           );
         },
