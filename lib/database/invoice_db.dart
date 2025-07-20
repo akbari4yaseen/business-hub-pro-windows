@@ -258,6 +258,7 @@ class InvoiceDBHelper {
               'unit_price': item['unit_price'],
               'unit_id': item['unit_id'],
               'description': item['description'],
+              'warehouse_id': item['warehouse_id'], // FIX: ensure warehouse_id is saved
               'created_at': DateTime.now().toIso8601String(),
               'updated_at': DateTime.now().toIso8601String(),
             },
@@ -334,6 +335,7 @@ class InvoiceDBHelper {
                 'unit_price': item['unit_price'],
                 'unit_id': item['unit_id'],
                 'description': item['description'],
+                'warehouse_id': item['warehouse_id'], // FIX: ensure warehouse_id is saved
                 'created_at': DateTime.now().toIso8601String(),
                 'updated_at': DateTime.now().toIso8601String(),
               },

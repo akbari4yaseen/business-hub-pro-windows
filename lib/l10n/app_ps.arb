@@ -639,5 +639,9 @@
   "from_unit": "له واحد څخه",
   "to_unit": "ته واحد",
   "conversion_rate": "د بدلون ضریب",
-  "pleaseSelectUnit": "مهرباني وکړئ یو واحد وټاکئ"
+  "pleaseSelectUnit": "مهرباني وکړئ یو واحد وټاکئ",
+  "deleteStockMovementAuthMessage": "مهرباني وکړئ د دې ګدام حرکت د حذف لپاره تصدیق وکړئ",
+  "confirmDeleteStockMovement": "ایا تاسې ډاډه یاست چې دا ګدام حرکت حذف کړئ؟ دا عمل بېرته نه راګرځي.",
+  "stockMovementDeleted": "د ګدام حرکت په بریالیتوب سره حذف شو.",
+  "errorDeletingStockMovement": "د ګدام حرکت په حذف کې تېروتنه."
 }

@@ -444,6 +444,7 @@ class InvoiceProvider with ChangeNotifier {
             unitPrice: itemMap['unit_price'] as double,
             unitId: itemMap['unit_id'] as int?,
             description: itemMap['description'] as String?,
+            warehouseId: itemMap['warehouse_id'] as int?, // FIX: ensure warehouseId is loaded
           );
         }).toList() ??
         [];
@@ -499,7 +500,7 @@ class InvoiceProvider with ChangeNotifier {
       var remainingQuantity = quantityToDeduct;
 
       final productStock = currentStock
-          .where((stock) => stock['product_id'] == productId)
+          .where((stock) => stock['product_id'] == productId && stock['warehouse_id'] == item.warehouseId)
           .toList();
 
       if (productStock.isEmpty) {

@@ -75,7 +75,8 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
         expiryDate: _expiryDate,
         date: _selectedDate ?? DateTime.now(),
         createdAt: _selectedDate ?? DateTime.now(),
-        updatedAt: DateTime.now(), // Replace with the appropriate updatedAt value
+        updatedAt:
+            DateTime.now(), // Replace with the appropriate updatedAt value
       );
       await widget.onSave(movement);
       if (mounted) {
@@ -166,29 +167,34 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                               child: Text(loc.selectProduct),
                             );
                           }
-                          return DropdownButtonFormField<int>(
-                            value: _selectedProductId,
-                            decoration: InputDecoration(
-                              labelText: loc.product,
-                              border: const OutlineInputBorder(),
-                            ),
-                            items: products.map((product) {
-                              return DropdownMenuItem<int>(
-                                value: product.id,
-                                child: Text(product.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedProductId = value;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null) {
-                                return loc.selectProduct;
-                              }
-                              return null;
-                            },
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              DropdownButtonFormField<int>(
+                                value: _selectedProductId,
+                                decoration: InputDecoration(
+                                  labelText: loc.product,
+                                  border: const OutlineInputBorder(),
+                                ),
+                                items: products.map((product) {
+                                  return DropdownMenuItem<int>(
+                                    value: product.id,
+                                    child: Text(product.name),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedProductId = value;
+                                  });
+                                },
+                                validator: (value) {
+                                  if (value == null) {
+                                    return loc.selectProduct;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -257,23 +263,41 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                           },
                         ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _quantityController,
-                        decoration: InputDecoration(
-                          labelText: loc.quantity,
-                          border: const OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return loc.enterQuantity;
+                      Consumer<InventoryProvider>(
+                        builder: (context, provider, child) {
+                          final products = provider.products;
+                          String? unit = '';
+                          if (_selectedProductId != null) {
+                            try {
+                              final product = products.firstWhere(
+                                  (p) => p.id == _selectedProductId);
+                              unit = provider.getUnitName(product.baseUnitId);
+                            } catch (e) {
+                              unit = '';
+                            }
                           }
-                          if (double.tryParse(value) == null) {
-                            return loc.enterValidNumber;
-                          }
-                          return null;
+
+                          return TextFormField(
+                            controller: _quantityController,
+                            decoration: InputDecoration(
+                              labelText: loc.quantity,
+                              suffix: Text(unit ?? ''),
+                              border: const OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return loc.enterQuantity;
+                              }
+                              if (double.tryParse(value) == null) {
+                                return loc.enterValidNumber;
+                              }
+                              return null;
+                            },
+                          );
                         },
                       ),
+
                       const SizedBox(height: 16),
                       TextFormField(
                         readOnly: true,
@@ -295,13 +319,12 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                             },
                           ),
                         ),
-                        controller: TextEditingController(
-                          text: _selectedDate != null
-                              ? dFormatter.formatLocalizedDate(
-                                  context, _selectedDate.toString())
-                              : loc.notSet,
-                        ),
+                        initialValue: _selectedDate != null
+                            ? dFormatter.formatLocalizedDate(
+                                context, _selectedDate.toString())
+                            : loc.notSet,
                       ),
+
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _referenceController,

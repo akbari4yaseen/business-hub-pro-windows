@@ -191,6 +191,17 @@ class InventoryProvider with ChangeNotifier {
     }
   }
 
+  Future<void> deleteStockMovement(int id) async {
+    try {
+      await _db.deleteStockMovement(id);
+      await _refreshStockMovements();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting stock movement: $e');
+      rethrow;
+    }
+  }
+
   // Update stock level
   Future<void> updateStock({
     required int productId,

@@ -636,5 +636,9 @@
   "from_unit": "From Unit",
   "to_unit": "To Unit",
   "conversion_rate": "Conversion Rate",
-  "pleaseSelectUnit": "Please select a unit"
+  "pleaseSelectUnit": "Please select a unit",
+  "deleteStockMovementAuthMessage": "Please authenticate to delete this Stock Movement",
+  "confirmDeleteStockMovement": "Are you sure you want to delete this stock movement? This action cannot be undone.",
+  "stockMovementDeleted": "Stock movement deleted successfully.",
+  "errorDeletingStockMovement": "Error deleting stock movement."
 }

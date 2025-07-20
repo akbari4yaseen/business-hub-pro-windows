@@ -231,6 +231,119 @@ class InventoryDB {
     return maps.map((map) => StockMovement.fromMap(map)).toList();
   }
 
+Future<int> deleteStockMovement(int id) async {
+  final db = await _db;
+
+  return await db.transaction((txn) async {
+    // Get the movement to be deleted
+    final movementList = await txn.query(
+      'stock_movements',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (movementList.isEmpty) return 0;
+
+    final movement = movementList.first;
+    final productId = movement['product_id'] as int;
+    final quantity = movement['quantity'] as double;
+    final type = movement['type'] as String;
+    final sourceWarehouseId = movement['source_warehouse_id'] as int?;
+    final destinationWarehouseId = movement['destination_warehouse_id'] as int?;
+
+    // Helper to safely add/subtract stock
+    Future<void> updateStock({
+      required int warehouseId,
+      required double deltaQuantity,
+    }) async {
+      final stockExists = Sqflite.firstIntValue(await txn.rawQuery(
+        'SELECT COUNT(*) FROM current_stock WHERE product_id = ? AND warehouse_id = ?',
+        [productId, warehouseId],
+      ))! > 0;
+
+      if (stockExists) {
+        await txn.rawUpdate(
+          'UPDATE current_stock SET quantity = quantity + ? WHERE product_id = ? AND warehouse_id = ?',
+          [deltaQuantity, productId, warehouseId],
+        );
+      } else {
+        if (deltaQuantity > 0) {
+          await txn.insert('current_stock', {
+            'product_id': productId,
+            'warehouse_id': warehouseId,
+            'quantity': deltaQuantity,
+          });
+        }
+      }
+    }
+
+    // Reverse the movement's effect on stock
+    switch (type) {
+      case 'stockIn':
+      case 'purchase':
+        if (destinationWarehouseId != null) {
+          await updateStock(
+            warehouseId: destinationWarehouseId,
+            deltaQuantity: -quantity,
+          );
+        }
+        break;
+
+      case 'stockOut':
+      case 'sale':
+        if (sourceWarehouseId != null) {
+          await updateStock(
+            warehouseId: sourceWarehouseId,
+            deltaQuantity: quantity,
+          );
+        }
+        break;
+
+      case 'transfer':
+        if (sourceWarehouseId != null) {
+          await updateStock(
+            warehouseId: sourceWarehouseId,
+            deltaQuantity: quantity,
+          );
+        }
+        if (destinationWarehouseId != null) {
+          await updateStock(
+            warehouseId: destinationWarehouseId,
+            deltaQuantity: -quantity,
+          );
+        }
+        break;
+
+      case 'adjustment':
+        // Assume positive quantity = added; reverse by subtracting
+        if (destinationWarehouseId != null) {
+          await updateStock(
+            warehouseId: destinationWarehouseId,
+            deltaQuantity: -quantity,
+          );
+        } else if (sourceWarehouseId != null) {
+          await updateStock(
+            warehouseId: sourceWarehouseId,
+            deltaQuantity: -quantity,
+          );
+        }
+        break;
+
+      default:
+        // Unknown movement type
+        throw Exception('Unknown movement type: $type');
+    }
+
+    // Delete the stock movement record
+    return await txn.delete(
+      'stock_movements',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  });
+}
+
+
   // Query operations
   Future<List<Map<String, dynamic>>> getCurrentStock() async {
     final db = await _db;

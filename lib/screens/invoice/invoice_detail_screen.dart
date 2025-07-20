@@ -216,7 +216,7 @@ class InvoiceDetailScreen extends StatelessWidget {
   Widget _buildCustomerName(BuildContext context, AppLocalizations loc) {
     return Consumer<AccountProvider>(
       builder: (_, accountProvider, __) {
-        final customer = accountProvider.customers.firstWhere(
+        final customer = accountProvider.accounts.firstWhere(
             (c) => c['id'] == invoice.accountId,
             orElse: () => {'name': 'Unknown Customer'});
         return Text('${loc.customer}: ${customer['name']}',

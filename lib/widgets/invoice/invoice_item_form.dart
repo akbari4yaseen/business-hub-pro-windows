@@ -13,6 +13,7 @@ class InvoiceItemFormData {
   final descriptionController = TextEditingController();
   int? selectedProductId;
   int? selectedUnitId;
+  int? selectedWarehouseId; 
 
   double get quantity => double.tryParse(quantityController.text) ?? 0;
   double get unitPrice =>
@@ -134,7 +135,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         _loadAvailableUnits(provider, product.id!);
 
                         // Set description if the product has one
-                        if (product.description != null && product.description!.isNotEmpty) {
+                        if (product.description != null &&
+                            product.description!.isNotEmpty) {
                           widget.formData.descriptionController.text =
                               product.description!;
                         }
@@ -148,8 +150,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         if (totalStock <= 0 && !widget.isPreSale) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                loc.warningNoStockFor(product.name)),
+                              content:
+                                  Text(loc.warningNoStockFor(product.name)),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -211,12 +213,44 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         );
                       },
                     ),
-                    if (widget.formData.selectedProductId != null && _availableUnits.isNotEmpty)
+                    // NEW: Warehouse dropdown
+                    if (widget.formData.selectedProductId != null)
+                      Consumer<InventoryProvider>(
+                        builder: (context, warehouseProvider, child) {
+                          final warehouses = warehouseProvider.warehouses;
+                          return DropdownButtonFormField<int>(
+                            decoration: InputDecoration(
+                              labelText: loc.warehouse,
+                            ),
+                            value: widget.formData.selectedWarehouseId,
+                            items: warehouses.map<DropdownMenuItem<int>>((w) {
+                              return DropdownMenuItem(
+                                value: w.id,
+                                child: Text(w.name),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                widget.formData.selectedWarehouseId = value;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return loc.pleaseSelectWarehouse;
+                              }
+                              return null;
+                            },
+                          );
+                        },
+                      ),
+                    if (widget.formData.selectedProductId != null &&
+                        _availableUnits.isNotEmpty)
                       const SizedBox(height: 8),
-                    if (widget.formData.selectedProductId != null && _availableUnits.isNotEmpty)
+                    if (widget.formData.selectedProductId != null &&
+                        _availableUnits.isNotEmpty)
                       DropdownButtonFormField<int>(
                         decoration: InputDecoration(
-                          labelText: loc.unit ?? 'Unit',
+                          labelText: loc.unit,
                         ),
                         value: widget.formData.selectedUnitId,
                         items: _availableUnits.map((unit) {
@@ -233,7 +267,7 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         },
                         validator: (value) {
                           if (value == null) {
-                            return loc.pleaseSelectUnit ?? 'Please select a unit';
+                            return loc.pleaseSelectUnit;
                           }
                           return null;
                         },
@@ -284,7 +318,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                       }
 
                       // Check if we have enough stock
-                      if (widget.formData.selectedProductId != null && !widget.isPreSale) {
+                      if (widget.formData.selectedProductId != null &&
+                          !widget.isPreSale) {
                         final provider = Provider.of<InventoryProvider>(context,
                             listen: false);
                         final stock = provider.getCurrentStockForProduct(
@@ -293,7 +328,9 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                             (sum, item) => sum + (item['quantity'] as double));
 
                         // Use converted quantity for stock check
-                        final quantityToCheck = _convertedQuantity > 0 ? _convertedQuantity : quantity;
+                        final quantityToCheck = _convertedQuantity > 0
+                            ? _convertedQuantity
+                            : quantity;
                         if (quantityToCheck > totalStock) {
                           return '${loc.notEnoughStock} (${_amountFormatter.format(totalStock)})';
                         }
@@ -360,14 +397,16 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
   void _loadAvailableUnits(InventoryProvider provider, int productId) {
     final product = provider.products.firstWhere((p) => p.id == productId);
     if (product.baseUnitId != null) {
-      final baseUnit = provider.units.firstWhere((u) => u.id == product.baseUnitId);
+      final baseUnit =
+          provider.units.firstWhere((u) => u.id == product.baseUnitId);
       setState(() {
         _availableUnits = [baseUnit];
         // Add other units that have conversions to/from base unit
         for (final unit in provider.units) {
           if (unit.id != product.baseUnitId) {
             // Check if there's a conversion path to/from base unit
-            final factor = provider.getMultiStepConversionFactor(unit.id!, product.baseUnitId!);
+            final factor = provider.getMultiStepConversionFactor(
+                unit.id!, product.baseUnitId!);
             if (factor != null) {
               _availableUnits.add(unit);
             }
@@ -381,8 +420,8 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
   }
 
   void _updateConversionInfo() {
-    if (widget.formData.selectedProductId == null || 
-        widget.formData.selectedUnitId == null || 
+    if (widget.formData.selectedProductId == null ||
+        widget.formData.selectedUnitId == null ||
         widget.formData.quantity <= 0) {
       setState(() {
         _convertedQuantity = 0;
@@ -392,8 +431,9 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
     }
 
     final provider = Provider.of<InventoryProvider>(context, listen: false);
-    final product = provider.products.firstWhere((p) => p.id == widget.formData.selectedProductId);
-    
+    final product = provider.products
+        .firstWhere((p) => p.id == widget.formData.selectedProductId);
+
     if (product.baseUnitId == widget.formData.selectedUnitId) {
       setState(() {
         _convertedQuantity = widget.formData.quantity;
@@ -403,18 +443,19 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
     }
 
     final factor = provider.getMultiStepConversionFactor(
-      widget.formData.selectedUnitId!, 
-      product.baseUnitId!
-    );
+        widget.formData.selectedUnitId!, product.baseUnitId!);
 
     if (factor != null) {
       final converted = widget.formData.quantity * factor;
-      final fromUnit = provider.units.firstWhere((u) => u.id == widget.formData.selectedUnitId);
-      final toUnit = provider.units.firstWhere((u) => u.id == product.baseUnitId);
-      
+      final fromUnit = provider.units
+          .firstWhere((u) => u.id == widget.formData.selectedUnitId);
+      final toUnit =
+          provider.units.firstWhere((u) => u.id == product.baseUnitId);
+
       setState(() {
         _convertedQuantity = converted;
-        _conversionInfo = '${widget.formData.quantity} ${fromUnit.name} = ${_amountFormatter.format(converted)} ${toUnit.name}';
+        _conversionInfo =
+            '${widget.formData.quantity} ${fromUnit.name} = ${_amountFormatter.format(converted)} ${toUnit.name}';
       });
     } else {
       setState(() {
@@ -479,4 +520,4 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
       ),
     );
   }
-} 
+}

@@ -141,6 +141,7 @@ class InvoiceItem {
   final double unitPrice;
   final int? unitId;
   final String? description;
+  final int? warehouseId;
 
   InvoiceItem({
     this.id,
@@ -150,6 +151,7 @@ class InvoiceItem {
     required this.unitPrice,
     this.unitId,
     this.description,
+    this.warehouseId,
   });
 
   double get total => quantity * unitPrice;
@@ -163,6 +165,7 @@ class InvoiceItem {
       'unit_price': unitPrice,
       'unit_id': unitId,
       'description': description,
+      'warehouse_id': warehouseId,
     };
   }
 
@@ -175,6 +178,7 @@ class InvoiceItem {
       unitPrice: map['unit_price'] as double,
       unitId: map['unit_id'] as int?,
       description: map['description'] as String?,
+      warehouseId: map['warehouse_id'] as int?,
     );
   }
 
@@ -186,6 +190,7 @@ class InvoiceItem {
     double? unitPrice,
     int? unitId,
     String? description,
+    int? warehouseId,
   }) {
     return InvoiceItem(
       id: id ?? this.id,
@@ -195,6 +200,7 @@ class InvoiceItem {
       unitPrice: unitPrice ?? this.unitPrice,
       unitId: unitId ?? this.unitId,
       description: description ?? this.description,
+      warehouseId: warehouseId ?? this.warehouseId,
     );
   }
 }

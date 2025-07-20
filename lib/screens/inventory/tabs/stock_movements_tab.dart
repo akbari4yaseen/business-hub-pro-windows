@@ -13,6 +13,7 @@ import '../../../providers/inventory_provider.dart';
 import '../../../models/stock_movement.dart';
 import '../../../themes/app_theme.dart';
 import '../../../widgets/inventory/movement_details_sheet.dart';
+import '../../../widgets/auth_widget.dart';
 
 class StockMovementsTab extends StatefulWidget {
   const StockMovementsTab({Key? key}) : super(key: key);
@@ -354,11 +355,13 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
         icon = Icons.build;
         break;
       case MovementType.purchase:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        color = Colors.blue;
+        icon = Icons.shopping_cart; // 🛒
+        break;
       case MovementType.sale:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        color = Colors.purple;
+        icon = Icons.sell; // 🏷️
+        break;
     }
 
     // Get unit name
@@ -384,6 +387,71 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
           ],
         ),
         onTap: () => _showMovementDetails(context, provider, movement),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          tooltip: loc.delete,
+          onPressed: () async {
+            // Step 1: authenticate
+            showDialog(
+              context: context,
+              builder: (_) => AuthWidget(
+                actionReason: loc.deleteStockMovementAuthMessage,
+                onAuthenticated: () {
+                  Navigator.of(context).pop(); // Close AuthWidget
+                  // Step 2: confirm
+                  showDialog(
+                    context: context,
+                    builder: (confirmCtx) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: AlertDialog(
+                          title: Text(loc.confirmDelete),
+                          content: Text(loc.confirmDeleteStockMovement),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(confirmCtx).pop(),
+                              child: Text(loc.cancel),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.of(confirmCtx).pop();
+                                try {
+                                  await provider
+                                      .deleteStockMovement(movement.id);
+                                  await provider.loadStockMovements(
+                                      refresh: true);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content:
+                                              Text(loc.stockMovementDeleted)),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              loc.errorDeletingStockMovement)),
+                                    );
+                                  }
+                                }
+                              },
+                              child: Text(
+                                loc.delete,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

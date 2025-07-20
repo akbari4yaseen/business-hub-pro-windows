@@ -143,7 +143,7 @@ class InvoiceListItem extends StatelessWidget {
               children: [
                 Consumer<AccountProvider>(
                   builder: (context, accountProvider, child) {
-                    final customer = accountProvider.customers.firstWhere(
+                    final customer = accountProvider.accounts.firstWhere(
                       (c) => c['id'] == invoice.accountId,
                       orElse: () =>
                           <String, dynamic>{'name': 'Unknown Customer'},

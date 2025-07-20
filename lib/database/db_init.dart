@@ -247,9 +247,11 @@ class DbInit {
         unit_price REAL NOT NULL,
         description TEXT,
         unit_id INTEGER,
+        warehouse_id INTEGER NOT NULL,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE,
+        FOREIGN KEY (warehouse_id) REFERENCES warehouses (id),
         FOREIGN KEY (product_id) REFERENCES products (id)
       )
     ''');

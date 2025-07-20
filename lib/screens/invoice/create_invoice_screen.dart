@@ -102,6 +102,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         formData.unitPriceController.text =
             _currencyFormat.format(item.unitPrice);
         formData.descriptionController.text = item.description ?? '';
+        formData.selectedWarehouseId = item.warehouseId; // NEW
         _items.add(formData);
       }
 
@@ -686,6 +687,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   unitPrice: item.unitPrice,
                   unitId: item.selectedUnitId,
                   description: item.description,
+                  warehouseId: item.selectedWarehouseId,
                 ))
             .toList(),
       );
