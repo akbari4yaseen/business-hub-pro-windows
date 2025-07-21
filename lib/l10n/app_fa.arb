@@ -635,10 +635,9 @@
   "no_unit_conversions": "هیچ تبدیل واحدی یافت نشد.",
   "from_unit": "از واحد",
   "to_unit": "به واحد",
-  "conversion_rate": "ضریب تبدیل",
-  "pleaseSelectUnit": "لطفاً یک واحد انتخاب کنید",
   "deleteStockMovementAuthMessage": "لطفاً برای حذف این حرکت انبار احراز هویت کنید",
   "confirmDeleteStockMovement": "آیا مطمئن هستید که می‌خواهید این حرکت انبار را حذف کنید؟ این عملیات قابل بازگشت نیست.",
   "stockMovementDeleted": "حرکت انبار با موفقیت حذف شد.",
-  "errorDeletingStockMovement": "خطا در حذف حرکت انبار."
+  "errorDeletingStockMovement": "خطا در حذف حرکت انبار.",
+  "unitCostWithAdditional": "تمام شد جنس:"
 }

@@ -519,6 +519,7 @@ class InvoiceDBHelper {
             'transaction_group': 'invoice_payment',
           },
         );
+        // also inset  as track 
         await txn.insert(
           'account_details',
           {

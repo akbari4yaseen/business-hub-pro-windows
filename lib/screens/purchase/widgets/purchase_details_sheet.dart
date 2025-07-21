@@ -64,7 +64,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
             final additionalCost = widget.purchase.additionalCost;
             final totalCost = totalPurchase + additionalCost;
             final totalQuantity = items.fold<double>(0, (sum, i) => sum + i.quantity);
-            final costPerUnit = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+            final additionalCostPerUnit = totalQuantity > 0 ? (widget.purchase.additionalCost / totalQuantity).toDouble() : 0.0;
 
             return FutureBuilder<Map<String, dynamic>?>(
               future: _supplierFuture,
@@ -108,7 +108,6 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                             _amountFormatter.format(widget.purchase.totalAmount)),
                         _buildDetailRow(loc.additionalCost, _amountFormatter.format(additionalCost)),
                         _buildDetailRow(loc.totalCost, _amountFormatter.format(totalCost), isTotal: true),
-                        _buildDetailRow(loc.costPerUnit, _amountFormatter.format(costPerUnit)),
                         if (widget.purchase.notes != null &&
                             widget.purchase.notes!.isNotEmpty)
                           _buildDetailRow(loc.notes, widget.purchase.notes!),
@@ -121,7 +120,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...items.map((item) => _buildItemRow(item)),
+                        ...items.map((item) => _buildItemRow(item, additionalCostPerUnit)),
                       ],
                     ),
                   ),
@@ -160,7 +159,8 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
     );
   }
 
-  Widget _buildItemRow(PurchaseItem item) {
+  Widget _buildItemRow(PurchaseItem item, double additionalCostPerUnit) {
+    final costPerItem = item.unitPrice + additionalCostPerUnit;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -205,6 +205,15 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  '${AppLocalizations.of(context)!.unitCostWithAdditional}: ${_amountFormatter.format(costPerItem)}',
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
