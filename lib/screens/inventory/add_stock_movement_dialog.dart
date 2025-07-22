@@ -281,7 +281,7 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
                             controller: _quantityController,
                             decoration: InputDecoration(
                               labelText: loc.quantity,
-                              suffix: Text(unit ?? ''),
+                              suffix: Text(unit),
                               border: const OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.number,

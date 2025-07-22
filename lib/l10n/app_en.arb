@@ -639,5 +639,10 @@
   "confirmDeleteStockMovement": "Are you sure you want to delete this stock movement? This action cannot be undone.",
   "stockMovementDeleted": "Stock movement deleted successfully.",
   "errorDeletingStockMovement": "Error deleting stock movement.",
-  "unitCostWithAdditional": "Unit Cost (with additional cost)"
+  "unitCostWithAdditional": "Unit Cost (with additional cost)",
+  "stockMovementReports": "Stock Movement Reports",
+  "stockMovementReportsDesc": "View and analyze all stock in/out/transfer movements with filters and summaries.",
+  "totalIn": "Total In",
+  "totalOut": "Total Out",
+  "netMovement": "Net Movement"
 }

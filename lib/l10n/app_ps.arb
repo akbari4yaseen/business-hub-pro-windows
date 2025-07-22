@@ -642,5 +642,10 @@
   "confirmDeleteStockMovement": "ایا تاسې ډاډه یاست چې دا ګدام حرکت حذف کړئ؟ دا عمل بېرته نه راګرځي.",
   "stockMovementDeleted": "د ګدام حرکت په بریالیتوب سره حذف شو.",
   "errorDeletingStockMovement": "د ګدام حرکت په حذف کې تېروتنه.",
-  "unitCostWithAdditional": "تمام شد جنس:"
+  "unitCostWithAdditional": "تمام شد جنس:",
+  "stockMovementReports": "د ګدام حرکت راپورونه",
+  "stockMovementReportsDesc": "ټول د ګدام داخل/خارج/انتقال حرکتونه د فیلټر او لنډیز سره وګورئ او تحلیل کړئ.",
+  "totalIn": "ټول داخل",
+  "totalOut": "ټول خارج",
+  "netMovement": "خالص حرکت"
 }

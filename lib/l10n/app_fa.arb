@@ -639,5 +639,10 @@
   "confirmDeleteStockMovement": "آیا مطمئن هستید که می‌خواهید این حرکت انبار را حذف کنید؟ این عملیات قابل بازگشت نیست.",
   "stockMovementDeleted": "حرکت انبار با موفقیت حذف شد.",
   "errorDeletingStockMovement": "خطا در حذف حرکت انبار.",
-  "unitCostWithAdditional": "تمام شد جنس:"
+  "unitCostWithAdditional": "تمام شد جنس:",
+  "stockMovementReports": "گزارش جابجایی موجودی‌ها",
+  "stockMovementReportsDesc": "نمایش و تحلیل تمام جابجایی‌های ورودی/خروجی/انتقال موجودی با فیلتر و خلاصه.",
+  "totalIn": "ورودی کل",
+  "totalOut": "خروجی کل",
+  "netMovement": "جابجایی خالص"
 }

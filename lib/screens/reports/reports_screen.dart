@@ -6,6 +6,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'periodic_reports_screen.dart';
 import 'purchase_reports_screen.dart';
 import 'sales_reports_screen.dart';
+import 'stock_movement_reports_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -99,6 +100,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const SalesReportsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: Text(loc.stockMovementReports),
+              subtitle: Text(loc.stockMovementReportsDesc),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StockMovementReportsScreen(),
                   ),
                 );
               },
