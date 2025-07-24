@@ -444,7 +444,7 @@ class InvoiceProvider with ChangeNotifier {
             unitPrice: itemMap['unit_price'] as double,
             unitId: itemMap['unit_id'] as int?,
             description: itemMap['description'] as String?,
-            warehouseId: itemMap['warehouse_id'] as int?, // FIX: ensure warehouseId is loaded
+            warehouseId: itemMap['warehouse_id'] as int?,
           );
         }).toList() ??
         [];
@@ -483,9 +483,10 @@ class InvoiceProvider with ChangeNotifier {
       final productId = item.productId;
       // Convert quantity to base unit if different unit was used
       double quantityToDeduct = item.quantity;
-      
+
       if (item.unitId != null) {
-        final product = _inventoryProvider.products.firstWhere((p) => p.id == productId);
+        final product =
+            _inventoryProvider.products.firstWhere((p) => p.id == productId);
         if (product.baseUnitId != null && item.unitId != product.baseUnitId) {
           // Convert from selected unit to base unit
           quantityToDeduct = _inventoryProvider.convertQuantity(
@@ -496,11 +497,13 @@ class InvoiceProvider with ChangeNotifier {
           );
         }
       }
-      
+
       var remainingQuantity = quantityToDeduct;
 
       final productStock = currentStock
-          .where((stock) => stock['product_id'] == productId && stock['warehouse_id'] == item.warehouseId)
+          .where((stock) =>
+              stock['product_id'] == productId &&
+              stock['warehouse_id'] == item.warehouseId)
           .toList();
 
       if (productStock.isEmpty) {

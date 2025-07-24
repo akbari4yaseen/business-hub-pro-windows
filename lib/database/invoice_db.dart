@@ -258,7 +258,7 @@ class InvoiceDBHelper {
               'unit_price': item['unit_price'],
               'unit_id': item['unit_id'],
               'description': item['description'],
-              'warehouse_id': item['warehouse_id'], // FIX: ensure warehouse_id is saved
+              'warehouse_id': item['warehouse_id'],
               'created_at': DateTime.now().toIso8601String(),
               'updated_at': DateTime.now().toIso8601String(),
             },
@@ -304,7 +304,7 @@ class InvoiceDBHelper {
 
         // Always update userEnteredTotal (can be null to remove manual adjustment)
         updates['user_entered_total'] = userEnteredTotal;
-        
+
         // Update isPreSale if provided
         if (isPreSale != null) updates['is_pre_sale'] = isPreSale ? 1 : 0;
 
@@ -335,7 +335,7 @@ class InvoiceDBHelper {
                 'unit_price': item['unit_price'],
                 'unit_id': item['unit_id'],
                 'description': item['description'],
-                'warehouse_id': item['warehouse_id'], // FIX: ensure warehouse_id is saved
+                'warehouse_id': item['warehouse_id'],
                 'created_at': DateTime.now().toIso8601String(),
                 'updated_at': DateTime.now().toIso8601String(),
               },
@@ -519,7 +519,7 @@ class InvoiceDBHelper {
             'transaction_group': 'invoice_payment',
           },
         );
-        // also inset  as track 
+        // also inset  as track
         await txn.insert(
           'account_details',
           {
@@ -745,12 +745,13 @@ class InvoiceDBHelper {
         for (final item in items) {
           final productId = item['product_id'] as int;
           final quantity = item['quantity'] as double;
+          final warehouseId = item['warehouse_id'] as int;
 
           // Get current stock
           final stockResult = await txn.query(
             'current_stock',
-            where: 'product_id = ?',
-            whereArgs: [productId],
+            where: 'product_id = ? AND warehouse_id = ?',
+            whereArgs: [productId, warehouseId],
           );
 
           if (stockResult.isNotEmpty) {
