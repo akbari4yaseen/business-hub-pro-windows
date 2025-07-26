@@ -60,37 +60,46 @@ class NotificationsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(loc.clearAllNotificationsTitle,
-                  style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 12),
-              Text(loc.clearAllNotificationsContent, textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton(
-                    child: Text(loc.cancel),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  ElevatedButton(
-                    child: Text(loc.clear),
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  loc.clearAllNotificationsTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  loc.clearAllNotificationsContent,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      child: Text(loc.cancel),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                    onPressed: () async {
-                      await context.read<NotificationProvider>().clearAll();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              )
-            ],
+                    ElevatedButton(
+                      child: Text(loc.clear),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await context.read<NotificationProvider>().clearAll();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
