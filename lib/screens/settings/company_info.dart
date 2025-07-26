@@ -25,27 +25,24 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
 
   bool _isLoading = true;
 
+  File? _logoFile;
+  String? _logoBase64;
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
-  File? _logoFile;
-  String? _logoBase64;
-
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-
     if (picked != null) {
       final file = File(picked.path);
       final bytes = await file.readAsBytes();
-      final base64Image = base64Encode(bytes);
-
       setState(() {
         _logoFile = file;
-        _logoBase64 = base64Image;
+        _logoBase64 = base64Encode(bytes);
       });
     }
   }
@@ -53,14 +50,12 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Future<void> _loadData() async {
     final provider = Provider.of<InfoProvider>(context, listen: false);
     await provider.loadInfo();
-
     final info = provider.info;
     _nameController.text = info.name ?? '';
     _whatsAppController.text = info.whatsApp ?? '';
     _phoneController.text = info.phone ?? '';
     _emailController.text = info.email ?? '';
     _addressController.text = info.address ?? '';
-
     setState(() => _isLoading = false);
   }
 
@@ -74,10 +69,20 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     super.dispose();
   }
 
-  String? _validateRequired(String? value) {
-    return (value == null || value.trim().isEmpty)
-        ? AppLocalizations.of(context)!.fieldRequired
-        : null;
+  String? _validateRequired(String? value) =>
+      (value == null || value.trim().isEmpty)
+          ? AppLocalizations.of(context)!.fieldRequired
+          : null;
+
+  String? _validateEmail(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return AppLocalizations.of(context)!.fieldRequired;
+    }
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(trimmed)
+        ? null
+        : AppLocalizations.of(context)!.invalidEmail;
   }
 
   ImageProvider? _getLogoImage(String? base64) {
@@ -87,16 +92,6 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     } catch (_) {
       return null;
     }
-  }
-
-  String? _validateEmail(String? value) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty)
-      return AppLocalizations.of(context)!.fieldRequired;
-    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    return emailRegex.hasMatch(trimmed)
-        ? null
-        : AppLocalizations.of(context)!.invalidEmail;
   }
 
   void _handleSubmit() async {
@@ -135,13 +130,13 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.companyInfoUpdateError),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
-  Widget _buildTextField({
+  Widget _buildModernTextField({
     required TextEditingController controller,
     required String label,
     String? Function(String?)? validator,
@@ -150,37 +145,20 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     IconData? icon,
     bool isLTR = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        textDirection: isLTR ? TextDirection.ltr : null,
-        autofillHints: autofillHints,
-        decoration: InputDecoration(
-          labelText: label,
-          floatingLabelBehavior:
-              FloatingLabelBehavior.auto, // Let it float naturally
-          prefixIcon: icon != null ? Icon(icon) : null,
-          filled: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.red),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.red, width: 2),
-            borderRadius: BorderRadius.circular(12),
-          ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      textDirection: isLTR ? TextDirection.ltr : null,
+      autofillHints: autofillHints,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: icon != null ? Icon(icon) : null,
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
     );
@@ -188,115 +166,177 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width > 900;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.companyInfo),
-        elevation: 2,
+        title: Text(loc.companyInfo),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(14),
-                child: Form(
-                  key: _formKey,
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 950),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(32),
                   child: Card(
-                    elevation: 4,
+                    elevation: 6,
+                    shadowColor: Colors.black12,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                        borderRadius: BorderRadius.circular(18)),
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Center(
-                            child: GestureDetector(
-                              onTap: _pickLogo,
-                              child: CircleAvatar(
-                                radius: 44,
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                backgroundImage: _logoFile != null
-                                    ? FileImage(_logoFile!)
-                                    : _getLogoImage(
-                                        Provider.of<InfoProvider>(context)
-                                            .info
-                                            .logo),
-                                child: (_logoFile == null &&
-                                        Provider.of<InfoProvider>(context)
+                      padding: const EdgeInsets.all(30),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 60,
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.2),
+                                    backgroundImage: _logoFile != null
+                                        ? FileImage(_logoFile!)
+                                        : _getLogoImage(
+                                            Provider.of<InfoProvider>(context)
                                                 .info
-                                                .logo ==
-                                            null)
-                                    ? const Icon(Icons.apartment,
-                                        size: 40, color: Colors.white)
-                                    : null,
+                                                .logo),
+                                    child: (_logoFile == null &&
+                                            Provider.of<InfoProvider>(context)
+                                                    .info
+                                                    .logo ==
+                                                null)
+                                        ? const Icon(Icons.apartment,
+                                            size: 50, color: Colors.white)
+                                        : null,
+                                  ),
+                                  FloatingActionButton(
+                                    mini: true,
+                                    onPressed: _pickLogo,
+                                    child: const Icon(Icons.edit),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildTextField(
-                            controller: _nameController,
-                            label: AppLocalizations.of(context)!.businessName,
-                            validator: _validateRequired,
-                            autofillHints: [AutofillHints.organizationName],
-                            icon: Icons.business,
-                          ),
-                          _buildTextField(
-                            controller: _whatsAppController,
-                            label: AppLocalizations.of(context)!.whatsApp,
-                            validator: _validateRequired,
-                            keyboardType: TextInputType.phone,
-                            icon: Icons.chat,
-                            isLTR: true,
-                          ),
-                          _buildTextField(
-                            controller: _phoneController,
-                            label: AppLocalizations.of(context)!.phone,
-                            validator: _validateRequired,
-                            keyboardType: TextInputType.phone,
-                            icon: Icons.phone,
-                            isLTR: true,
-                          ),
-                          _buildTextField(
-                            controller: _emailController,
-                            label: AppLocalizations.of(context)!.email,
-                            validator: _validateEmail,
-                            isLTR: true,
-                            keyboardType: TextInputType.emailAddress,
-                            autofillHints: [AutofillHints.email],
-                            icon: Icons.email,
-                          ),
-                          _buildTextField(
-                            controller: _addressController,
-                            label: AppLocalizations.of(context)!.address,
-                            validator: _validateRequired,
-                            autofillHints: [AutofillHints.fullStreetAddress],
-                            icon: Icons.location_on,
-                          ),
-                        ],
+                            const SizedBox(height: 32),
+                            LayoutBuilder(builder: (context, constraints) {
+                              if (isWide) {
+                                return GridView.count(
+                                  shrinkWrap: true,
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 3.5,
+                                  children: [
+                                    _buildModernTextField(
+                                      controller: _nameController,
+                                      label: loc.businessName,
+                                      validator: _validateRequired,
+                                      icon: Icons.business,
+                                    ),
+                                    _buildModernTextField(
+                                      controller: _whatsAppController,
+                                      label: loc.whatsApp,
+                                      validator: _validateRequired,
+                                      keyboardType: TextInputType.phone,
+                                      icon: Icons.chat,
+                                      isLTR: true,
+                                    ),
+                                    _buildModernTextField(
+                                      controller: _phoneController,
+                                      label: loc.phone,
+                                      validator: _validateRequired,
+                                      keyboardType: TextInputType.phone,
+                                      icon: Icons.phone,
+                                      isLTR: true,
+                                    ),
+                                    _buildModernTextField(
+                                      controller: _emailController,
+                                      label: loc.email,
+                                      validator: _validateEmail,
+                                      keyboardType: TextInputType.emailAddress,
+                                      icon: Icons.email,
+                                      isLTR: true,
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return Column(
+                                  children: [
+                                    _buildModernTextField(
+                                      controller: _nameController,
+                                      label: loc.businessName,
+                                      validator: _validateRequired,
+                                      icon: Icons.business,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildModernTextField(
+                                      controller: _whatsAppController,
+                                      label: loc.whatsApp,
+                                      validator: _validateRequired,
+                                      keyboardType: TextInputType.phone,
+                                      icon: Icons.chat,
+                                      isLTR: true,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildModernTextField(
+                                      controller: _phoneController,
+                                      label: loc.phone,
+                                      validator: _validateRequired,
+                                      keyboardType: TextInputType.phone,
+                                      icon: Icons.phone,
+                                      isLTR: true,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildModernTextField(
+                                      controller: _emailController,
+                                      label: loc.email,
+                                      validator: _validateEmail,
+                                      keyboardType: TextInputType.emailAddress,
+                                      icon: Icons.email,
+                                      isLTR: true,
+                                    ),
+                                  ],
+                                );
+                              }
+                            }),
+                            const SizedBox(height: 16),
+                            _buildModernTextField(
+                              controller: _addressController,
+                              label: loc.address,
+                              validator: _validateRequired,
+                              icon: Icons.location_on,
+                            ),
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              height: 55,
+                              child: ElevatedButton.icon(
+                                onPressed: _handleSubmit,
+                                icon: const Icon(Icons.save),
+                                label: Text(
+                                  loc.saveChanges,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-      bottomNavigationBar: _isLoading
-          ? null
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-              child: SizedBox(
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _handleSubmit,
-                  icon: const Icon(Icons.save),
-                  label: Text(
-                    AppLocalizations.of(context)!.saveChanges,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),

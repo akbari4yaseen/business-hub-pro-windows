@@ -647,5 +647,10 @@
   "stockMovementReportsDesc": "ټول د ګدام داخل/خارج/انتقال حرکتونه د فیلټر او لنډیز سره وګورئ او تحلیل کړئ.",
   "totalIn": "ټول داخل",
   "totalOut": "ټول خارج",
-  "netMovement": "خالص حرکت"
+  "netMovement": "خالص حرکت",
+  "manageDatabaseBackups": "د ډیټابیس بیک اپونه اداره کړئ",
+  "backupDescription": "د خپل ډیټابیس آنلاین او محلي بیک اپونه جوړ کړئ یا د اړتیا په وخت کې معلومات بیرته راواخلئ.",
+  "enterYourCurrentAndNewPassword": "مهرباني وکړئ خپل اوسنی پاسورډ دننه کړئ او نوی یو غوره کړئ.",
+  "showPassword": "پاسورډ ښکاره کړئ",
+  "hidePassword": "پاسورډ پټ کړئ"
 }

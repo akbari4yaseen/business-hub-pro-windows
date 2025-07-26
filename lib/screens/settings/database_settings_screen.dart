@@ -108,17 +108,19 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
     if (Platform.isWindows) {
       // For Windows, use the Documents folder
       final documentsDir = await getApplicationDocumentsDirectory();
-      final backupDir = Directory(join(documentsDir.path, 'BusinessHubPro', 'Backups'));
+      final backupDir =
+          Directory(join(documentsDir.path, 'BusinessHubPro', 'Backups'));
       if (!await backupDir.exists()) {
         await backupDir.create(recursive: true);
       }
-      backupPath = join(backupDir.path, 
-        'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db');
+      backupPath = join(backupDir.path,
+          'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db');
     } else {
       // For other platforms, use FilePicker
       final result = await FilePicker.platform.saveFile(
         dialogTitle: loc.selectBackupLocation,
-        fileName: 'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db',
+        fileName:
+            'BusinessHubPro_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.db',
       );
       backupPath = result;
     }
@@ -224,156 +226,175 @@ class _DatabaseSettingsScreenState extends State<DatabaseSettingsScreen> {
         title: Text(loc.databaseSettings),
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _fetchBackupInfo,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            children: [
-              _buildStatusCard(
-                context,
-                icon: Icons.cloud_done_rounded,
-                title: loc.lastOnlineBackup,
-                subtitle: onlineStatus,
-              ),
-              const SizedBox(height: 12),
-              _buildStatusCard(
-                context,
-                icon: Icons.save_alt_rounded,
-                title: loc.lastOfflineBackup,
-                subtitle: offlineStatus,
-              ),
-              const SizedBox(height: 24),
-              Row(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isOnlineBackingUp
-                          ? null
-                          : () => _handleOnlineBackup(context),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isOnlineBackingUp
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.cloud_upload_rounded),
-                                SizedBox(width: 8),
-                                Text(loc.backupOnline),
-                              ],
-                            ),
+                  Text(
+                    loc.manageDatabaseBackups,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isOfflineBackingUp
-                          ? null
-                          : () => _handleOfflineBackup(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        side: BorderSide(color: theme.colorScheme.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    loc.backupDescription,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  /// Backup Status Section
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildModernStatusCard(
+                        context,
+                        icon: Icons.cloud_done_rounded,
+                        title: loc.lastOnlineBackup,
+                        subtitle: onlineStatus,
+                        color: theme.colorScheme.primaryContainer,
                       ),
-                      child: _isOfflineBackingUp
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.download_for_offline_rounded),
-                                SizedBox(width: 8),
-                                Text(loc.backupLocal)
-                              ],
-                            ),
-                    ),
+                      _buildModernStatusCard(
+                        context,
+                        icon: Icons.save_alt_rounded,
+                        title: loc.lastOfflineBackup,
+                        subtitle: offlineStatus,
+                        color: theme.colorScheme.secondaryContainer,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  /// Backup & Restore Actions
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        icon: _isOnlineBackingUp
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.cloud_upload_rounded),
+                        label: Text(loc.backupOnline),
+                        onPressed: _isOnlineBackingUp
+                            ? null
+                            : () => _handleOnlineBackup(context),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          textStyle: theme.textTheme.titleMedium,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        icon: _isOfflineBackingUp
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.download_for_offline_rounded),
+                        label: Text(loc.backupLocal),
+                        onPressed: _isOfflineBackingUp
+                            ? null
+                            : () => _handleOfflineBackup(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          textStyle: theme.textTheme.titleMedium,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      FilledButton.tonalIcon(
+                        icon: _isRestoring
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.restore_rounded),
+                        label: Text(loc.restoreDatabase),
+                        onPressed:
+                            _isRestoring ? null : () => _handleRestore(context),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.errorContainer,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 16),
+                          textStyle: theme.textTheme.titleMedium,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-              Center(
-                child: ElevatedButton(
-                  onPressed:
-                      _isRestoring ? null : () => _handleRestore(context),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 14),
-                    backgroundColor: theme.colorScheme.errorContainer,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: _isRestoring
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.restore_rounded),
-                            SizedBox(width: 8),
-                            Text(loc.restoreDatabase)
-                          ],
-                        ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusCard(BuildContext context,
-      {required IconData icon,
-      required String title,
-      required String subtitle}) {
+  Widget _buildModernStatusCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
     final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 3,
+      color: color,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.all(20),
+        child: SizedBox(
+          width: 320,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 36, color: theme.colorScheme.onPrimary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Text(subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
               ),
-              child: Icon(icon,
-                  size: 28, color: theme.colorScheme.onPrimaryContainer),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

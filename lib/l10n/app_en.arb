@@ -644,5 +644,10 @@
   "stockMovementReportsDesc": "View and analyze all stock in/out/transfer movements with filters and summaries.",
   "totalIn": "Total In",
   "totalOut": "Total Out",
-  "netMovement": "Net Movement"
+  "netMovement": "Net Movement",
+  "manageDatabaseBackups": "Manage Database Backups",
+  "backupDescription": "Create online and local backups of your database, or restore data when needed.",
+  "enterYourCurrentAndNewPassword": "Please enter your current password and choose a new one.",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password"
 }

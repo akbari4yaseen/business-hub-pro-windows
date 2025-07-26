@@ -77,7 +77,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      _dateController.text = dFormatter.formatLocalizedDate(context,
+      _dateController.text = dFormatter.formatLocalizedDateTime(context,
           widget.purchase?.date.toString() ?? DateTime.now().toString());
       _isInitialized = true;
     }
@@ -175,7 +175,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await pickLocalizedDate(
+    final DateTime? picked = await pickLocalizedDateTime(
       context: context,
       initialDate: _selectedDate,
     );
@@ -183,7 +183,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       setState(() {
         _selectedDate = picked;
         _dateController.text =
-            dFormatter.formatLocalizedDate(context, picked.toString());
+            dFormatter.formatLocalizedDateTime(context, picked.toString());
       });
     }
   }
