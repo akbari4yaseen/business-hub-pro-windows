@@ -61,7 +61,7 @@ class DbInit {
         amount DECIMAL(15,2) NOT NULL,
         currency VARCHAR(3) NOT NULL,
         transaction_type VARCHAR(8) NOT NULL,
-        description VARCHAR(256)
+        description VARCHAR(512)
       )
     ''');
 
