@@ -195,8 +195,7 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
                             repeatInterval:
                                 _isRepeating ? _repeatInterval : null,
                           );
-                          Navigator.pop(context); // Close dialog
-                          widget.onSave(r); // Save data
+                          widget.onSave(r); // This will close the dialog and return the reminder
                         },
                         child: Text(loc.save),
                       ),

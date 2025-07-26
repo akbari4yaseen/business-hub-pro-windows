@@ -188,7 +188,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
       context: context,
       builder: (_) => AddReminderDialog(
         reminder: existing,
-        onSave: (r) => Navigator.pop(context, r),
+        onSave: (r) {
+          Navigator.pop(context, r);
+        },
       ),
     );
 
