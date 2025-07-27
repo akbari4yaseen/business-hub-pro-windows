@@ -1,5 +1,4 @@
 import 'package:BusinessHubPro/models/purchase.dart';
-import 'package:BusinessHubPro/models/purchase_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -11,7 +10,7 @@ import '../../themes/app_theme.dart';
 import '../../providers/account_provider.dart';
 import '../../../utils/date_formatters.dart';
 
-final _amountFormatter = NumberFormat('#,###.##');
+final _amountFormatter = NumberFormat('#,##0.##');
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({Key? key}) : super(key: key);
@@ -93,7 +92,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               ),
               if (_isLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   child: const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -282,7 +281,9 @@ class _PurchaseCardState extends State<PurchaseCard> {
 
   Future<void> _loadItems() async {
     try {
-      final items = await context.read<PurchaseProvider>().getPurchaseItems(widget.purchase.id);
+      final items = await context
+          .read<PurchaseProvider>()
+          .getPurchaseItems(widget.purchase.id);
       if (mounted) {
         setState(() {
           _items = items;
@@ -300,7 +301,9 @@ class _PurchaseCardState extends State<PurchaseCard> {
 
   Future<void> _loadSupplier() async {
     try {
-      final supplier = await context.read<AccountProvider>().getAccountById(widget.purchase.supplierId);
+      final supplier = await context
+          .read<AccountProvider>()
+          .getAccountById(widget.purchase.supplierId);
       if (mounted) {
         setState(() {
           _supplier = supplier;
@@ -372,8 +375,7 @@ class _PurchaseCardState extends State<PurchaseCard> {
 
     return Card(
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Row(
           children: [
             Expanded(
@@ -408,8 +410,7 @@ class _PurchaseCardState extends State<PurchaseCard> {
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete,
-                          size: 20, color: Colors.red),
+                      const Icon(Icons.delete, size: 20, color: Colors.red),
                       const SizedBox(width: 8),
                       Text(loc.delete,
                           style: const TextStyle(color: Colors.red)),
@@ -426,7 +427,8 @@ class _PurchaseCardState extends State<PurchaseCard> {
             const SizedBox(height: 4),
             Text(
                 '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
-            Text('${loc.supplier}: ${_supplier?['name'] ?? (_isLoadingSupplier ? 'Loading...' : '')}'),
+            Text(
+                '${loc.supplier}: ${_supplier?['name'] ?? (_isLoadingSupplier ? 'Loading...' : '')}'),
             Text(
               '${loc.total}: \u200E${_amountFormatter.format(widget.purchase.totalAmount)} ${widget.purchase.currency}',
               style: const TextStyle(
@@ -441,10 +443,9 @@ class _PurchaseCardState extends State<PurchaseCard> {
                   spacing: 8,
                   children: _items.map((item) {
                     return Chip(
-                      label:
-                          Text(item.productName ?? 'Unknown Product'),
+                      label: Text(item.productName ?? 'Unknown Product'),
                       backgroundColor:
-                          AppTheme.primaryColor.withOpacity(0.1),
+                          AppTheme.primaryColor.withValues(alpha: 0.1),
                     );
                   }).toList(),
                 ),

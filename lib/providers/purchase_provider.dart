@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../database/purchase_db.dart';
 import '../models/purchase.dart';
-import '../models/purchase_item.dart';
 
 class PurchaseProvider with ChangeNotifier {
   final PurchaseDBHelper _db = PurchaseDBHelper();

@@ -1,7 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import '../models/purchase.dart';
-import '../models/purchase_item.dart';
 
 class PurchaseDBHelper {
   static final PurchaseDBHelper _instance = PurchaseDBHelper._internal();

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../models/purchase.dart';
-import '../../../models/purchase_item.dart';
 import '../../../models/product.dart';
 import '../../../models/unit.dart';
 import '../../../providers/inventory_provider.dart';

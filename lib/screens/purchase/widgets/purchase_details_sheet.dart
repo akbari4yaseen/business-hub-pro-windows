@@ -3,7 +3,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../models/purchase.dart';
-import '../../../models/purchase_item.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../themes/app_theme.dart';
 import '../../../providers/account_provider.dart';
@@ -25,7 +24,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
   late Future<List<PurchaseItem>> _itemsFuture;
   late Future<Map<String, dynamic>?> _supplierFuture;
   bool _isInitialized = false;
-  final _amountFormatter = NumberFormat('#,###.##');
+  final _amountFormatter = NumberFormat('#,##0.##');
 
   @override
   void initState() {
@@ -63,8 +62,11 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
             final totalPurchase = widget.purchase.totalAmount;
             final additionalCost = widget.purchase.additionalCost;
             final totalCost = totalPurchase + additionalCost;
-            final totalQuantity = items.fold<double>(0, (sum, i) => sum + i.quantity);
-            final additionalCostPerUnit = totalQuantity > 0 ? (widget.purchase.additionalCost / totalQuantity).toDouble() : 0.0;
+            final totalQuantity =
+                items.fold<double>(0, (sum, i) => sum + i.quantity);
+            final additionalCostPerUnit = totalQuantity > 0
+                ? (widget.purchase.additionalCost / totalQuantity).toDouble()
+                : 0.0;
 
             return FutureBuilder<Map<String, dynamic>?>(
               future: _supplierFuture,
@@ -105,9 +107,13 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                         _buildDetailRow(loc.currency, widget.purchase.currency),
                         _buildDetailRow(
                             loc.total,
-                            _amountFormatter.format(widget.purchase.totalAmount)),
-                        _buildDetailRow(loc.additionalCost, _amountFormatter.format(additionalCost)),
-                        _buildDetailRow(loc.totalCost, _amountFormatter.format(totalCost), isTotal: true),
+                            _amountFormatter
+                                .format(widget.purchase.totalAmount)),
+                        _buildDetailRow(loc.additionalCost,
+                            _amountFormatter.format(additionalCost)),
+                        _buildDetailRow(
+                            loc.totalCost, _amountFormatter.format(totalCost),
+                            isTotal: true),
                         if (widget.purchase.notes != null &&
                             widget.purchase.notes!.isNotEmpty)
                           _buildDetailRow(loc.notes, widget.purchase.notes!),
@@ -120,7 +126,8 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...items.map((item) => _buildItemRow(item, additionalCostPerUnit)),
+                        ...items.map((item) =>
+                            _buildItemRow(item, additionalCostPerUnit)),
                       ],
                     ),
                   ),
