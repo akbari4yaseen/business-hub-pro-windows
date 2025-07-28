@@ -653,5 +653,9 @@
   "showPassword": "پټ نوم ښودل",
   "hidePassword": "پټ نوم پټول",
   "actions": "کړنې",
-  "newSale": "نوی پلور"
+  "newSale": "نوی پلور",
+  "unitName": "د واحد نوم",
+  "fromUnit": "له واحد څخه",
+  "toUnit": "ته واحد",
+  "delete_unit": "واحد حذف کړئ"
 }

@@ -650,5 +650,8 @@
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "actions": "Actions",
-  "newSale": "New Sale"
+  "newSale": "New Sale",
+  "unitName": "Unit Name",
+  "fromUnit": "From Unit",
+  "toUnit": "To Unit"
 }

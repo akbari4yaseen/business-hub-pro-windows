@@ -650,5 +650,9 @@
   "showPassword": "نمایش رمز عبور",
   "hidePassword": "مخفی کردن رمز عبور",
   "actions": "عملیات",
-  "newSale": "فروش جدید"
+  "newSale": "فروش جدید",
+  "unitName": "نام واحد",
+  "fromUnit": "از واحد",
+  "toUnit": "به واحد",
+  "delete_unit": "حذف واحد"
 }

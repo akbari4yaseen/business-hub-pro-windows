@@ -5,6 +5,7 @@ import '../../providers/inventory_provider.dart';
 import '../../models/unit.dart';
 import '../../widgets/unit_dialog.dart';
 import '../../widgets/unit_conversion_dialog.dart';
+import '../../themes/app_theme.dart';
 
 class ManageUnitsScreen extends StatelessWidget {
   const ManageUnitsScreen({Key? key}) : super(key: key);
@@ -16,6 +17,13 @@ class ManageUnitsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.units),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: loc.addUnit,
+            onPressed: () => _showUnitDialog(context),
+          ),
+        ],
       ),
       body: Consumer<InventoryProvider>(
         builder: (context, provider, child) {
@@ -37,91 +45,226 @@ class ManageUnitsScreen extends StatelessWidget {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 80,
-            ),
-            itemCount: provider.units.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final unit = provider.units[index];
-              return Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+          return Column(
+            children: [
+              // Fixed Header
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  title: Text(unit.name,
-                      style: Theme.of(context).textTheme.titleMedium),
-                  subtitle:
-                      unit.description != null ? Text(unit.description!) : null,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade200,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.swap_horiz),
-                        tooltip: loc.unit_conversion,
-                        onPressed: () => _showUnitConversionDialog(context, unit),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showUnitDialog(context, unit: unit);
-                          } else if (value == 'delete') {
-                            _confirmDeleteUnit(context, unit);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit, size: 20),
-                                const SizedBox(width: 8),
-                                Text(loc.edit),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.delete,
-                                    size: 20, color: Colors.red),
-                                const SizedBox(width: 8),
-                                Text(loc.delete),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildHeaderCell(loc.unitName, Icons.inbox, 2),
+                      _buildHeaderCell(loc.description, Icons.description, 3),
+                      _buildHeaderCell(loc.actions, Icons.more_vert, 1),
                     ],
                   ),
-                  leading: unit.symbol != null
-                      ? CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          child: Text(
-                            unit.symbol!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      : null,
                 ),
-              );
-            },
+              ),
+              // Scrollable Data
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 80),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Table Rows
+                        ...provider.units.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final unit = entry.value;
+
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: index.isEven 
+                                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                                  : Colors.transparent,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey.shade100,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                _buildUnitNameCell(unit),
+                                _buildDescriptionCell(unit),
+                                _buildActionsCell(unit, context, loc),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showUnitDialog(context),
-        child: const Icon(Icons.add),
-        tooltip: loc.add_unit,
+        icon: const Icon(Icons.add),
+        label: Text(loc.addUnit),
+        tooltip: loc.addUnit,
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text, IconData icon, int flex) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontFamily: 'VazirBold',
+                  fontSize: 14,
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitNameCell(Unit unit) {
+    return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          unit.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionCell(Unit unit) {
+    return Expanded(
+      flex: 3,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          unit.description ?? '-',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionsCell(Unit unit, BuildContext context, AppLocalizations loc) {
+    return Expanded(
+      flex: 1,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.swap_horiz, size: 20),
+            tooltip: loc.unit_conversion,
+            onPressed: () => _showUnitConversionDialog(context, unit),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 22),
+            tooltip: loc.actions,
+            padding: EdgeInsets.zero,
+            onSelected: (value) {
+              if (value == 'edit') {
+                _showUnitDialog(context, unit: unit);
+              } else if (value == 'delete') {
+                _confirmDeleteUnit(context, unit);
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit, size: 18),
+                    const SizedBox(width: 12),
+                    Text(loc.edit),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete, size: 18, color: Colors.redAccent),
+                    const SizedBox(width: 12),
+                    Text(loc.delete),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
