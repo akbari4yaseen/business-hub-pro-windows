@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'exchange/exchange_details_widget.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/exchange.dart';
-import '../database/exchange_db.dart';
 import '../../utils/date_formatters.dart';
+import '../themes/app_theme.dart';
 
 class ExchangeListWidget extends StatefulWidget {
   final Function(Exchange) onEdit;
@@ -31,52 +31,336 @@ class ExchangeListWidget extends StatefulWidget {
 class _ExchangeListWidgetState extends State<ExchangeListWidget> {
   static final NumberFormat _numberFormatter = NumberFormat('#,##0.##');
 
-  final _exchangeDb = ExchangeDBHelper();
-  final _scrollController = ScrollController();
-  List<Exchange> _exchanges = [];
-  bool _isLoading = false;
-  bool _hasMore = true;
-  int _currentPage = 1;
-  static const int _pageSize = 20;
-
   @override
-  void initState() {
-    super.initState();
-    _loadExchanges();
-    _scrollController.addListener(_onScroll);
-  }
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
 
-  Future<void> _loadExchanges() async {
-    if (_isLoading || !_hasMore) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final exchanges = await _exchangeDb.getExchanges(
-        page: _currentPage,
-        pageSize: _pageSize,
+    if (widget.exchanges.isEmpty && !widget.isLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.currency_exchange,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              loc.noExchangesFound,
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontFamily: 'VazirBold',
+              ),
+            ),
+          ],
+        ),
       );
-
-      setState(() {
-        _exchanges.addAll(exchanges);
-        _hasMore = exchanges.length == _pageSize;
-        _currentPage++;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading exchanges: $e')),
-        );
-      }
     }
+
+    return Column(
+      children: [
+        // Fixed Header
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                        const SizedBox(width: 10),
+                        Text(
+                          loc.date,
+                          style: TextStyle(
+                            fontFamily: 'VazirBold',
+                            fontSize: 14,
+                            color: Colors.grey[800],
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildHeaderCell(loc.fromAccount, Icons.account_balance, 2),
+                _buildHeaderCell(loc.fromCurrency, Icons.currency_exchange, 1),
+                _buildHeaderCell(loc.toCurrency, Icons.currency_exchange, 1),
+                _buildHeaderCell(loc.amount, Icons.attach_money, 1),
+                _buildHeaderCell(loc.resultAmount, Icons.calculate, 1),
+                _buildHeaderCell(loc.actions, Icons.more_vert, 1),
+              ],
+            ),
+          ),
+        ),
+        // Scrollable Data
+        Expanded(
+          child: SingleChildScrollView(
+            controller: widget.scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 80),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Table Rows
+                  ...widget.exchanges.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final exchange = entry.value;
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: index.isEven 
+                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                            : Colors.transparent,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey.shade100,
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: () => _showDetails(exchange),
+                        onLongPress: () => _showDetails(exchange),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          children: [
+                            _buildDateCellFixed(DateTime.parse(exchange.date), context),
+                            _buildAccountCell(exchange.fromAccountName ?? 'No Name (${exchange.fromAccountId})'),
+                            _buildCurrencyCellSimple(exchange.fromCurrency),
+                            _buildCurrencyCellSimple(exchange.toCurrency),
+                            _buildAmountCell(exchange.amount, exchange.fromCurrency, context),
+                            _buildAmountCell(exchange.resultAmount, exchange.toCurrency, context),
+                            _buildActionsCell(exchange, loc),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  // Loading indicator for pagination
+                  if (widget.hasMore)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      _loadExchanges();
-    }
+  Widget _buildHeaderCell(String text, IconData icon, int flex) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontFamily: 'VazirBold',
+                  fontSize: 14,
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateCellFixed(DateTime date, BuildContext context) {
+    return SizedBox(
+      width: 90,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(
+          formatLocalizedDateTime(context, date.toString()),
+          style: TextStyle(
+            color: Colors.grey[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountCell(String accountName) {
+    return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          accountName,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.start,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrencyCellSimple(String currency) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          currency,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmountCell(double amount, String currency, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final isEnglish = locale == 'en';
+    
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          '\u200E${_numberFormatter.format(amount)} ${currency}',
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          textAlign: isEnglish ? TextAlign.start : TextAlign.end,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionsCell(Exchange exchange, AppLocalizations loc) {
+    return Expanded(
+      flex: 1,
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, size: 22),
+        tooltip: loc.actions,
+        padding: EdgeInsets.zero,
+        onSelected: (value) {
+          switch (value) {
+            case 'details':
+              _showDetails(exchange);
+              break;
+            case 'edit':
+              widget.onEdit(exchange);
+              break;
+            case 'delete':
+              widget.onDelete(exchange);
+              break;
+            default:
+              break;
+          }
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem(
+            value: 'details',
+            child: Row(
+              children: [
+                const Icon(Icons.info, size: 18),
+                const SizedBox(width: 12),
+                Text(loc.details),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit, size: 18, color: AppTheme.primaryColor),
+                const SizedBox(width: 12),
+                Text(loc.edit),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                const Icon(Icons.delete, size: 18, color: Colors.redAccent),
+                const SizedBox(width: 12),
+                Text(loc.delete),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDetails(Exchange exchange) {
@@ -84,111 +368,5 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
       context: context,
       builder: (_) => ExchangeDetailsWidget(exchange: exchange),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    if (widget.exchanges.isEmpty && !widget.isLoading) {
-      return Center(child: Text(loc.noExchangesFound));
-    }
-
-    return ListView.builder(
-      controller: widget.scrollController,
-      itemCount: widget.exchanges.length + (widget.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == widget.exchanges.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        final exchange = widget.exchanges[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-          child: ListTile(
-            onTap: () => _showDetails(exchange),
-            title: Text(
-              '${exchange.fromCurrency} ${loc.to} ${exchange.toCurrency}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${loc.amount}: \u200E${_numberFormatter.format(exchange.amount)} ${exchange.fromCurrency}',
-                ),
-                Text(
-                  '${loc.rate}: ${exchange.rate} (${exchange.operator})',
-                ),
-                Text(
-                  '${loc.resultAmount}: \u200E${_numberFormatter.format(exchange.resultAmount)} ${exchange.toCurrency}',
-                ),
-                if (exchange.profitLoss != 0)
-                  Text(
-                    '${loc.profitLoss}: \u200E${_numberFormatter.format(exchange.profitLoss)} ${exchange.toCurrency}',
-                    style: TextStyle(
-                      color:
-                          exchange.profitLoss >= 0 ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                Text(
-                  formatLocalizedDateTime(context, exchange.date),
-                ),
-              ],
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) {
-                switch (value) {
-                  case 'details':
-                    _showDetails(exchange);
-                    break;
-                  case 'edit':
-                    widget.onEdit(exchange);
-                    break;
-                  case 'delete':
-                    widget.onDelete(exchange);
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'details',
-                  child: ListTile(
-                    leading: Icon(Icons.info),
-                    title: Text(loc.details),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'edit',
-                  child: ListTile(
-                    leading: Icon(Icons.edit),
-                    title: Text(loc.edit),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(Icons.delete),
-                    title: Text(loc.delete),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 }

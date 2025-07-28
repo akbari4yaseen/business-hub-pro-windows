@@ -30,7 +30,8 @@ class ExchangeDBHelper {
 
     // Build filters
     if (searchQuery?.isNotEmpty ?? false) {
-      where.add('(LOWER(e.description) LIKE ? OR LOWER(acc_from.name) LIKE ? OR LOWER(acc_to.name) LIKE ?)');
+      where.add(
+          '(LOWER(e.description) LIKE ? OR LOWER(acc_from.name) LIKE ? OR LOWER(acc_to.name) LIKE ?)');
       final q = '%${searchQuery!.toLowerCase()}%';
       args.addAll([q, q, q]);
     }
@@ -53,10 +54,11 @@ class ExchangeDBHelper {
 
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
 
-    // Inner subquery: filter+order+page the exchange rows
-    final innerSql = '''
+    final sql = '''
       SELECT
-        e.*
+        e.*,
+        acc_from.name AS from_account_name,
+        acc_to.name AS to_account_name
       FROM exchanges e
       JOIN accounts acc_from ON e.from_account_id = acc_from.id
       JOIN accounts acc_to ON e.to_account_id = acc_to.id
@@ -66,21 +68,8 @@ class ExchangeDBHelper {
     ''';
     args.addAll([pageSize, offset]);
 
-    // Outer query: attach account names, preserve ordering
-    final sql = '''
-      SELECT
-        e2.*,
-        acc_from.name AS from_account_name,
-        acc_to.name AS to_account_name
-      FROM (
-        $innerSql
-      ) AS e2
-      JOIN accounts acc_from ON e2.from_account_id = acc_from.id
-      JOIN accounts acc_to ON e2.to_account_id = acc_to.id
-      ORDER BY e2.date DESC
-    ''';
-
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, args);
+
     return List.generate(maps.length, (i) => Exchange.fromMap(maps[i]));
   }
 
@@ -102,22 +91,32 @@ class ExchangeDBHelper {
 
   Future<List<Exchange>> getExchangesByAccount(int accountId) async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'exchanges',
-      where: 'from_account_id = ? OR to_account_id = ?',
-      whereArgs: [accountId, accountId],
-      orderBy: 'date DESC',
-    );
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT
+        e.*,
+        acc_from.name AS from_account_name,
+        acc_to.name AS to_account_name
+      FROM exchanges e
+      JOIN accounts acc_from ON e.from_account_id = acc_from.id
+      JOIN accounts acc_to ON e.to_account_id = acc_to.id
+      WHERE e.from_account_id = ? OR e.to_account_id = ?
+      ORDER BY e.date DESC
+    ''', [accountId, accountId]);
     return List.generate(maps.length, (i) => Exchange.fromMap(maps[i]));
   }
 
   Future<Exchange?> getExchange(int id) async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'exchanges',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT
+        e.*,
+        acc_from.name AS from_account_name,
+        acc_to.name AS to_account_name
+      FROM exchanges e
+      JOIN accounts acc_from ON e.from_account_id = acc_from.id
+      JOIN accounts acc_to ON e.to_account_id = acc_to.id
+      WHERE e.id = ?
+    ''', [id]);
 
     if (maps.isEmpty) return null;
     return Exchange.fromMap(maps.first);
@@ -165,8 +164,6 @@ class ExchangeDBHelper {
   }) async {
     final db = await _db;
     await db.transaction((txn) async {
-     
-
       double profitLoss = 0;
       if (expectedRate != null) {
         double expectedAmount;

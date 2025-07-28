@@ -1,40 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
+import 'record_payment_dialog.dart';
+import '../../models/invoice.dart';
+import '../../utils/date_formatters.dart';
+import '../../utils/invoice.dart';
+import '../../screens/invoice/invoice_detail_screen.dart';
+import '../../providers/account_provider.dart';
 import '../../themes/app_theme.dart';
 
-import '../../../utils/utilities.dart';
-import '../../../utils/date_formatters.dart';
-
-class JournalList extends StatelessWidget {
-  final List<Map<String, dynamic>> journals;
+class InvoiceTable extends StatelessWidget {
+  final List<Invoice> invoices;
+  final bool showOverdueWarning;
+  final Function(Invoice, double) onPaymentRecorded;
+  final Function(Invoice) onInvoiceFinalized;
+  final ScrollController scrollController;
   final bool isLoading;
   final bool hasMore;
-  final ScrollController scrollController;
-  final void Function(Map<String, dynamic>) onDetails;
-  final void Function(Map<String, dynamic>) onEdit;
-  final void Function(int) onDelete;
-  final void Function(Map<String, dynamic>) onShare;
-  final NumberFormat amountFormatter;
 
-  const JournalList({
+  const InvoiceTable({
     Key? key,
-    required this.journals,
+    required this.invoices,
+    this.showOverdueWarning = false,
+    required this.onPaymentRecorded,
+    required this.onInvoiceFinalized,
+    required this.scrollController,
     required this.isLoading,
     required this.hasMore,
-    required this.scrollController,
-    required this.onDetails,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onShare,
-    required this.amountFormatter,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    if (journals.isEmpty) {
+    if (invoices.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -46,7 +47,7 @@ class JournalList extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              loc.noJournalEntries,
+              showOverdueWarning ? loc.noOverdueInvoices : loc.noInvoices,
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
@@ -116,10 +117,10 @@ class JournalList extends StatelessWidget {
                     ),
                   ),
                 ),
-                _buildHeaderCell(loc.account, Icons.account_balance, 2),
-                _buildHeaderCell(loc.track, Icons.track_changes, 2),
-                _buildHeaderCell(loc.description, Icons.description, 3),
-                _buildHeaderCell(loc.amount, Icons.attach_money, 1),
+                _buildHeaderCell(loc.invoiceNumber, Icons.receipt, 1),
+                _buildHeaderCell(loc.customer, Icons.person, 2),
+                _buildHeaderCell(loc.status, Icons.info, 1),
+                _buildHeaderCell(loc.total, Icons.attach_money, 1),
                 _buildHeaderCell(loc.actions, Icons.more_vert, 1),
               ],
             ),
@@ -150,11 +151,9 @@ class JournalList extends StatelessWidget {
               child: Column(
                 children: [
                   // Table Rows
-                  ...journals.asMap().entries.map((entry) {
+                  ...invoices.asMap().entries.map((entry) {
                     final index = entry.key;
-                    final journal = entry.value;
-                    final isCredit = journal['transaction_type'] == 'credit';
-                    final amountColor = isCredit ? Colors.green[700] : Colors.red[700];
+                    final invoice = entry.value;
 
                     return Container(
                       width: double.infinity,
@@ -171,25 +170,17 @@ class JournalList extends StatelessWidget {
                         ),
                       ),
                       child: InkWell(
-                        onTap: () => onDetails(journal),
-                        onLongPress: () => onDetails(journal),
+                        onTap: () => _showInvoiceDetails(context, invoice),
+                        onLongPress: () => _showInvoiceDetails(context, invoice),
                         borderRadius: BorderRadius.circular(12),
                         child: Row(
                           children: [
-                            _buildDateCell(journal['date'], context),
-                            _buildTextCell(
-                              getLocalizedSystemAccountName(context, journal['account_name']),
-                              2,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            _buildTextCell(
-                              getLocalizedSystemAccountName(context, journal['track_name']),
-                              2,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            _buildDescriptionCell(journal['description'] ?? ''),
-                            _buildAmountCell(journal, amountColor, context),
-                            _buildActionsCell(journal, loc),
+                            _buildDateCell(invoice.date.toString(), context),
+                            _buildInvoiceNumberCell(invoice.invoiceNumber),
+                            _buildCustomerCell(invoice.accountId, context),
+                            _buildStatusCell(invoice, context),
+                            _buildTotalCell(invoice),
+                            _buildActionsCell(invoice, context),
                           ],
                         ),
                       ),
@@ -237,72 +228,13 @@ class JournalList extends StatelessWidget {
     );
   }
 
-  Widget _buildTextCell(String text, int flex, {FontWeight? fontWeight}) {
-    return Expanded(
-      flex: flex,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontWeight: fontWeight ?? FontWeight.normal,
-            fontSize: 13,
-            color: Colors.grey[800],
-            height: 1.4,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAmountCell(Map<String, dynamic> journal, Color? amountColor, BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    final isEnglish = locale == 'en';
-    
-    return Expanded(
-      flex: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(
-          '\u200E${amountFormatter.format(journal['amount'])} ${journal['currency']}',
-          style: TextStyle(
-            color: amountColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-          textAlign: isEnglish ? TextAlign.start : TextAlign.end,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionCell(String description) {
-    return Expanded(
-      flex: 3,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(
-          description,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.grey[700],
-            fontSize: 13,
-            height: 1.4,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildDateCell(String date, BuildContext context) {
     return SizedBox(
       width: 90,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Text(
-          formatLocalizedDateTime(context, date),
+          formatLocalizedDate(context, date),
           style: TextStyle(
             color: Colors.grey[700],
             fontSize: 12,
@@ -314,7 +246,100 @@ class JournalList extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsCell(Map<String, dynamic> journal, AppLocalizations loc) {
+  Widget _buildInvoiceNumberCell(String invoiceNumber) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          invoiceNumber,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerCell(int accountId, BuildContext context) {
+    return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Consumer<AccountProvider>(
+          builder: (context, accountProvider, child) {
+            final customer = accountProvider.accounts.firstWhere(
+              (c) => c['id'] == accountId,
+              orElse: () => <String, dynamic>{'name': 'Unknown Customer'},
+            );
+            final customerName = customer['name'];
+            return Text(
+              customerName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCell(Invoice invoice, BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final statusColor = _getStatusColor(invoice.status);
+    
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: statusColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            invoice.status.localizedName(loc),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalCell(Invoice invoice) {
+    final currencyFormat = NumberFormat('#,###.##');
+    
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          '${currencyFormat.format(invoice.total)} ${invoice.currency}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.end,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionsCell(Invoice invoice, BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -324,16 +349,19 @@ class JournalList extends StatelessWidget {
         onSelected: (value) {
           switch (value) {
             case 'details':
-              onDetails(journal);
+              _showInvoiceDetails(context, invoice);
               break;
-            case 'share':
-              onShare(journal);
+            case 'finalize':
+              if (invoice.status == InvoiceStatus.draft) {
+                onInvoiceFinalized(invoice);
+              }
               break;
-            case 'edit':
-              onEdit(journal);
-              break;
-            case 'delete':
-              onDelete(journal['id']);
+            case 'payment':
+              if (invoice.status != InvoiceStatus.draft &&
+                  invoice.status != InvoiceStatus.paid &&
+                  invoice.status != InvoiceStatus.cancelled) {
+                _showRecordPaymentDialog(context, invoice);
+              }
               break;
             default:
               break;
@@ -350,38 +378,65 @@ class JournalList extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuItem(
-            value: 'share',
-            child: Row(
-              children: [
-                const Icon(Icons.share, size: 18),
-                const SizedBox(width: 12),
-                Text(loc.share),
-              ],
+          if (invoice.status == InvoiceStatus.draft)
+            PopupMenuItem(
+              value: 'finalize',
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, size: 18, color: AppTheme.primaryColor),
+                  const SizedBox(width: 12),
+                  Text(loc.finalize),
+                ],
+              ),
             ),
-          ),
-          PopupMenuItem(
-            value: 'edit',
-            child: Row(
-              children: [
-                Icon(Icons.edit, size: 18, color: AppTheme.primaryColor),
-                const SizedBox(width: 12),
-                Text(loc.edit),
-              ],
+          if (invoice.status != InvoiceStatus.draft &&
+              invoice.status != InvoiceStatus.paid &&
+              invoice.status != InvoiceStatus.cancelled)
+            PopupMenuItem(
+              value: 'payment',
+              child: Row(
+                children: [
+                  Icon(Icons.payment, size: 18, color: Colors.green),
+                  const SizedBox(width: 12),
+                  Text(loc.recordPayment),
+                ],
+              ),
             ),
-          ),
-          PopupMenuItem(
-            value: 'delete',
-            child: Row(
-              children: [
-                const Icon(Icons.delete, size: 18, color: Colors.redAccent),
-                const SizedBox(width: 12),
-                Text(loc.delete),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
-}
+
+  Color _getStatusColor(InvoiceStatus status) {
+    switch (status) {
+      case InvoiceStatus.draft:
+        return Colors.grey;
+      case InvoiceStatus.finalized:
+        return AppTheme.primaryColor;
+      case InvoiceStatus.partiallyPaid:
+        return Colors.orange;
+      case InvoiceStatus.paid:
+        return Colors.green;
+      case InvoiceStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  void _showInvoiceDetails(BuildContext context, Invoice invoice) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InvoiceDetailScreen(invoice: invoice),
+      ),
+    );
+  }
+
+  void _showRecordPaymentDialog(BuildContext context, Invoice invoice) {
+    showDialog(
+      context: context,
+      builder: (context) => RecordPaymentDialog(
+        invoice: invoice,
+        onPaymentRecorded: onPaymentRecorded,
+      ),
+    );
+  }
+} 

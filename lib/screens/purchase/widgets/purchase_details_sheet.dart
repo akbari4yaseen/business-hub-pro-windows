@@ -101,7 +101,7 @@ class _PurchaseDetailsSheetState extends State<PurchaseDetailsSheet> {
                             loc.invoice, widget.purchase.invoiceNumber!),
                         _buildDetailRow(
                             loc.date,
-                            formatLocalizedDate(
+                            formatLocalizedDateTime(
                                 context, widget.purchase.date.toString())),
                         _buildDetailRow(loc.supplier, supplier?['name'] ?? ''),
                         _buildDetailRow(loc.currency, widget.purchase.currency),

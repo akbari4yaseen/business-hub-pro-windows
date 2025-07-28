@@ -13,6 +13,8 @@ class Exchange {
   final String transactionType;
   final String? description;
   final String date;
+  final String? fromAccountName;
+  final String? toAccountName;
 
   Exchange({
     this.id,
@@ -29,6 +31,8 @@ class Exchange {
     required this.transactionType,
     this.description,
     required this.date,
+    this.fromAccountName,
+    this.toAccountName,
   });
 
   Map<String, dynamic> toMap() {
@@ -47,6 +51,8 @@ class Exchange {
       'transaction_type': transactionType,
       'description': description,
       'date': date,
+      // Note: from_account_name and to_account_name are populated from JOIN queries
+      // and should not be included in INSERT operations
     };
   }
 
@@ -66,6 +72,8 @@ class Exchange {
       transactionType: map['transaction_type'],
       description: map['description'],
       date: map['date'],
+      fromAccountName: map['from_account_name'],
+      toAccountName: map['to_account_name'],
     );
   }
 }

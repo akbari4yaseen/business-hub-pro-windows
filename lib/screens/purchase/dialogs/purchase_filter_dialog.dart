@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../utils/date_time_picker_helper.dart';
-import '../../utils/date_formatters.dart' as dFormatter;
+import '../../../utils/date_time_picker_helper.dart';
+import '../../../utils/date_formatters.dart' as dFormatter;
 
-class JournalFilterDialog extends StatelessWidget {
-  final String? selectedType;
+class PurchaseFilterDialog extends StatelessWidget {
+  final String? selectedSupplier;
   final String? selectedCurrency;
   final DateTime? selectedDate;
-  final List<String> typeOptions;
+  final List<String> supplierOptions;
   final List<String> currencyOptions;
-  final void Function({String? type, String? currency, DateTime? date}) onApply;
+  final void Function({String? supplier, String? currency, DateTime? date}) onApply;
   final VoidCallback onReset;
-  final void Function({String? type, String? currency, DateTime? date}) onChanged;
+  final void Function({String? supplier, String? currency, DateTime? date}) onChanged;
 
-  const JournalFilterDialog({
+  const PurchaseFilterDialog({
     Key? key,
-    this.selectedType,
+    this.selectedSupplier,
     this.selectedCurrency,
     this.selectedDate,
-    required this.typeOptions,
+    required this.supplierOptions,
     required this.currencyOptions,
     required this.onApply,
     required this.onReset,
@@ -65,23 +65,27 @@ class JournalFilterDialog extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Transaction Type Dropdown
+                        // Supplier Dropdown
                         Text(
-                          loc.transactionType,
+                          loc.supplier,
                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: selectedType ?? 'all',
-                          items: typeOptions.map((type) {
+                          value: selectedSupplier ?? 'all',
+                          items: supplierOptions.map((supplier) {
+                            final displayName = supplier == 'all' ? loc.all : supplier.split(' (')[0];
                             return DropdownMenuItem(
-                              value: type,
-                              child: Text(type == 'all' ? loc.all : (type == 'credit' ? loc.credit : loc.debit)),
+                              value: supplier,
+                              child: Text(
+                                displayName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
-                          onChanged: (value) => onChanged(type: value),
+                          onChanged: (value) => onChanged(supplier: value),
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -197,7 +201,7 @@ class JournalFilterDialog extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => onApply(
-                        type: selectedType,
+                        supplier: selectedSupplier,
                         currency: selectedCurrency,
                         date: selectedDate,
                       ),
@@ -219,4 +223,4 @@ class JournalFilterDialog extends StatelessWidget {
       ),
     );
   }
-}
+} 

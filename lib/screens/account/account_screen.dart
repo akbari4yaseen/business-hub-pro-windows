@@ -35,7 +35,6 @@ class _AccountScreenState extends State<AccountScreen>
   late final TextEditingController _searchController;
   late final SearchManager _searchManager;
 
-  bool _isAtTop = true;
   bool _isLoading = true;
   bool _isSearching = false;
 
@@ -93,9 +92,6 @@ class _AccountScreenState extends State<AccountScreen>
   void _updateScrollPosition() {
     if (!mounted) return;
     final atTop = _scrollController.position.pixels <= 0;
-    if (atTop != _isAtTop) {
-      setState(() => _isAtTop = atTop);
-    }
   }
 
   Future<void> _loadAccounts() async {
@@ -553,13 +549,11 @@ class _AccountScreenState extends State<AccountScreen>
             ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'accounts_add_fab',
-        onPressed: _isAtTop ? _addAccount : _scrollToTop,
-        tooltip: _isAtTop
-            ? AppLocalizations.of(context)!.addAccount
-            : AppLocalizations.of(context)!.scrollToTop,
-        mini: !_isAtTop,
+        onPressed: _addAccount,
+        tooltip: AppLocalizations.of(context)!.addAccount,
+        mini: false,
         child: FaIcon(
-            _isAtTop ? FontAwesomeIcons.userPlus : FontAwesomeIcons.angleUp,
+            FontAwesomeIcons.userPlus,
             size: 18),
       ),
     );

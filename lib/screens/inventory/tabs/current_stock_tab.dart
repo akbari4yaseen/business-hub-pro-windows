@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../widgets/stock_alert_card.dart';
-import '../widgets/stock_list.dart';
 import '../widgets/search_filter_bar.dart';
 import '../../../providers/inventory_provider.dart';
+import '../../../widgets/inventory/current_stock_table.dart';
 
 class CurrentStockTab extends StatefulWidget {
   const CurrentStockTab({Key? key}) : super(key: key);
@@ -15,6 +14,7 @@ class CurrentStockTab extends StatefulWidget {
 }
 
 class _CurrentStockTabState extends State<CurrentStockTab> {
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   String? _selectedWarehouse;
   String? _selectedCategory;
@@ -28,6 +28,12 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
   List<String> _getUniqueCategories(List<Map<String, dynamic>> stock) {
     return stock.map((e) => e['category_name'] as String? ?? 'Uncategorized').toSet().toList()
       ..sort();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -90,85 +96,54 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
                 }
               }
             },
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        SearchFilterBar(
-                          onSearchChanged: (query) =>
-                              setState(() => _searchQuery = query),
-                          onWarehouseChanged: (warehouse) =>
-                              setState(() => _selectedWarehouse = warehouse),
-                          onCategoryChanged: (category) =>
-                              setState(() => _selectedCategory = category),
-                          warehouses: warehouses,
-                          categories: categories,
-                        ),
-                        if (_searchQuery.isNotEmpty ||
-                            _selectedWarehouse != null ||
-                            _selectedCategory != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Row(
-                              children: [
-                                Text('${loc.activeFilters}:'),
-                                const SizedBox(width: 8),
-                                TextButton(
-                                  onPressed: () => setState(() {
-                                    _searchQuery = '';
-                                    _selectedWarehouse = null;
-                                    _selectedCategory = null;
-                                  }),
-                                  child: Text(loc.clearAll),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (provider.lowStockProducts.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: StockAlertCard(
-                      title: loc.lowStockAlerts,
-                      icon: Icons.warning,
-                      color: Colors.red,
-                      items: provider.lowStockProducts,
-                    ),
-                  ),
-                if (provider.expiringProducts.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: StockAlertCard(
-                      title: loc.expiringProducts,
-                      icon: Icons.schedule,
-                      color: Colors.orange,
-                      items: provider.expiringProducts,
-                    ),
-                  ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(16.0),
-                  sliver: filteredStock.isEmpty
-                      ? SliverFillRemaining(
-                          child: Center(
-                            child: Text(
-                              loc.noItemsFound,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        )
-                      : StockList(items: filteredStock),
-                ),
-              ],
+            child: CurrentStockTable(
+              items: filteredStock,
+              scrollController: _scrollController,
+              isLoading: provider.isLoading,
+              hasMore: false, // Current stock doesn't have pagination
+              filters: _buildFilters(warehouses, categories, loc),
+              lowStockProducts: provider.lowStockProducts,
+              expiringProducts: provider.expiringProducts,
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFilters(List<String> warehouses, List<String> categories, AppLocalizations loc) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          SearchFilterBar(
+            onSearchChanged: (query) => setState(() => _searchQuery = query),
+            onWarehouseChanged: (warehouse) => setState(() => _selectedWarehouse = warehouse),
+            onCategoryChanged: (category) => setState(() => _selectedCategory = category),
+            warehouses: warehouses,
+            categories: categories,
+          ),
+          if (_searchQuery.isNotEmpty ||
+              _selectedWarehouse != null ||
+              _selectedCategory != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Row(
+                children: [
+                  Text('${loc.activeFilters}:'),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _searchQuery = '';
+                      _selectedWarehouse = null;
+                      _selectedCategory = null;
+                    }),
+                    child: Text(loc.clearAll),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

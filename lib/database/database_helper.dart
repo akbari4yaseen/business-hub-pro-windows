@@ -43,11 +43,18 @@ class DatabaseHelper {
 
       final db = await openDatabase(
         dbPath,
-        version: 1,
+        version: 2, // Increment version for migration
         onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, version) async {
           await DbInit.createTables(db);
           await DbInit.seedDefaults(db);
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            // Add new columns to exchanges table
+            await db.execute('ALTER TABLE exchanges ADD COLUMN from_account_name TEXT');
+            await db.execute('ALTER TABLE exchanges ADD COLUMN to_account_name TEXT');
+          }
         },
         onOpen: (Database db) async {
           await db.execute('PRAGMA foreign_keys = ON');

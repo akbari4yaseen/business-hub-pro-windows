@@ -172,7 +172,6 @@
   "errorDeletingJournal": "Error deleting journal. Please try again.",
   "errorLoadingJournal": "Error loading journal entries. Please try again.",
   "storagePermissionRequired": "Storage permission is required to back up.",
-  "scrollToTop": "Scroll to top",
   "shareMessageHeader": "📢 Dear *{name}*,\n\nHere is the detailed summary of your account balances across all available currencies. This report reflects the most recent transactions recorded in our system.\n\nPlease review the balances below carefully to stay updated and avoid any potential discrepancies.\n\n*Balances:*",
   "shareMessageTimestamp": "*Timestamp:* {date}",
   "shareMessageFooter": "---------------\n{appName}",
@@ -649,5 +648,7 @@
   "backupDescription": "Create online and local backups of your database, or restore data when needed.",
   "enterYourCurrentAndNewPassword": "Please enter your current password and choose a new one.",
   "showPassword": "Show password",
-  "hidePassword": "Hide password"
+  "hidePassword": "Hide password",
+  "actions": "Actions",
+  "newSale": "New Sale"
 }

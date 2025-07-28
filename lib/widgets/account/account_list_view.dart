@@ -42,7 +42,7 @@ class AccountListView extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView.builder(
         controller: scrollController,
-        padding: const EdgeInsets.fromLTRB(0, 5, 0, 50),
+        padding: const EdgeInsets.fromLTRB(0, 5, 0, 80), // Increased bottom padding for FAB
         itemCount: totalItems,
         itemBuilder: (context, index) {
           if (index < accounts.length) {

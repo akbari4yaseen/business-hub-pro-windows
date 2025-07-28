@@ -10,7 +10,7 @@ import '../../utils/date_formatters.dart' as dFormatter;
 import '../../widgets/search_bar.dart';
 
 import '../../providers/invoice_provider.dart';
-import '../../widgets/invoice/invoice_list.dart';
+import '../../widgets/invoice/invoice_table.dart';
 import '../../models/invoice.dart';
 
 class InvoiceScreen extends StatefulWidget {
@@ -25,7 +25,6 @@ class _InvoiceScreenState extends State<InvoiceScreen>
   late final TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  bool _isAtTop = true;
   bool _isSearching = false;
 
   @override
@@ -55,10 +54,6 @@ class _InvoiceScreenState extends State<InvoiceScreen>
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       context.read<InvoiceProvider>().loadInvoices();
-    }
-    final atTop = _scrollController.position.pixels <= 0;
-    if (atTop != _isAtTop) {
-      setState(() => _isAtTop = atTop);
     }
   }
 
@@ -255,7 +250,8 @@ class _InvoiceScreenState extends State<InvoiceScreen>
             ),
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () => context.read<InvoiceProvider>().loadInvoices(refresh: true),
+              onPressed: () =>
+                  context.read<InvoiceProvider>().loadInvoices(refresh: true),
               tooltip: loc.refresh,
             ),
             IconButton(
@@ -291,28 +287,21 @@ class _InvoiceScreenState extends State<InvoiceScreen>
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         heroTag: "create_invoice_fab",
-        mini: !_isAtTop,
         onPressed: () {
-          if (_isAtTop) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const CreateInvoiceScreen(),
-              ),
-            );
-          } else {
-            _scrollController.animateTo(
-              0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-            );
-          }
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const CreateInvoiceScreen(),
+            ),
+          );
         },
-        tooltip: loc.createInvoice,
-        child: FaIcon(
-            _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
-            size: 18),
+        tooltip: loc.newSale,
+        label: Text(loc.createInvoice),
+        icon: FaIcon(
+          FontAwesomeIcons.plus,
+          size: 18,
+        ),
       ),
     );
   }
@@ -324,7 +313,7 @@ class _InvoiceScreenState extends State<InvoiceScreen>
     bool showOverdueWarning = false,
   }) {
     final provider = context.read<InvoiceProvider>();
-    return InvoiceList(
+    return InvoiceTable(
       invoices: invoices,
       showOverdueWarning: showOverdueWarning,
       onPaymentRecorded: (invoice, amount) async {

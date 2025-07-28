@@ -6,6 +6,7 @@ import '../../models/exchange.dart';
 import '../../widgets/exchange_list_widget.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/exchange_filter_modal.dart';
+import '../../themes/app_theme.dart';
 
 class ExchangeScreen extends StatefulWidget {
   const ExchangeScreen({Key? key}) : super(key: key);
@@ -219,7 +220,14 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
     if (_isLoading && _exchanges.isEmpty) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading exchange data...'),
+            ],
+          ),
         ),
       );
     }
@@ -236,42 +244,113 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
                 onCancel: () {
                   setState(() => _isSearching = false);
                   _searchController.clear();
+                  _refreshData();
                 },
                 hintText: loc.search,
               )
-            : Text(loc.exchange),
+            : Row(
+                children: [
+                  Icon(Icons.currency_exchange, size: 24, color: AppTheme.primaryColor),
+                  const SizedBox(width: 12),
+                  Text(
+                    loc.exchange,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'VazirBold',
+                    ),
+                  ),
+                  if (_exchanges.isNotEmpty) ...[
+                    const SizedBox(width: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_exchanges.length}',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => setState(() => _isSearching = true),
-          ),
           if (!_isSearching) ...[
+            // Filter indicator
+            if (_selectedFromCurrency != null ||
+                _selectedToCurrency != null ||
+                _selectedFromDate != null ||
+                _selectedToDate != null)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.filter_list, size: 16, color: Colors.orange[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      loc.activeFilters,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: loc.refresh,
               onPressed: _refreshData,
             ),
             IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: loc.search,
+              onPressed: () => setState(() => _isSearching = true),
+            ),
+            IconButton(
               icon: const Icon(Icons.filter_list),
+              tooltip: loc.filter,
               onPressed: _showFilterModal,
             ),
+            const SizedBox(width: 8),
           ],
         ],
       ),
-      body: RefreshIndicator(
-        key: _refreshKey,
-        onRefresh: _refreshData,
-        child: ExchangeListWidget(
-          exchanges: _exchanges,
-          isLoading: _isLoading,
-          hasMore: _hasMore,
-          scrollController: _scrollController,
-          onEdit: _showExchangeForm,
-          onDelete: _deleteExchange,
+      body: Container(
+        width: double.infinity,
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: RefreshIndicator(
+          key: _refreshKey,
+          onRefresh: _refreshData,
+          child: ExchangeListWidget(
+            exchanges: _exchanges,
+            isLoading: _isLoading,
+            hasMore: _hasMore,
+            scrollController: _scrollController,
+            onEdit: _showExchangeForm,
+            onDelete: _deleteExchange,
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'exchange_add_fab',
         onPressed: () => _showExchangeForm(),
-        child: const Icon(Icons.add),
+        tooltip: loc.newExchange,
+        icon: const Icon(Icons.add),
+        label: Text(loc.newExchange),
       ),
     );
   }

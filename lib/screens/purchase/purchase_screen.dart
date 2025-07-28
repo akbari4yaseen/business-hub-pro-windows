@@ -1,16 +1,14 @@
-import 'package:BusinessHubPro/models/purchase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../models/purchase.dart';
+import '../../themes/app_theme.dart';
+import '../../widgets/search_bar.dart';
 import 'dialogs/purchase_form_dialog.dart';
 import 'widgets/purchase_details_sheet.dart';
-import '../../providers/purchase_provider.dart';
-import '../../themes/app_theme.dart';
-import '../../providers/account_provider.dart';
-import '../../../utils/date_formatters.dart';
-
-final _amountFormatter = NumberFormat('#,##0.##');
+import 'widgets/purchase_table.dart';
+import 'dialogs/purchase_filter_dialog.dart';
+import 'controllers/purchase_screen_controller.dart';
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({Key? key}) : super(key: key);
@@ -20,144 +18,224 @@ class PurchaseScreen extends StatefulWidget {
 }
 
 class _PurchaseScreenState extends State<PurchaseScreen> {
-  String _searchQuery = '';
   final _searchController = TextEditingController();
-  bool _isLoading = false;
+  late final PurchaseScreenController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadPurchases();
+    _controller = PurchaseScreenController();
+    _controller.initialize();
+    
+    // Add listener to search controller
+    _searchController.addListener(() {
+      if (_controller.searchQuery != _searchController.text) {
+        _controller.updateSearchQuery(_searchController.text);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadPurchases() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    try {
-      final provider = context.read<PurchaseProvider>();
-      await provider.loadPurchases(refresh: true);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.error),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // Filter purchases based on search query
-  List<Purchase> _getFilteredPurchases(PurchaseProvider provider) {
-    return provider.purchases.where((purchase) {
-      final matchesSearch = purchase.invoiceNumber!
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      return matchesSearch;
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: Consumer<PurchaseProvider>(
-        builder: (context, provider, child) {
-          final purchases = _getFilteredPurchases(provider);
-
-          return Stack(
-            children: [
-              Column(
-                children: [
-                  _buildHeader(context, provider),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : purchases.isEmpty
-                            ? _buildEmptyState(provider)
-                            : _buildPurchasesList(purchases, provider),
-                  ),
-                ],
-              ),
-              if (_isLoading)
-                Container(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-            ],
+    return ChangeNotifierProvider.value(
+      value: _controller,
+      child: Consumer<PurchaseScreenController>(
+        builder: (context, controller, child) {
+          return Scaffold(
+            appBar: _buildAppBar(loc, controller),
+            body: _buildBody(loc, controller),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () => _showAddPurchaseDialog(context),
+              tooltip: loc.addPurchase,
+              heroTag: "add_purchase",
+              icon: const Icon(Icons.add),
+              label: Text(loc.addPurchase),
+            ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddPurchaseDialog(context),
-        tooltip: loc.addPurchase,
-        heroTag: "add_purchase",
-        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, PurchaseProvider provider) {
-    final loc = AppLocalizations.of(context)!;
-    return Card(
-      margin: const EdgeInsets.all(12.0),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  PreferredSizeWidget _buildAppBar(AppLocalizations loc, PurchaseScreenController controller) {
+    return AppBar(
+      title: controller.isSearching
+          ? CommonSearchBar(
+              controller: _searchController,
+              debounceDuration: const Duration(milliseconds: 500),
+              isLoading: controller.isLoading,
+              onChanged: controller.updateSearchQuery,
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              onCancel: () {
+                controller.setSearching(false);
+                _searchController.clear();
+                controller.updateSearchQuery('');
+              },
+              hintText: loc.searchPurchases,
+            )
+          : _buildTitle(loc, controller),
+      actions: _buildActions(loc, controller),
+    );
+  }
+
+  Widget _buildTitle(AppLocalizations loc, PurchaseScreenController controller) {
+    return Row(
+      children: [
+        Icon(Icons.shopping_cart, size: 24, color: AppTheme.primaryColor),
+        const SizedBox(width: 12),
+        Text(
+          loc.purchases,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'VazirBold',
+          ),
+        ),
+        if (controller.purchases.isNotEmpty) ...[
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${controller.purchases.length}',
+              style: TextStyle(
+                color: AppTheme.primaryColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildActions(AppLocalizations loc, PurchaseScreenController controller) {
+    if (controller.isSearching) return [];
+
+    return [
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        tooltip: loc.refreshPurchases,
+        onPressed: controller.isLoading ? null : controller.refresh,
+      ),
+      IconButton(
+        icon: const Icon(Icons.search),
+        tooltip: loc.search,
+        onPressed: () => controller.setSearching(true),
+      ),
+      IconButton(
+        icon: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  loc.purchases,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            const Icon(Icons.filter_list),
+            if (controller.hasActiveFilters)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 12,
+                    minHeight: 12,
+                  ),
+                  child: Text(
+                    '1',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: loc.refreshPurchases,
-                  onPressed: _isLoading ? null : () => _loadPurchases(),
-                ),
-              ],
-            ),
-            const Divider(),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: loc.searchPurchases,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
               ),
-              onChanged: (value) => setState(() => _searchQuery = value),
+          ],
+        ),
+        tooltip: controller.hasActiveFilters ? loc.activeFilters : loc.filter,
+        onPressed: () => _showFilterDialog(controller),
+      ),
+      const SizedBox(width: 8),
+    ];
+  }
+
+  Widget _buildBody(AppLocalizations loc, PurchaseScreenController controller) {
+    return Container(
+      width: double.infinity,
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: controller.isLoading && controller.purchases.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading purchases...'),
+                ],
+              ),
+            )
+          : controller.purchases.isEmpty
+              ? _buildEmptyState(loc)
+              : _buildPurchaseList(controller),
+    );
+  }
+
+  Widget _buildEmptyState(AppLocalizations loc) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.shopping_cart,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            loc.noPurchasesFound,
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontFamily: 'VazirBold',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            loc.changeSearchCriteria,
+            style: TextStyle(color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchaseList(PurchaseScreenController controller) {
+    return RefreshIndicator(
+      onRefresh: controller.refresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 80), // Add bottom padding for FAB
+        child: Column(
+          children: [
+            PurchaseTable(
+              purchases: controller.purchases,
+              onEdit: _showEditPurchaseDialog,
+              onDelete: _deletePurchase,
+              onDetails: _showPurchaseDetails,
             ),
           ],
         ),
@@ -165,63 +243,49 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  Widget _buildEmptyState(PurchaseProvider provider) {
-    final loc = AppLocalizations.of(context)!;
+  void _showFilterDialog(PurchaseScreenController controller) {
+    String? tmpSupplier = controller.selectedSupplier;
+    String? tmpCurrency = controller.selectedCurrency;
+    DateTime? tmpDate = controller.selectedDate;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.shopping_cart,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            loc.noPurchasesFound,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            loc.changeSearchCriteria,
-            style: const TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : () => _loadPurchases(),
-            icon: const Icon(Icons.refresh),
-            label: Text(loc.refreshPurchases),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPurchasesList(
-      List<Purchase> purchases, PurchaseProvider provider) {
-    return RefreshIndicator(
-      onRefresh: _loadPurchases,
-      child: ListView.separated(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 8,
-          bottom: 80,
-        ),
-        itemCount: purchases.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final purchase = purchases[index];
-          return PurchaseCard(
-            purchase: purchase,
-            onTap: () => _showPurchaseDetails(purchase, provider),
-          );
-        },
-      ),
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return PurchaseFilterDialog(
+              selectedSupplier: tmpSupplier,
+              selectedCurrency: tmpCurrency,
+              selectedDate: tmpDate,
+              supplierOptions: controller.supplierOptions,
+              currencyOptions: controller.currencyOptions,
+              onChanged: ({String? supplier, String? currency, DateTime? date}) {
+                setModalState(() {
+                  if (supplier != null) tmpSupplier = supplier;
+                  if (currency != null) tmpCurrency = currency;
+                  if (date != null) tmpDate = date;
+                });
+              },
+              onReset: () {
+                setModalState(() {
+                  tmpSupplier = null;
+                  tmpCurrency = null;
+                  tmpDate = null;
+                });
+              },
+              onApply: ({supplier, currency, date}) {
+                controller.applyFilters(
+                  supplier: tmpSupplier,
+                  currency: tmpCurrency,
+                  date: tmpDate,
+                );
+                Navigator.of(context).pop();
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -232,94 +296,23 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  void _showPurchaseDetails(Purchase purchase, PurchaseProvider provider) {
+  void _showEditPurchaseDialog(Map<String, dynamic> purchase) {
+    final purchaseObj = Purchase.fromMap(purchase);
     showDialog(
       context: context,
-      builder: (context) => PurchaseDetailsSheet(purchase: purchase),
+      builder: (context) => PurchaseFormDialog(purchase: purchaseObj),
     );
   }
-}
 
-class PurchaseCard extends StatefulWidget {
-  final Purchase purchase;
-  final VoidCallback onTap;
-
-  const PurchaseCard({
-    Key? key,
-    required this.purchase,
-    required this.onTap,
-  }) : super(key: key);
-
-  @override
-  State<PurchaseCard> createState() => _PurchaseCardState();
-}
-
-class _PurchaseCardState extends State<PurchaseCard> {
-  List<PurchaseItem> _items = [];
-  Map<String, dynamic>? _supplier;
-  bool _isLoadingItems = true;
-  bool _isLoadingSupplier = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
+  void _showPurchaseDetails(Map<String, dynamic> purchase) {
+    final purchaseObj = Purchase.fromMap(purchase);
+    showDialog(
+      context: context,
+      builder: (context) => PurchaseDetailsSheet(purchase: purchaseObj),
+    );
   }
 
-  Future<void> _loadData() async {
-    if (widget.purchase.id != null) {
-      // Load items and supplier data asynchronously
-      _loadItems();
-      _loadSupplier();
-    } else {
-      setState(() {
-        _isLoadingItems = false;
-        _isLoadingSupplier = false;
-      });
-    }
-  }
-
-  Future<void> _loadItems() async {
-    try {
-      final items = await context
-          .read<PurchaseProvider>()
-          .getPurchaseItems(widget.purchase.id);
-      if (mounted) {
-        setState(() {
-          _items = items;
-          _isLoadingItems = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingItems = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadSupplier() async {
-    try {
-      final supplier = await context
-          .read<AccountProvider>()
-          .getAccountById(widget.purchase.supplierId);
-      if (mounted) {
-        setState(() {
-          _supplier = supplier;
-          _isLoadingSupplier = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingSupplier = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _deletePurchase() async {
+  Future<void> _deletePurchase(Map<String, dynamic> purchase) async {
     final loc = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -341,9 +334,7 @@ class _PurchaseCardState extends State<PurchaseCard> {
 
     if (confirmed == true && mounted) {
       try {
-        await context
-            .read<PurchaseProvider>()
-            .deletePurchase(widget.purchase.id!);
+        await _controller.deletePurchase(purchase);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(loc.purchaseDeleted)),
@@ -360,111 +351,5 @@ class _PurchaseCardState extends State<PurchaseCard> {
         }
       }
     }
-  }
-
-  void _editPurchase() {
-    showDialog(
-      context: context,
-      builder: (context) => PurchaseFormDialog(purchase: widget.purchase),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.purchase.invoiceNumber!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                switch (value) {
-                  case 'edit':
-                    _editPurchase();
-                    break;
-                  case 'delete':
-                    _deletePurchase();
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.edit, size: 20),
-                      const SizedBox(width: 8),
-                      Text(loc.edit),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.delete, size: 20, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Text(loc.delete,
-                          style: const TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-                '${loc.date}: ${formatLocalizedDate(context, widget.purchase.date.toString())}'),
-            Text(
-                '${loc.supplier}: ${_supplier?['name'] ?? (_isLoadingSupplier ? 'Loading...' : '')}'),
-            Text(
-              '${loc.total}: \u200E${_amountFormatter.format(widget.purchase.totalAmount)} ${widget.purchase.currency}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-            if (_items.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 8,
-                  children: _items.map((item) {
-                    return Chip(
-                      label: Text(item.productName ?? 'Unknown Product'),
-                      backgroundColor:
-                          AppTheme.primaryColor.withValues(alpha: 0.1),
-                    );
-                  }).toList(),
-                ),
-              ),
-            if (_isLoadingItems)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'Loading items...',
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        onTap: widget.onTap,
-      ),
-    );
   }
 }

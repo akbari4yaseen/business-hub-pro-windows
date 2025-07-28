@@ -13,6 +13,7 @@ import '../../widgets/journal/journal_filter_dialog.dart';
 import '../../widgets/journal/journal_list.dart';
 import '../../widgets/search_bar.dart';
 import '../../widgets/journal/journal_form_dialog.dart';
+import '../../themes/app_theme.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({Key? key}) : super(key: key);
@@ -35,7 +36,6 @@ class _JournalScreenState extends State<JournalScreen> {
   bool _isLoading = false;
   bool _hasMore = true;
   bool _isSearching = false;
-  bool _isAtTop = true;
 
   int _currentPage = 0;
 
@@ -115,11 +115,6 @@ class _JournalScreenState extends State<JournalScreen> {
     if (position.pixels >= position.maxScrollExtent - 200) {
       _fetchNextPage();
     }
-
-    final atTop = position.pixels <= 0;
-    if (atTop != _isAtTop) {
-      setState(() => _isAtTop = atTop);
-    }
   }
 
   Future<void> _deleteJournal(int id) async {
@@ -178,52 +173,52 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-void _showFilterModal() {
-  String? tmpType = _selectedType;
-  String? tmpCurrency = _selectedCurrency;
-  DateTime? tmpDate = _selectedDate;
+  void _showFilterModal() {
+    String? tmpType = _selectedType;
+    String? tmpCurrency = _selectedCurrency;
+    DateTime? tmpDate = _selectedDate;
 
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return JournalFilterDialog(
-            selectedType: tmpType,
-            selectedCurrency: tmpCurrency,
-            selectedDate: tmpDate,
-            typeOptions: const ['all', 'credit', 'debit'],
-            currencyOptions: _currencyOptions,
-            onChanged: ({String? type, String? currency, DateTime? date}) {
-              setModalState(() {
-                if (type != null) tmpType = type;
-                if (currency != null) tmpCurrency = currency;
-                if (date != null) tmpDate = date;
-              });
-            },
-            onReset: () {
-              setModalState(() {
-                tmpType = null;
-                tmpCurrency = null;
-                tmpDate = null;
-              });
-            },
-            onApply: ({type, currency, date}) {
-              setState(() {
-                _selectedType = tmpType;
-                _selectedCurrency = tmpCurrency;
-                _selectedDate = tmpDate;
-              });
-              Navigator.of(context).pop();
-              _refreshJournals();
-            },
-          );
-        },
-      );
-    },
-  );
-}
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return JournalFilterDialog(
+              selectedType: tmpType,
+              selectedCurrency: tmpCurrency,
+              selectedDate: tmpDate,
+              typeOptions: const ['all', 'credit', 'debit'],
+              currencyOptions: _currencyOptions,
+              onChanged: ({String? type, String? currency, DateTime? date}) {
+                setModalState(() {
+                  if (type != null) tmpType = type;
+                  if (currency != null) tmpCurrency = currency;
+                  if (date != null) tmpDate = date;
+                });
+              },
+              onReset: () {
+                setModalState(() {
+                  tmpType = null;
+                  tmpCurrency = null;
+                  tmpDate = null;
+                });
+              },
+              onApply: ({type, currency, date}) {
+                setState(() {
+                  _selectedType = tmpType;
+                  _selectedCurrency = tmpCurrency;
+                  _selectedDate = tmpDate;
+                });
+                Navigator.of(context).pop();
+                _refreshJournals();
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _onSearchChanged(String query) async {
     if (query.isEmpty) {
@@ -339,56 +334,128 @@ void _showFilterModal() {
                 },
                 hintText: loc.searchJournal,
               )
-            : Text(loc.journal, style: const TextStyle(fontSize: 18)),
+            : Row(
+                children: [
+                  Icon(Icons.receipt_long,
+                      size: 24, color: AppTheme.primaryColor),
+                  const SizedBox(width: 12),
+                  Text(
+                    loc.journal,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'VazirBold',
+                    ),
+                  ),
+                  if (_journals.isNotEmpty) ...[
+                    const SizedBox(width: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_journals.length}',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
         actions: [
           if (!_isSearching) ...[
+            // Filter indicator
+            if (_selectedType != null ||
+                _selectedCurrency != null ||
+                _selectedDate != null)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.filter_list,
+                        size: 16, color: Colors.orange[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      loc.activeFilters,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: loc.refresh,
               onPressed: _refreshJournals,
             ),
             IconButton(
               icon: const Icon(Icons.search),
+              tooltip: loc.search,
               onPressed: () => setState(() => _isSearching = true),
             ),
             IconButton(
               icon: const Icon(Icons.filter_list),
+              tooltip: loc.filter,
               onPressed: _showFilterModal,
             ),
+            const SizedBox(width: 8),
           ],
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refreshJournals,
-              child: JournalList(
-                journals: _journals,
-                isLoading: _isLoading,
-                hasMore: _hasMore,
-                onShare: _shareJournal,
-                scrollController: _scrollController,
-                onDetails: _showDetails,
-                onEdit: _editJournal,
-                onDelete: _confirmDelete,
-                amountFormatter: _amountFormatter,
+      body: Container(
+        width: double.infinity,
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: _isLoading && _journals.isEmpty
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Loading journal entries...'),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _refreshJournals,
+                child: JournalList(
+                  journals: _journals,
+                  isLoading: _isLoading,
+                  hasMore: _hasMore,
+                  onShare: _shareJournal,
+                  scrollController: _scrollController,
+                  onDetails: _showDetails,
+                  onEdit: _editJournal,
+                  onDelete: _confirmDelete,
+                  amountFormatter: _amountFormatter,
+                ),
               ),
-            ),
-      floatingActionButton: FloatingActionButton(
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         heroTag: 'journal_add_fab',
-        onPressed: _isAtTop ? _addJournal : _scrollToTop,
-        tooltip: _isAtTop ? loc.addJournal : loc.scrollToTop,
-        mini: !_isAtTop,
-        child: FaIcon(
-          _isAtTop ? FontAwesomeIcons.plus : FontAwesomeIcons.angleUp,
+        onPressed: _addJournal,
+        tooltip: loc.addJournal,
+        icon: FaIcon(
+          FontAwesomeIcons.plus,
           size: 18,
         ),
+        label: Text(loc.addJournal),
       ),
     );
   }
-
-  void _scrollToTop() => _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-      );
 }

@@ -75,8 +75,7 @@ class _AddStockMovementDialogState extends State<AddStockMovementDialog> {
         expiryDate: _expiryDate,
         date: _selectedDate ?? DateTime.now(),
         createdAt: _selectedDate ?? DateTime.now(),
-        updatedAt:
-            DateTime.now(), // Replace with the appropriate updatedAt value
+        updatedAt: DateTime.now(),
       );
       await widget.onSave(movement);
       if (mounted) {

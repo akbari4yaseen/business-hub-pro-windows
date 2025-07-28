@@ -74,6 +74,7 @@ class PurchaseDBHelper {
     DateTime? startDate,
     DateTime? endDate,
     int? supplierId,
+    String? currency,
   }) async {
     final db = await _db;
     final where = <String>[];
@@ -98,6 +99,11 @@ class PurchaseDBHelper {
     if (supplierId != null) {
       where.add('p.supplier_id = ?');
       args.add(supplierId);
+    }
+
+    if (currency != null && currency.isNotEmpty) {
+      where.add('p.currency = ?');
+      args.add(currency);
     }
 
     final whereClause = where.isEmpty ? '' : 'WHERE ' + where.join(' AND ');
@@ -248,5 +254,29 @@ class PurchaseDBHelper {
     ''');
 
     return result.map((row) => row['currency'] as String).toList();
+  }
+
+  Future<List<String>> getDistinctCurrencies() async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT DISTINCT currency 
+      FROM purchases 
+      WHERE currency IS NOT NULL 
+      ORDER BY currency
+    ''');
+    
+    return result.map((row) => row['currency'] as String).toList();
+  }
+
+  Future<List<String>> getDistinctSuppliers() async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT DISTINCT a.name || ' (' || p.supplier_id || ')' as supplier_display
+      FROM purchases p
+      JOIN accounts a ON p.supplier_id = a.id
+      ORDER BY a.name
+    ''');
+    
+    return result.map((row) => row['supplier_display'] as String).toList();
   }
 }
