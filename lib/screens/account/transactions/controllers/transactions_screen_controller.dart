@@ -7,7 +7,7 @@ import '../../../../utils/transaction_helper.dart';
 
 class TransactionsScreenController extends ChangeNotifier {
   static const int _pageSize = 30;
-  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  static final NumberFormat _amountFormatter = NumberFormat('#,##0.##');
 
   // Data
   final List<Map<String, dynamic>> _transactions = [];

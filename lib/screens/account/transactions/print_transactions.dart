@@ -14,7 +14,7 @@ import '../../../providers/account_provider.dart';
 
 /// Utility to generate and print transactions PDF for an account.
 class PrintTransactions {
-  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  static final NumberFormat _amountFormatter = NumberFormat('#,##0.##');
 
   static Future<void> printTransactions(
     BuildContext context,
@@ -85,7 +85,7 @@ class PrintTransactions {
                       fontSize: 16, fontWeight: pw.FontWeight.bold),
                 ),
                 pw.Text(
-                  '${loc.printed(printTimestamp)}',
+                  '${printTimestamp}',
                   style: pw.TextStyle(fontSize: 9),
                 ),
               ],
@@ -101,7 +101,7 @@ class PrintTransactions {
             pw.Divider(thickness: 1, height: 12),
             pw.Center(
               child: pw.Text(
-                accountName,
+                '${loc.bill} ${accountName}',
                 style:
                     pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
               ),

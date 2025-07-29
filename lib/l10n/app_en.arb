@@ -289,6 +289,7 @@
   "journalSaved": "Journal saved",
   "errorSavingJournal": "Error saving Journal",
   "printSettings": "Print Settings",
+  "preparingPrint": "Preparing print...",
   "startDate": "Start Date",
   "endDate": "End Date",
   "shareMessage": "Dear {accountName},\n\nYour account has been {action} with {amount} {currency} on {date}.\n\nExtra Description: {description}\n\n{footer}",
@@ -653,5 +654,6 @@
   "newSale": "New Sale",
   "unitName": "Unit Name",
   "fromUnit": "From Unit",
-  "toUnit": "To Unit"
+  "toUnit": "To Unit",
+  "bill": "Bill of"
 }

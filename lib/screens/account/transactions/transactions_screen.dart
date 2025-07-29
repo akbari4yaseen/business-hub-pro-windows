@@ -13,8 +13,10 @@ import '../../../widgets/journal/journal_filter_dialog.dart';
 import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
 import '../../../utils/transaction_share_helper.dart';
 import '../../../database/journal_db.dart';
+import '../../../database/account_db.dart';
 import 'controllers/transactions_screen_controller.dart';
 import 'widgets/transaction_list.dart';
+import 'print_transactions.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -253,8 +255,75 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
     if (result == null) return;
 
-    // Implementation for print functionality
-    // This would need to be implemented based on your print requirements
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.preparingPrint),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+
+    try {
+      // Get all transactions for the account
+      final allTransactions = await AccountDBHelper().getTransactionsForPrint(controller.account['id']);
+      
+      // Filter transactions based on print settings
+      List<Map<String, dynamic>> filteredTransactions = allTransactions.where((tx) {
+        // Filter by date range
+        if (result.startDate != null || result.endDate != null) {
+          final txDate = DateTime.parse(tx['date']);
+          final txDateOnly = DateTime(txDate.year, txDate.month, txDate.day);
+          
+          if (result.startDate != null) {
+            final startDateOnly = DateTime(result.startDate!.year, result.startDate!.month, result.startDate!.day);
+            if (txDateOnly.isBefore(startDateOnly)) {
+              return false;
+            }
+          }
+          
+          if (result.endDate != null) {
+            final endDateOnly = DateTime(result.endDate!.year, result.endDate!.month, result.endDate!.day);
+            if (txDateOnly.isAfter(endDateOnly)) {
+              return false;
+            }
+          }
+        }
+        
+        // Filter by transaction type
+        if (result.transactionType != null && result.transactionType != 'all') {
+          if (tx['transaction_type'] != result.transactionType) {
+            return false;
+          }
+        }
+        
+        // Filter by currency
+        if (result.currency != null && result.currency != 'all') {
+          if (tx['currency'] != result.currency) {
+            return false;
+          }
+        }
+        
+        return true;
+      }).toList();
+
+      // Call the print service
+      await PrintTransactions.printTransactions(
+        context,
+        controller.account,
+        transactions: filteredTransactions,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Print error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showTransactionDetails(Map<String, dynamic> transaction) {

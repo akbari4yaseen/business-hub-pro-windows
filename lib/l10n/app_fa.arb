@@ -287,6 +287,7 @@
   "journalSaved": "روزنامچه ثبت شد",
   "errorSavingJournal": "خطا در ثبت روزنامچه",
   "printSettings": "تنظیمات چاپ",
+  "preparingPrint": "در حال آماده‌سازی چاپ...",
   "startDate": "تاریخ شروع",
   "endDate": "تاریخ ختم",
   "shareMessage": "محترم {accountName}،\n\nحساب شما در تاریخ {date} به مبلغ {amount} {currency} {action} شده است.\n\nتوضیحات بیشتر: {description}\n\n{footer}",
@@ -654,5 +655,5 @@
   "unitName": "نام واحد",
   "fromUnit": "از واحد",
   "toUnit": "به واحد",
-  "delete_unit": "حذف واحد"
+  "bill": "صورت حساب"
 }

@@ -291,6 +291,7 @@
   "journalSaved": "روزنامچه وساتل شوه",
   "errorSavingJournal": "د روزنامچی په ساتلو کې تېروتنه",
   "printSettings": "د چاپ تنظیمونه",
+  "preparingPrint": "د چاپ چمتو کول...",
   "startDate": "پیل نېټه",
   "endDate": "د پای نېټه",
   "shareMessage": "ګرانه {accountName},\n\nستاسې حساب د {action} شوی د {amount} {currency} په {date}.\n\nاضافي توضیحات: {description}\n\n{footer}",
@@ -657,5 +658,5 @@
   "unitName": "د واحد نوم",
   "fromUnit": "له واحد څخه",
   "toUnit": "ته واحد",
-  "delete_unit": "واحد حذف کړئ"
+  "bill": "حساب لیک"
 }
