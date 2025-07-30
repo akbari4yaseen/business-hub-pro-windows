@@ -574,6 +574,9 @@ class InvoiceProvider with ChangeNotifier {
         _invoiceCache[invoiceId] = updatedInvoice;
       }
 
+      // Refresh inventory to reflect stock changes
+      await _inventoryProvider.initialize();
+
       // Reset pagination and refresh data
       await _refreshData();
     } catch (e) {
