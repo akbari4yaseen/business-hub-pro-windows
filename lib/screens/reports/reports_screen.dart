@@ -7,6 +7,7 @@ import 'periodic_reports_screen.dart';
 import 'purchase_reports_screen.dart';
 import 'sales_reports_screen.dart';
 import 'stock_movement_reports_screen.dart';
+import 'stock_value_reports_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -114,6 +115,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const StockMovementReportsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.assessment),
+              title: Text(loc.stockValueReports ?? 'Stock Value Reports'),
+              subtitle: Text(loc.stockValueReportsDesc ?? 'View current stock values with pricing and summaries'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StockValueReportsScreen(),
                   ),
                 );
               },

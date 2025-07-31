@@ -658,5 +658,22 @@
   "unitName": "د واحد نوم",
   "fromUnit": "له واحد څخه",
   "toUnit": "ته واحد",
-  "bill": "حساب لیک"
+  "bill": "رسید",
+  "stockValueReports": "د موجودي ارزښت راپورونه",
+  "stockValueReportsDesc": "د موجودي اوسني ارزښتونو سره د قیمت او لنډیزونو سره وګورئ",
+  "detailed": "تفصيلي",
+  "byWarehouse": "د انبار له مخې",
+  "byProduct": "د محصول له مخې",
+  "byCurrency": "د ارز له مخې",
+  "expiryDateFrom": "د پای ته رسیدو نیټه له",
+  "expiryDateTo": "د پای ته رسیدو نیټه تر",
+  "errorLoadingData": "د معلوماتو د لورډ کولو تیروتنه: {error}",
+  "totalValue": "ټول ارزښت",
+  "totalQuantity": "ټول مقدار",
+  "stockValueByCurrency": "د موجودي ارزښت د ارز له مخې",
+  "stockValue": "د موجودي ارزښت",
+  "allProducts": "ټول محصولات",
+  "na": "نه پیژندل کیږي",
+  "totalProducts": "ټول محصولات",
+  "totalWarehouses": "ټول انبارونه"
 }

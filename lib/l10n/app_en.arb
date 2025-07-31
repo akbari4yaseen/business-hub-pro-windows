@@ -655,5 +655,22 @@
   "unitName": "Unit Name",
   "fromUnit": "From Unit",
   "toUnit": "To Unit",
-  "bill": "Bill of"
+  "bill": "Bill of",
+  "stockValueReports": "Stock Value Reports",
+  "stockValueReportsDesc": "View current stock values with pricing and summaries",
+  "detailed": "Detailed",
+  "byWarehouse": "By Warehouse",
+  "byProduct": "By Product",
+  "byCurrency": "By Currency",
+  "expiryDateFrom": "Expiry Date From",
+  "expiryDateTo": "Expiry Date To",
+  "errorLoadingData": "Error loading data: {error}",
+  "totalValue": "Total Value",
+  "totalQuantity": "Total Quantity",
+  "stockValueByCurrency": "Stock Value by Currency",
+  "stockValue": "Stock Value",
+  "allProducts": "All products",
+  "na": "N/A",
+  "totalProducts": "Total Products",
+  "totalWarehouses": "Total Warehouses"
 }

@@ -14,6 +14,258 @@ class ReportsDBHelper {
     return await DatabaseHelper().database;
   }
 
+  // Stock Value Reports
+  Future<List<Map<String, dynamic>>> getStockValues({
+    DateTime? expiryDateFrom,
+    DateTime? expiryDateTo,
+    int? productId,
+    int? warehouseId,
+  }) async {
+    final db = await database;
+    
+    String whereClause = '1=1';
+    List<Object?> whereArgs = [];
+    
+    if (expiryDateFrom != null) {
+      whereClause += ' AND cs.expiry_date >= ?';
+      whereArgs.add(expiryDateFrom.toIso8601String());
+    }
+    
+    if (expiryDateTo != null) {
+      whereClause += ' AND cs.expiry_date <= ?';
+      whereArgs.add(expiryDateTo.toIso8601String());
+    }
+    
+    if (productId != null) {
+      whereClause += ' AND cs.product_id = ?';
+      whereArgs.add(productId);
+    }
+    
+    if (warehouseId != null) {
+      whereClause += ' AND cs.warehouse_id = ?';
+      whereArgs.add(warehouseId);
+    }
+
+    return await db.rawQuery('''
+      SELECT 
+        cs.product_id,
+        cs.warehouse_id,
+        prod.name AS product_name,
+        wh.name AS warehouse_name,
+        COALESCE(p.currency, 'USD') AS currency,
+        cs.quantity,
+        cs.expiry_date,
+        COALESCE(pi.unit_price, 0) AS unit_price,
+        COALESCE(uc.factor, 1) AS conversion_factor
+      FROM current_stock cs
+      JOIN products prod ON cs.product_id = prod.id
+      JOIN warehouses wh ON cs.warehouse_id = wh.id
+      LEFT JOIN (
+          SELECT product_id, unit_price, unit_id, purchase_id
+          FROM purchase_items
+          WHERE id IN (
+              SELECT MAX(id)
+              FROM purchase_items
+              GROUP BY product_id
+          )
+      ) pi ON pi.product_id = prod.id
+      LEFT JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN unit_conversions uc 
+        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      WHERE $whereClause
+      ORDER BY prod.name, wh.name
+    ''', whereArgs);
+  }
+
+  Future<List<Map<String, dynamic>>> getStockValuesByWarehouse({
+    DateTime? expiryDateFrom,
+    DateTime? expiryDateTo,
+  }) async {
+    final db = await database;
+    
+    String whereClause = '1=1';
+    List<Object?> whereArgs = [];
+    
+    if (expiryDateFrom != null) {
+      whereClause += ' AND cs.expiry_date >= ?';
+      whereArgs.add(expiryDateFrom.toIso8601String());
+    }
+    
+    if (expiryDateTo != null) {
+      whereClause += ' AND cs.expiry_date <= ?';
+      whereArgs.add(expiryDateTo.toIso8601String());
+    }
+
+    return await db.rawQuery('''
+      SELECT 
+        wh.id AS warehouse_id,
+        wh.name AS warehouse_name,
+        COALESCE(p.currency, 'USD') AS currency,
+        COUNT(DISTINCT cs.product_id) AS product_count,
+        SUM(cs.quantity) AS total_quantity,
+        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+      FROM current_stock cs
+      JOIN warehouses wh ON cs.warehouse_id = wh.id
+      JOIN products prod ON cs.product_id = prod.id
+      LEFT JOIN (
+          SELECT product_id, unit_price, unit_id, purchase_id
+          FROM purchase_items
+          WHERE id IN (
+              SELECT MAX(id)
+              FROM purchase_items
+              GROUP BY product_id
+          )
+      ) pi ON pi.product_id = prod.id
+      LEFT JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN unit_conversions uc 
+        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      WHERE $whereClause
+      GROUP BY wh.id, wh.name, COALESCE(p.currency, 'USD')
+      ORDER BY total_stock_value DESC
+    ''', whereArgs);
+  }
+
+  Future<List<Map<String, dynamic>>> getStockValuesByProduct({
+    DateTime? expiryDateFrom,
+    DateTime? expiryDateTo,
+  }) async {
+    final db = await database;
+    
+    String whereClause = '1=1';
+    List<Object?> whereArgs = [];
+    
+    if (expiryDateFrom != null) {
+      whereClause += ' AND cs.expiry_date >= ?';
+      whereArgs.add(expiryDateFrom.toIso8601String());
+    }
+    
+    if (expiryDateTo != null) {
+      whereClause += ' AND cs.expiry_date <= ?';
+      whereArgs.add(expiryDateTo.toIso8601String());
+    }
+
+    return await db.rawQuery('''
+      SELECT 
+        prod.id AS product_id,
+        prod.name AS product_name,
+        COALESCE(p.currency, 'USD') AS currency,
+        COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
+        SUM(cs.quantity) AS total_quantity,
+        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+      FROM current_stock cs
+      JOIN products prod ON cs.product_id = prod.id
+      LEFT JOIN (
+          SELECT product_id, unit_price, unit_id, purchase_id
+          FROM purchase_items
+          WHERE id IN (
+              SELECT MAX(id)
+              FROM purchase_items
+              GROUP BY product_id
+          )
+      ) pi ON pi.product_id = prod.id
+      LEFT JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN unit_conversions uc 
+        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      WHERE $whereClause
+      GROUP BY prod.id, prod.name, COALESCE(p.currency, 'USD')
+      ORDER BY total_stock_value DESC
+    ''', whereArgs);
+  }
+
+  Future<Map<String, dynamic>> getTotalStockValue({
+    DateTime? expiryDateFrom,
+    DateTime? expiryDateTo,
+  }) async {
+    final db = await database;
+    
+    String whereClause = '1=1';
+    List<Object?> whereArgs = [];
+    
+    if (expiryDateFrom != null) {
+      whereClause += ' AND cs.expiry_date >= ?';
+      whereArgs.add(expiryDateFrom.toIso8601String());
+    }
+    
+    if (expiryDateTo != null) {
+      whereClause += ' AND cs.expiry_date <= ?';
+      whereArgs.add(expiryDateTo.toIso8601String());
+    }
+
+    final result = await db.rawQuery('''
+      SELECT 
+        COUNT(DISTINCT cs.product_id) AS total_products,
+        COUNT(DISTINCT cs.warehouse_id) AS total_warehouses,
+        SUM(cs.quantity) AS total_quantity
+      FROM current_stock cs
+      JOIN products prod ON cs.product_id = prod.id
+      LEFT JOIN (
+          SELECT product_id, unit_price, unit_id, purchase_id
+          FROM purchase_items
+          WHERE id IN (
+              SELECT MAX(id)
+              FROM purchase_items
+              GROUP BY product_id
+          )
+      ) pi ON pi.product_id = prod.id
+      LEFT JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN unit_conversions uc 
+        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      WHERE $whereClause
+    ''', whereArgs);
+
+    return result.isNotEmpty ? result.first : {
+      'total_products': 0,
+      'total_warehouses': 0,
+      'total_quantity': 0.0,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> getStockValuesByCurrency({
+    DateTime? expiryDateFrom,
+    DateTime? expiryDateTo,
+  }) async {
+    final db = await database;
+    
+    String whereClause = '1=1';
+    List<Object?> whereArgs = [];
+    
+    if (expiryDateFrom != null) {
+      whereClause += ' AND cs.expiry_date >= ?';
+      whereArgs.add(expiryDateFrom.toIso8601String());
+    }
+    
+    if (expiryDateTo != null) {
+      whereClause += ' AND cs.expiry_date <= ?';
+      whereArgs.add(expiryDateTo.toIso8601String());
+    }
+
+    return await db.rawQuery('''
+      SELECT 
+        COALESCE(p.currency, 'USD') AS currency,
+        COUNT(DISTINCT cs.product_id) AS product_count,
+        COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
+        SUM(cs.quantity) AS total_quantity,
+        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+      FROM current_stock cs
+      JOIN products prod ON cs.product_id = prod.id
+      LEFT JOIN (
+          SELECT product_id, unit_price, unit_id, purchase_id
+          FROM purchase_items
+          WHERE id IN (
+              SELECT MAX(id)
+              FROM purchase_items
+              GROUP BY product_id
+          )
+      ) pi ON pi.product_id = prod.id
+      LEFT JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN unit_conversions uc 
+        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      WHERE $whereClause
+      GROUP BY COALESCE(p.currency, 'USD')
+      ORDER BY total_stock_value DESC
+    ''', whereArgs);
+  }
+
   /// Returns a list of maps: each contains account_type and count, excluding 'system' types.
   Future<List<Map<String, dynamic>>> getAccountTypeCounts() async {
     final db = await database;
