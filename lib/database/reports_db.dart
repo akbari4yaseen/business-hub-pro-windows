@@ -14,7 +14,35 @@ class ReportsDBHelper {
     return await DatabaseHelper().database;
   }
 
-  // Stock Value Reports
+  /// Gets detailed stock values with proper additional cost distribution.
+  /// 
+  /// This method focuses on additional cost calculation only.
+  /// Unit conversions are handled in the UI for simplicity and accuracy.
+  /// 
+  /// The calculation is simplified into clear steps:
+  /// - Step 1: Get latest purchase prices and additional costs
+  /// - Step 2: Calculate total purchase value for cost distribution
+  /// - Step 3: Apply additional costs proportionally
+  /// 
+  /// Benefits of this approach:
+  /// - Easier to understand and maintain
+  /// - Better performance with CTEs (Common Table Expressions)
+  /// - Clear separation of concerns
+  /// - Unit conversion handled in UI for better control
+  /// - Simpler database queries
+  /// - Easier to debug unit conversion issues
+  /// 
+  /// Returns:
+  /// - unit_price_with_additional_cost: Price with additional costs in purchase unit
+  /// - purchase_unit_id: Unit ID from purchase
+  /// - product_base_unit_id: Base unit ID from product
+  /// - Unit conversion is applied in UI using these IDs
+  /// 
+  /// IMPORTANT: The UI converts stock quantity from base unit to purchase unit
+  /// before calculating value to ensure accuracy. Example:
+  /// - Purchase: 20 tons × 447 per ton = 8,940 total
+  /// - Stock: 200 burlap units (50kg each) = 10,000 kg = 10 tons
+  /// - Correct calculation: 10 tons × 447 per ton = 4,470
   Future<List<Map<String, dynamic>>> getStockValues({
     DateTime? expiryDateFrom,
     DateTime? expiryDateTo,
@@ -46,32 +74,63 @@ class ReportsDBHelper {
       whereArgs.add(warehouseId);
     }
 
+    // Step 1: Get purchase items with latest prices and additional costs
+    final purchaseItemsQuery = '''
+      SELECT 
+        pi.product_id,
+        pi.unit_price,
+        pi.quantity,
+        pi.unit_id,
+        pi.purchase_id,
+        p.additional_cost,
+        p.currency
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.id IN (
+        SELECT MAX(id)
+        FROM purchase_items
+        GROUP BY product_id
+      )
+    ''';
+
+    // Step 2: Calculate total purchase value for additional cost distribution
+    final purchaseTotalsQuery = '''
+      SELECT 
+        purchase_id,
+        SUM(unit_price * quantity) as total_purchase_value
+      FROM purchase_items
+      GROUP BY purchase_id
+    ''';
+
+    // Step 3: Main query with simplified calculations (no unit conversion)
     return await db.rawQuery('''
+      WITH purchase_items_with_costs AS (
+        $purchaseItemsQuery
+      ),
+      purchase_totals AS (
+        $purchaseTotalsQuery
+      )
       SELECT 
         cs.product_id,
         cs.warehouse_id,
         prod.name AS product_name,
         wh.name AS warehouse_name,
-        COALESCE(p.currency, 'USD') AS currency,
+        COALESCE(pi.currency, 'USD') AS currency,
         cs.quantity,
         cs.expiry_date,
-        COALESCE(pi.unit_price, 0) AS unit_price,
-        COALESCE(uc.factor, 1) AS conversion_factor
+        COALESCE(
+          -- Base unit price + additional cost share per unit
+          pi.unit_price +
+          (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
+           COALESCE(pt.total_purchase_value, 1)) / pi.quantity
+        , 0) AS unit_price_with_additional_cost,
+        pi.unit_id AS purchase_unit_id,
+        prod.base_unit_id AS product_base_unit_id
       FROM current_stock cs
       JOIN products prod ON cs.product_id = prod.id
       JOIN warehouses wh ON cs.warehouse_id = wh.id
-      LEFT JOIN (
-          SELECT product_id, unit_price, unit_id, purchase_id
-          FROM purchase_items
-          WHERE id IN (
-              SELECT MAX(id)
-              FROM purchase_items
-              GROUP BY product_id
-          )
-      ) pi ON pi.product_id = prod.id
-      LEFT JOIN purchases p ON pi.purchase_id = p.id
-      LEFT JOIN unit_conversions uc 
-        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
+      LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
       WHERE $whereClause
       ORDER BY prod.name, wh.name
     ''', whereArgs);
@@ -96,32 +155,65 @@ class ReportsDBHelper {
       whereArgs.add(expiryDateTo.toIso8601String());
     }
 
+    // Step 1: Get purchase items with latest prices and additional costs
+    final purchaseItemsQuery = '''
+      SELECT 
+        pi.product_id,
+        pi.unit_price,
+        pi.quantity,
+        pi.unit_id,
+        pi.purchase_id,
+        p.additional_cost,
+        p.currency
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.id IN (
+        SELECT MAX(id)
+        FROM purchase_items
+        GROUP BY product_id
+      )
+    ''';
+
+    // Step 2: Calculate total purchase value for additional cost distribution
+    final purchaseTotalsQuery = '''
+      SELECT 
+        purchase_id,
+        SUM(unit_price * quantity) as total_purchase_value
+      FROM purchase_items
+      GROUP BY purchase_id
+    ''';
+
+    // Step 3: Main query with simplified calculations (no unit conversion)
     return await db.rawQuery('''
+      WITH purchase_items_with_costs AS (
+        $purchaseItemsQuery
+      ),
+      purchase_totals AS (
+        $purchaseTotalsQuery
+      )
       SELECT 
         wh.id AS warehouse_id,
         wh.name AS warehouse_name,
-        COALESCE(p.currency, 'USD') AS currency,
+        COALESCE(pi.currency, 'USD') AS currency,
         COUNT(DISTINCT cs.product_id) AS product_count,
         SUM(cs.quantity) AS total_quantity,
-        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+        SUM(
+          cs.quantity * 
+          COALESCE(
+            -- Base unit price + additional cost share per unit
+            pi.unit_price +
+            (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
+             COALESCE(pt.total_purchase_value, 1)) / pi.quantity
+          , 0)
+        ) AS total_stock_value_raw
       FROM current_stock cs
       JOIN warehouses wh ON cs.warehouse_id = wh.id
       JOIN products prod ON cs.product_id = prod.id
-      LEFT JOIN (
-          SELECT product_id, unit_price, unit_id, purchase_id
-          FROM purchase_items
-          WHERE id IN (
-              SELECT MAX(id)
-              FROM purchase_items
-              GROUP BY product_id
-          )
-      ) pi ON pi.product_id = prod.id
-      LEFT JOIN purchases p ON pi.purchase_id = p.id
-      LEFT JOIN unit_conversions uc 
-        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
+      LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
       WHERE $whereClause
-      GROUP BY wh.id, wh.name, COALESCE(p.currency, 'USD')
-      ORDER BY total_stock_value DESC
+      GROUP BY wh.id, wh.name, COALESCE(pi.currency, 'USD')
+      ORDER BY total_stock_value_raw DESC
     ''', whereArgs);
   }
 
@@ -144,31 +236,64 @@ class ReportsDBHelper {
       whereArgs.add(expiryDateTo.toIso8601String());
     }
 
+    // Step 1: Get purchase items with latest prices and additional costs
+    final purchaseItemsQuery = '''
+      SELECT 
+        pi.product_id,
+        pi.unit_price,
+        pi.quantity,
+        pi.unit_id,
+        pi.purchase_id,
+        p.additional_cost,
+        p.currency
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.id IN (
+        SELECT MAX(id)
+        FROM purchase_items
+        GROUP BY product_id
+      )
+    ''';
+
+    // Step 2: Calculate total purchase value for additional cost distribution
+    final purchaseTotalsQuery = '''
+      SELECT 
+        purchase_id,
+        SUM(unit_price * quantity) as total_purchase_value
+      FROM purchase_items
+      GROUP BY purchase_id
+    ''';
+
+    // Step 3: Main query with simplified calculations (no unit conversion)
     return await db.rawQuery('''
+      WITH purchase_items_with_costs AS (
+        $purchaseItemsQuery
+      ),
+      purchase_totals AS (
+        $purchaseTotalsQuery
+      )
       SELECT 
         prod.id AS product_id,
         prod.name AS product_name,
-        COALESCE(p.currency, 'USD') AS currency,
+        COALESCE(pi.currency, 'USD') AS currency,
         COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
         SUM(cs.quantity) AS total_quantity,
-        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+        SUM(
+          cs.quantity * 
+          COALESCE(
+            -- Base unit price + additional cost share per unit
+            pi.unit_price +
+            (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
+             COALESCE(pt.total_purchase_value, 1)) / pi.quantity
+          , 0)
+        ) AS total_stock_value_raw
       FROM current_stock cs
       JOIN products prod ON cs.product_id = prod.id
-      LEFT JOIN (
-          SELECT product_id, unit_price, unit_id, purchase_id
-          FROM purchase_items
-          WHERE id IN (
-              SELECT MAX(id)
-              FROM purchase_items
-              GROUP BY product_id
-          )
-      ) pi ON pi.product_id = prod.id
-      LEFT JOIN purchases p ON pi.purchase_id = p.id
-      LEFT JOIN unit_conversions uc 
-        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
+      LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
       WHERE $whereClause
-      GROUP BY prod.id, prod.name, COALESCE(p.currency, 'USD')
-      ORDER BY total_stock_value DESC
+      GROUP BY prod.id, prod.name, COALESCE(pi.currency, 'USD')
+      ORDER BY total_stock_value_raw DESC
     ''', whereArgs);
   }
 
@@ -239,30 +364,63 @@ class ReportsDBHelper {
       whereArgs.add(expiryDateTo.toIso8601String());
     }
 
-    return await db.rawQuery('''
+    // Step 1: Get purchase items with latest prices and additional costs
+    final purchaseItemsQuery = '''
       SELECT 
-        COALESCE(p.currency, 'USD') AS currency,
+        pi.product_id,
+        pi.unit_price,
+        pi.quantity,
+        pi.unit_id,
+        pi.purchase_id,
+        p.additional_cost,
+        p.currency
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      WHERE pi.id IN (
+        SELECT MAX(id)
+        FROM purchase_items
+        GROUP BY product_id
+      )
+    ''';
+
+    // Step 2: Calculate total purchase value for additional cost distribution
+    final purchaseTotalsQuery = '''
+      SELECT 
+        purchase_id,
+        SUM(unit_price * quantity) as total_purchase_value
+      FROM purchase_items
+      GROUP BY purchase_id
+    ''';
+
+    // Step 3: Main query with simplified calculations (no unit conversion)
+    return await db.rawQuery('''
+      WITH purchase_items_with_costs AS (
+        $purchaseItemsQuery
+      ),
+      purchase_totals AS (
+        $purchaseTotalsQuery
+      )
+      SELECT 
+        COALESCE(pi.currency, 'USD') AS currency,
         COUNT(DISTINCT cs.product_id) AS product_count,
         COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
         SUM(cs.quantity) AS total_quantity,
-        SUM(cs.quantity * COALESCE(pi.unit_price, 0) / COALESCE(uc.factor, 1)) AS total_stock_value
+        SUM(
+          cs.quantity * 
+          COALESCE(
+            -- Base unit price + additional cost share per unit
+            pi.unit_price +
+            (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
+             COALESCE(pt.total_purchase_value, 1)) / pi.quantity
+          , 0)
+        ) AS total_stock_value_raw
       FROM current_stock cs
       JOIN products prod ON cs.product_id = prod.id
-      LEFT JOIN (
-          SELECT product_id, unit_price, unit_id, purchase_id
-          FROM purchase_items
-          WHERE id IN (
-              SELECT MAX(id)
-              FROM purchase_items
-              GROUP BY product_id
-          )
-      ) pi ON pi.product_id = prod.id
-      LEFT JOIN purchases p ON pi.purchase_id = p.id
-      LEFT JOIN unit_conversions uc 
-        ON uc.from_unit_id = pi.unit_id AND uc.to_unit_id = prod.base_unit_id
+      LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
+      LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
       WHERE $whereClause
-      GROUP BY COALESCE(p.currency, 'USD')
-      ORDER BY total_stock_value DESC
+      GROUP BY COALESCE(pi.currency, 'USD')
+      ORDER BY total_stock_value_raw DESC
     ''', whereArgs);
   }
 

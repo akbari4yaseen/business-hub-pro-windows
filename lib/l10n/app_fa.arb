@@ -655,7 +655,7 @@
   "unitName": "نام واحد",
   "fromUnit": "از واحد",
   "toUnit": "به واحد",
-  "bill": "صورتحساب",
+  "bill": "صورت حساب",
   "stockValueReports": "گزارش‌های ارزش موجودی",
   "stockValueReportsDesc": "مشاهده ارزش‌های موجودی فعلی با قیمت‌گذاری و خلاصه‌ها",
   "detailed": "جزئیات",
@@ -665,17 +665,12 @@
   "expiryDateFrom": "تاریخ انقضا از",
   "expiryDateTo": "تاریخ انقضا تا",
   "errorLoadingData": "خطا در بارگذاری داده‌ها: {error}",
-  
   "totalValue": "ارزش کل",
-  
   "totalQuantity": "مقدار کل",
-
   "stockValueByCurrency": "ارزش موجودی بر اساس ارز",
   "stockValue": "ارزش موجودی",
   "allProducts": "همه محصولات",
- 
   "na": "نامشخص",
   "totalProducts": "کل محصولات",
   "totalWarehouses": "کل انبارها"
- 
 }

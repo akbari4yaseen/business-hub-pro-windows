@@ -36,8 +36,33 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
 
   List<Product> _products = [];
   List<Warehouse> _warehouses = [];
-  
-  final NumberFormat _numberFormatter = NumberFormat('#,##0.00');
+
+  final NumberFormat _numberFormatter = NumberFormat('#,##0.##');
+
+  // Helper method to get reverse conversion factor (to convert from base unit to purchase unit)
+  Future<double> _getReverseConversionFactor(
+      int? fromUnitId, int? toUnitId) async {
+    if (fromUnitId == null || toUnitId == null || fromUnitId == toUnitId) {
+      return 1.0;
+    }
+
+    try {
+      // First try direct conversion
+      final conversion = await _inventoryDb.getUnitConversionBetweenUnits(
+          fromUnitId, toUnitId);
+      if (conversion != null) {
+        return 1.0 / conversion.factor; // Reverse the factor
+      }
+
+      // Try reverse conversion
+      final reverseConversion = await _inventoryDb
+          .getUnitConversionBetweenUnits(toUnitId, fromUnitId);
+      return reverseConversion?.factor ?? 1.0;
+    } catch (e) {
+      // If conversion not found, return 1.0 (no conversion)
+      return 1.0;
+    }
+  }
 
   @override
   void initState() {
@@ -91,20 +116,42 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
       productId: _selectedProduct?.id,
       warehouseId: _selectedWarehouse?.id,
     );
-    
-    // Calculate total_stock_value in UI
-    final calculatedData = data.map((item) {
-      final quantity = (item['quantity'] ?? 0).toDouble();
-      final unitPrice = (item['unit_price'] ?? 0).toDouble();
-      final conversionFactor = (item['conversion_factor'] ?? 1).toDouble();
-      final totalStockValue = quantity * unitPrice / conversionFactor;
-      
-      return {
-        ...item,
-        'total_stock_value': totalStockValue,
-      };
-    }).toList();
-    
+
+    // Calculate total_stock_value in UI with proper unit conversion
+    final calculatedData = await Future.wait(
+      data.map((item) async {
+        final stockQuantity = (item['quantity'] ?? 0).toDouble();
+        final unitPriceWithAdditionalCost =
+            (item['unit_price_with_additional_cost'] ?? 0).toDouble();
+        final purchaseUnitId = item['purchase_unit_id'];
+        final productBaseUnitId = item['product_base_unit_id'];
+
+        // Get reverse conversion factor from base unit to purchase unit
+        final conversionFactor = await _getReverseConversionFactor(
+            productBaseUnitId, purchaseUnitId);
+
+        // Convert stock quantity from base unit to purchase unit
+        // Example: 200 burlap units × conversion_factor = quantity in tons
+        final quantityInPurchaseUnit = stockQuantity * conversionFactor;
+
+        // Calculate total value using purchase unit
+        // Example: 10 tons × 447 per ton = 4,470
+        final totalStockValue =
+            quantityInPurchaseUnit * unitPriceWithAdditionalCost;
+
+        return {
+          ...item,
+          'total_stock_value': totalStockValue,
+          'unit_price':
+              unitPriceWithAdditionalCost, // Unit price in purchase unit
+          'conversion_factor': conversionFactor,
+          'quantity_in_purchase_unit': quantityInPurchaseUnit,
+          'stock_quantity':
+              stockQuantity, // Original stock quantity in base unit
+        };
+      }),
+    );
+
     setState(() => _stockValues = calculatedData);
   }
 
@@ -120,33 +167,227 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
         return NumberFormat.currency(symbol: '£').format(doubleValue);
       case 'AFN':
         return NumberFormat.currency(symbol: '؋').format(doubleValue);
+      case 'INR':
+        return NumberFormat.currency(symbol: '₹').format(doubleValue);
+      case 'JPY':
+        return NumberFormat.currency(symbol: '¥').format(doubleValue);
+      case 'CNY':
+        return NumberFormat.currency(symbol: '¥').format(doubleValue);
+      case 'RUB':
+        return NumberFormat.currency(symbol: '₽').format(doubleValue);
+      case 'TRY':
+        return NumberFormat.currency(symbol: '₺').format(doubleValue);
+      case 'PKR':
+        return NumberFormat.currency(symbol: '₨').format(doubleValue);
+      case 'IRR':
+        return NumberFormat.currency(symbol: 'تومان').format(doubleValue);
       default:
         return NumberFormat.currency(symbol: currency).format(doubleValue);
     }
   }
 
   Future<void> _loadWarehouseSummaries() async {
-    final data = await _db.getStockValuesByWarehouse(
+    // Get detailed data to apply proper unit conversions
+    final detailedData = await _db.getStockValues(
       expiryDateFrom: _expiryDateFrom,
       expiryDateTo: _expiryDateTo,
     );
-    setState(() => _warehouseSummaries = data);
+
+    // Apply unit conversions and group by warehouse
+    final convertedData = await Future.wait(
+      detailedData.map((item) async {
+        final stockQuantity = (item['quantity'] ?? 0).toDouble();
+        final unitPriceWithAdditionalCost =
+            (item['unit_price_with_additional_cost'] ?? 0).toDouble();
+        final purchaseUnitId = item['purchase_unit_id'];
+        final productBaseUnitId = item['product_base_unit_id'];
+        final warehouseId = item['warehouse_id'];
+        final warehouseName = item['warehouse_name'];
+        final currency = item['currency'] ?? 'USD';
+
+        // Get reverse conversion factor and apply proper conversion
+        final conversionFactor = await _getReverseConversionFactor(
+            productBaseUnitId, purchaseUnitId);
+        final quantityInPurchaseUnit = stockQuantity * conversionFactor;
+        final totalStockValue =
+            quantityInPurchaseUnit * unitPriceWithAdditionalCost;
+
+        return {
+          'warehouse_id': warehouseId,
+          'warehouse_name': warehouseName,
+          'currency': currency,
+          'product_count': 1, // Will be aggregated
+          'total_quantity': stockQuantity,
+          'total_stock_value': totalStockValue,
+        };
+      }),
+    );
+
+    // Group by warehouse and aggregate
+    final Map<String, Map<String, dynamic>> warehouseMap = {};
+
+    for (final item in convertedData) {
+      final warehouseKey = '${item['warehouse_id']}_${item['currency']}';
+
+      if (warehouseMap.containsKey(warehouseKey)) {
+        final existing = warehouseMap[warehouseKey]!;
+        existing['product_count'] = (existing['product_count'] ?? 0) + 1;
+        existing['total_quantity'] =
+            (existing['total_quantity'] ?? 0) + (item['total_quantity'] ?? 0);
+        existing['total_stock_value'] = (existing['total_stock_value'] ?? 0) +
+            (item['total_stock_value'] ?? 0);
+      } else {
+        warehouseMap[warehouseKey] = {
+          'warehouse_id': item['warehouse_id'],
+          'warehouse_name': item['warehouse_name'],
+          'currency': item['currency'],
+          'product_count': 1,
+          'total_quantity': item['total_quantity'],
+          'total_stock_value': item['total_stock_value'],
+        };
+      }
+    }
+
+    final summaries = warehouseMap.values.toList()
+      ..sort((a, b) =>
+          (b['total_stock_value'] ?? 0).compareTo(a['total_stock_value'] ?? 0));
+
+    setState(() => _warehouseSummaries = summaries);
   }
 
   Future<void> _loadProductSummaries() async {
-    final data = await _db.getStockValuesByProduct(
+    // Get detailed data to apply proper unit conversions
+    final detailedData = await _db.getStockValues(
       expiryDateFrom: _expiryDateFrom,
       expiryDateTo: _expiryDateTo,
     );
-    setState(() => _productSummaries = data);
+
+    // Apply unit conversions and group by product
+    final convertedData = await Future.wait(
+      detailedData.map((item) async {
+        final stockQuantity = (item['quantity'] ?? 0).toDouble();
+        final unitPriceWithAdditionalCost =
+            (item['unit_price_with_additional_cost'] ?? 0).toDouble();
+        final purchaseUnitId = item['purchase_unit_id'];
+        final productBaseUnitId = item['product_base_unit_id'];
+        final productId = item['product_id'];
+        final productName = item['product_name'];
+        final currency = item['currency'] ?? 'USD';
+
+        // Get reverse conversion factor and apply proper conversion
+        final conversionFactor = await _getReverseConversionFactor(
+            productBaseUnitId, purchaseUnitId);
+        final quantityInPurchaseUnit = stockQuantity * conversionFactor;
+        final totalStockValue =
+            quantityInPurchaseUnit * unitPriceWithAdditionalCost;
+
+        return {
+          'product_id': productId,
+          'product_name': productName,
+          'currency': currency,
+          'warehouse_count': 1, // Will be aggregated
+          'total_quantity': stockQuantity,
+          'total_stock_value': totalStockValue,
+        };
+      }),
+    );
+
+    // Group by product and aggregate
+    final Map<String, Map<String, dynamic>> productMap = {};
+
+    for (final item in convertedData) {
+      final productKey = '${item['product_id']}_${item['currency']}';
+
+      if (productMap.containsKey(productKey)) {
+        final existing = productMap[productKey]!;
+        existing['warehouse_count'] = (existing['warehouse_count'] ?? 0) + 1;
+        existing['total_quantity'] =
+            (existing['total_quantity'] ?? 0) + (item['total_quantity'] ?? 0);
+        existing['total_stock_value'] = (existing['total_stock_value'] ?? 0) +
+            (item['total_stock_value'] ?? 0);
+      } else {
+        productMap[productKey] = {
+          'product_id': item['product_id'],
+          'product_name': item['product_name'],
+          'currency': item['currency'],
+          'warehouse_count': 1,
+          'total_quantity': item['total_quantity'],
+          'total_stock_value': item['total_stock_value'],
+        };
+      }
+    }
+
+    final summaries = productMap.values.toList()
+      ..sort((a, b) =>
+          (b['total_stock_value'] ?? 0).compareTo(a['total_stock_value'] ?? 0));
+
+    setState(() => _productSummaries = summaries);
   }
 
   Future<void> _loadCurrencySummaries() async {
-    final data = await _db.getStockValuesByCurrency(
+    // Get detailed data to apply proper unit conversions
+    final detailedData = await _db.getStockValues(
       expiryDateFrom: _expiryDateFrom,
       expiryDateTo: _expiryDateTo,
     );
-    setState(() => _currencySummaries = data);
+
+    // Apply unit conversions and group by currency
+    final convertedData = await Future.wait(
+      detailedData.map((item) async {
+        final stockQuantity = (item['quantity'] ?? 0).toDouble();
+        final unitPriceWithAdditionalCost =
+            (item['unit_price_with_additional_cost'] ?? 0).toDouble();
+        final purchaseUnitId = item['purchase_unit_id'];
+        final productBaseUnitId = item['product_base_unit_id'];
+        final currency = item['currency'] ?? 'USD';
+
+        // Get reverse conversion factor and apply proper conversion
+        final conversionFactor = await _getReverseConversionFactor(
+            productBaseUnitId, purchaseUnitId);
+        final quantityInPurchaseUnit = stockQuantity * conversionFactor;
+        final totalStockValue =
+            quantityInPurchaseUnit * unitPriceWithAdditionalCost;
+
+        return {
+          'currency': currency,
+          'product_count': 1, // Will be aggregated
+          'warehouse_count': 1, // Will be aggregated
+          'total_quantity': stockQuantity,
+          'total_stock_value': totalStockValue,
+        };
+      }),
+    );
+
+    // Group by currency and aggregate
+    final Map<String, Map<String, dynamic>> currencyMap = {};
+
+    for (final item in convertedData) {
+      final currency = item['currency'] ?? 'USD';
+
+      if (currencyMap.containsKey(currency)) {
+        final existing = currencyMap[currency]!;
+        existing['product_count'] = (existing['product_count'] ?? 0) + 1;
+        existing['warehouse_count'] = (existing['warehouse_count'] ?? 0) + 1;
+        existing['total_quantity'] =
+            (existing['total_quantity'] ?? 0) + (item['total_quantity'] ?? 0);
+        existing['total_stock_value'] = (existing['total_stock_value'] ?? 0) +
+            (item['total_stock_value'] ?? 0);
+      } else {
+        currencyMap[currency] = {
+          'currency': currency,
+          'product_count': 1,
+          'warehouse_count': 1,
+          'total_quantity': item['total_quantity'],
+          'total_stock_value': item['total_stock_value'],
+        };
+      }
+    }
+
+    final summaries = currencyMap.values.toList()
+      ..sort((a, b) =>
+          (b['total_stock_value'] ?? 0).compareTo(a['total_stock_value'] ?? 0));
+
+    setState(() => _currencySummaries = summaries);
   }
 
   Future<void> _loadTotalSummary() async {
@@ -218,6 +459,8 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
   }
 
   Widget _buildSummaryCards() {
+    final loc = AppLocalizations.of(context)!;
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -227,25 +470,26 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
       childAspectRatio: 1.5,
       children: [
         _buildSummaryCard(
-          'Total Products',
+          loc.totalProducts,
           '${_totalSummary['total_products'] ?? 0}',
           Icons.inventory,
           Colors.blue,
         ),
         _buildSummaryCard(
-          'Total Warehouses',
+          loc.totalWarehouses,
           '${_totalSummary['total_warehouses'] ?? 0}',
           Icons.warehouse,
           Colors.orange,
         ),
         _buildSummaryCard(
-          'Total Quantity',
-          _numberFormatter.format((_totalSummary['total_quantity'] ?? 0).toDouble()),
+          loc.totalQuantity,
+          _numberFormatter
+              .format((_totalSummary['total_quantity'] ?? 0).toDouble()),
           Icons.shopping_cart,
           Colors.purple,
         ),
         _buildSummaryCard(
-          'Currencies',
+          loc.currencies,
           '${_currencySummaries.length}',
           Icons.attach_money,
           Colors.green,
@@ -274,76 +518,77 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               ),
             ),
             const SizedBox(height: 16),
-            ..._currencySummaries.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            item['currency'] ?? 'USD',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            ..._currencySummaries
+                .map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${item['currency'] ?? 'USD'} ${loc.stockValue}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    item['currency'] ?? 'USD',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${item['currency'] ?? 'USD'} ${loc.stockValue}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item['product_count'] ?? 0} ${loc.products}, ${item['warehouse_count'] ?? 0} ${loc.warehouses}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${item['product_count'] ?? 0} ${loc.products}, ${item['warehouse_count'] ?? 0} ${loc.warehouses}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _formatCurrencyValue(item['total_stock_value'],
+                                    item['currency'] ?? 'USD'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              Text(
+                                '${loc.quantity}: ${_numberFormatter.format((item['total_quantity'] ?? 0).toDouble())}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _formatCurrencyValue(
-                            item['total_stock_value'],
-                            item['currency'] ?? 'USD'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                      Text(
-                        '${loc.quantity}: ${_numberFormatter.format((item['total_quantity'] ?? 0).toDouble())}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )).toList(),
+                    ))
+                .toList(),
           ],
         ),
       ),
@@ -385,12 +630,14 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
   Widget _buildFilterInfo() {
     final loc = AppLocalizations.of(context)!;
     final filters = <String>[];
-    
+
     if (_expiryDateFrom != null) {
-      filters.add('${loc.from}: ${dFormatter.formatDate(_expiryDateFrom!.toIso8601String())}');
+      filters.add(
+          '${loc.from}: ${dFormatter.formatDate(_expiryDateFrom!.toIso8601String())}');
     }
     if (_expiryDateTo != null) {
-      filters.add('${loc.to}: ${dFormatter.formatDate(_expiryDateTo!.toIso8601String())}');
+      filters.add(
+          '${loc.to}: ${dFormatter.formatDate(_expiryDateTo!.toIso8601String())}');
     }
     if (_selectedProduct != null) {
       filters.add('${loc.product}: ${_selectedProduct!.name}');
@@ -501,8 +748,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'],
-                      item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'USD'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -546,8 +792,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'],
-                      item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'USD'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -592,8 +837,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'],
-                      item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'USD'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
