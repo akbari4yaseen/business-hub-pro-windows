@@ -189,6 +189,8 @@ class DbInit {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         from_account_id INTEGER NOT NULL,
         to_account_id INTEGER NOT NULL,
+        from_account_name TEXT,
+        to_account_name TEXT,
         from_currency VARCHAR(3) NOT NULL,
         to_currency VARCHAR(3) NOT NULL,
         operator VARCHAR(1) NOT NULL,

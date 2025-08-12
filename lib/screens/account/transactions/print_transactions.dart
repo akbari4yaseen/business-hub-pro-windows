@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 
 import '../../../database/account_db.dart';
 import '../../../utils/date_formatters.dart';
@@ -21,37 +22,31 @@ class PrintTransactions {
     Map<String, dynamic> account, {
     List<Map<String, dynamic>>? transactions,
   }) async {
-    // Fetch app info and account data - MAKE SURE it's loaded before proceeding
     final infoProvider = Provider.of<InfoProvider>(context, listen: false);
-    await infoProvider.loadInfo(); // Explicitly wait for info to load
+    await infoProvider.loadInfo();
     final info = infoProvider.info;
 
     final accountProvider =
         Provider.of<AccountProvider>(context, listen: false);
     final accountId = account['id'];
-
-    // Get latest account data from provider if available
     final latestAccount = accountProvider.getAccount(accountId) ?? account;
     final accountName = latestAccount['name'] ?? '';
     final balances = (latestAccount['balances'] as Map<String, dynamic>?) ?? {};
 
-    // Use passed-in transactions, or fetch all if null
     final txs = transactions ??
         await AccountDBHelper().getTransactionsForPrint(accountId);
 
     final String companyName = info.name ?? '';
     final String companyAddress = info.address ?? '';
-    final String companyPhone = info.whatsApp ?? '';
+    final String companyPhone = info.whatsApp! + ' ' + (info.phone ?? '');
 
     final now = DateTime.now();
     final printTimestamp = formatLocalizedDateTime(context, now.toString());
 
-    // Determine text direction based on locale
     final localeCode = Localizations.localeOf(context).languageCode;
     final isRTL = localeCode != 'en';
     final pdfDir = isRTL ? pw.TextDirection.rtl : pw.TextDirection.ltr;
 
-    // Load custom fonts
     final fontDataRegular =
         await rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf');
     final fontDataBold =
@@ -59,7 +54,6 @@ class PrintTransactions {
     final vazirFontRegular = pw.Font.ttf(fontDataRegular);
     final vazirFontBold = pw.Font.ttf(fontDataBold);
 
-    // Create PDF document with theme
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(
         base: vazirFontRegular,
@@ -78,24 +72,53 @@ class PrintTransactions {
           children: [
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  companyName,
-                  style: pw.TextStyle(
-                      fontSize: 16, fontWeight: pw.FontWeight.bold),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      companyName,
+                      style: pw.TextStyle(
+                          fontSize: 16, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(companyAddress, style: pw.TextStyle(fontSize: 9)),
+                    pw.Text(companyPhone, style: pw.TextStyle(fontSize: 9)),
+                  ],
                 ),
-                pw.Text(
-                  '${printTimestamp}',
-                  style: pw.TextStyle(fontSize: 9),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    // Logo
+                    (() {
+                      if (info.logo != null && info.logo!.isNotEmpty) {
+                        try {
+                          final bytes = base64Decode(info.logo!);
+                          if (bytes.isNotEmpty) {
+                            return pw.Container(
+                              width: 48,
+                              height: 48,
+                              child: pw.Image(
+                                pw.MemoryImage(bytes),
+                                fit: pw.BoxFit.contain,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          // Ignore and fall through to placeholder
+                        }
+                      }
+                      return pw.SizedBox(width: 48, height: 48);
+                    })(),
+                    pw.SizedBox(height: 10),
+                    pw.Text(
+                      '${printTimestamp}',
+                      style:
+                          pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            pw.SizedBox(height: 2),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(companyAddress, style: pw.TextStyle(fontSize: 9)),
-                pw.Text(companyPhone, style: pw.TextStyle(fontSize: 9)),
               ],
             ),
             pw.Divider(thickness: 1, height: 12),
