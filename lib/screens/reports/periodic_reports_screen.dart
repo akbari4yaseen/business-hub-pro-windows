@@ -6,6 +6,7 @@ import '../../utils/utilities.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
 import '../../themes/app_theme.dart';
+import 'widgets/per_account_filter_panel.dart';
 
 class PeriodicReportsScreen extends StatefulWidget {
   const PeriodicReportsScreen({Key? key}) : super(key: key);
@@ -421,6 +422,20 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 24),
+
+                          // New: Per-Account Filter Section
+                          Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: PerAccountFilterPanel(
+                                  db: _db, formatter: _formatter),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),

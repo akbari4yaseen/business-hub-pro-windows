@@ -31,7 +31,8 @@ class ExchangeDBHelper {
     // Build filters
     if (searchQuery?.isNotEmpty ?? false) {
       where.add(
-          '(LOWER(e.description) LIKE ? OR LOWER(acc_from.name) LIKE ? OR LOWER(acc_to.name) LIKE ?)');
+        '(LOWER(e.description) LIKE ? OR LOWER(acc_from.name) LIKE ? OR LOWER(acc_to.name) LIKE ?)',
+      );
       final q = '%${searchQuery!.toLowerCase()}%';
       args.addAll([q, q, q]);
     }
@@ -91,7 +92,8 @@ class ExchangeDBHelper {
 
   Future<List<Exchange>> getExchangesByAccount(int accountId) async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT
         e.*,
         acc_from.name AS from_account_name,
@@ -101,13 +103,16 @@ class ExchangeDBHelper {
       JOIN accounts acc_to ON e.to_account_id = acc_to.id
       WHERE e.from_account_id = ? OR e.to_account_id = ?
       ORDER BY e.date DESC
-    ''', [accountId, accountId]);
+    ''',
+      [accountId, accountId],
+    );
     return List.generate(maps.length, (i) => Exchange.fromMap(maps[i]));
   }
 
   Future<Exchange?> getExchange(int id) async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT
         e.*,
         acc_from.name AS from_account_name,
@@ -116,7 +121,9 @@ class ExchangeDBHelper {
       JOIN accounts acc_from ON e.from_account_id = acc_from.id
       JOIN accounts acc_to ON e.to_account_id = acc_to.id
       WHERE e.id = ?
-    ''', [id]);
+    ''',
+      [id],
+    );
 
     if (maps.isEmpty) return null;
     return Exchange.fromMap(maps.first);
@@ -130,16 +137,45 @@ class ExchangeDBHelper {
       where: 'id = ?',
       whereArgs: [exchange.id],
     );
+
+    // Update account details
+    // Delete existing account details for this exchange
+    await db.delete(
+      'account_details',
+      where: 'transaction_id = ? AND transaction_group = ?',
+      whereArgs: [exchange.id, 'exchange'],
+    );
+    // Insert new account details
+    await db.insert('account_details', {
+      'date': exchange.date,
+      'account_id': exchange.fromAccountId,
+      'amount': exchange.amount,
+      'currency': exchange.fromCurrency,
+      'transaction_type': 'debit',
+      'description':
+          exchange.description ?? 'Currency exchange to ${exchange.toCurrency}',
+      'transaction_id': exchange.id,
+      'transaction_group': 'exchange',
+    });
+
+    await db.insert('account_details', {
+      'date': exchange.date,
+      'account_id': exchange.toAccountId,
+      'amount': exchange.resultAmount,
+      'currency': exchange.toCurrency,
+      'transaction_type': 'credit',
+      'description':
+          exchange.description ??
+          'Currency exchange from ${exchange.fromCurrency}',
+      'transaction_id': exchange.id,
+      'transaction_group': 'exchange',
+    });
   }
 
   Future<void> deleteExchange(int id) async {
     final db = await _db;
     await db.transaction((txn) async {
-      await txn.delete(
-        'exchanges',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+      await txn.delete('exchanges', where: 'id = ?', whereArgs: [id]);
       await txn.delete(
         'account_details',
         where: 'transaction_id = ? AND transaction_group = ?',

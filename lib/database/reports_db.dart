@@ -15,15 +15,15 @@ class ReportsDBHelper {
   }
 
   /// Gets detailed stock values with proper additional cost distribution.
-  /// 
+  ///
   /// This method focuses on additional cost calculation only.
   /// Unit conversions are handled in the UI for simplicity and accuracy.
-  /// 
+  ///
   /// The calculation is simplified into clear steps:
   /// - Step 1: Get latest purchase prices and additional costs
   /// - Step 2: Calculate total purchase value for cost distribution
   /// - Step 3: Apply additional costs proportionally
-  /// 
+  ///
   /// Benefits of this approach:
   /// - Easier to understand and maintain
   /// - Better performance with CTEs (Common Table Expressions)
@@ -31,13 +31,13 @@ class ReportsDBHelper {
   /// - Unit conversion handled in UI for better control
   /// - Simpler database queries
   /// - Easier to debug unit conversion issues
-  /// 
+  ///
   /// Returns:
   /// - unit_price_with_additional_cost: Price with additional costs in purchase unit
   /// - purchase_unit_id: Unit ID from purchase
   /// - product_base_unit_id: Base unit ID from product
   /// - Unit conversion is applied in UI using these IDs
-  /// 
+  ///
   /// IMPORTANT: The UI converts stock quantity from base unit to purchase unit
   /// before calculating value to ensure accuracy. Example:
   /// - Purchase: 20 tons × 447 per ton = 8,940 total
@@ -50,25 +50,25 @@ class ReportsDBHelper {
     int? warehouseId,
   }) async {
     final db = await database;
-    
+
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-    
+
     if (expiryDateFrom != null) {
       whereClause += ' AND cs.expiry_date >= ?';
       whereArgs.add(expiryDateFrom.toIso8601String());
     }
-    
+
     if (expiryDateTo != null) {
       whereClause += ' AND cs.expiry_date <= ?';
       whereArgs.add(expiryDateTo.toIso8601String());
     }
-    
+
     if (productId != null) {
       whereClause += ' AND cs.product_id = ?';
       whereArgs.add(productId);
     }
-    
+
     if (warehouseId != null) {
       whereClause += ' AND cs.warehouse_id = ?';
       whereArgs.add(warehouseId);
@@ -141,15 +141,15 @@ class ReportsDBHelper {
     DateTime? expiryDateTo,
   }) async {
     final db = await database;
-    
+
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-    
+
     if (expiryDateFrom != null) {
       whereClause += ' AND cs.expiry_date >= ?';
       whereArgs.add(expiryDateFrom.toIso8601String());
     }
-    
+
     if (expiryDateTo != null) {
       whereClause += ' AND cs.expiry_date <= ?';
       whereArgs.add(expiryDateTo.toIso8601String());
@@ -222,15 +222,15 @@ class ReportsDBHelper {
     DateTime? expiryDateTo,
   }) async {
     final db = await database;
-    
+
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-    
+
     if (expiryDateFrom != null) {
       whereClause += ' AND cs.expiry_date >= ?';
       whereArgs.add(expiryDateFrom.toIso8601String());
     }
-    
+
     if (expiryDateTo != null) {
       whereClause += ' AND cs.expiry_date <= ?';
       whereArgs.add(expiryDateTo.toIso8601String());
@@ -302,15 +302,15 @@ class ReportsDBHelper {
     DateTime? expiryDateTo,
   }) async {
     final db = await database;
-    
+
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-    
+
     if (expiryDateFrom != null) {
       whereClause += ' AND cs.expiry_date >= ?';
       whereArgs.add(expiryDateFrom.toIso8601String());
     }
-    
+
     if (expiryDateTo != null) {
       whereClause += ' AND cs.expiry_date <= ?';
       whereArgs.add(expiryDateTo.toIso8601String());
@@ -338,11 +338,13 @@ class ReportsDBHelper {
       WHERE $whereClause
     ''', whereArgs);
 
-    return result.isNotEmpty ? result.first : {
-      'total_products': 0,
-      'total_warehouses': 0,
-      'total_quantity': 0.0,
-    };
+    return result.isNotEmpty
+        ? result.first
+        : {
+            'total_products': 0,
+            'total_warehouses': 0,
+            'total_quantity': 0.0,
+          };
   }
 
   Future<List<Map<String, dynamic>>> getStockValuesByCurrency({
@@ -350,15 +352,15 @@ class ReportsDBHelper {
     DateTime? expiryDateTo,
   }) async {
     final db = await database;
-    
+
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-    
+
     if (expiryDateFrom != null) {
       whereClause += ' AND cs.expiry_date >= ?';
       whereArgs.add(expiryDateFrom.toIso8601String());
     }
-    
+
     if (expiryDateTo != null) {
       whereClause += ' AND cs.expiry_date <= ?';
       whereArgs.add(expiryDateTo.toIso8601String());
@@ -572,6 +574,44 @@ class ReportsDBHelper {
     ''';
     final rows = await db.rawQuery(sql, [
       accountType,
+      currency,
+      startDate.toIso8601String(),
+      endDate.toIso8601String(),
+    ]);
+    return rows;
+  }
+
+  /// Returns active non-system accounts (id, name)
+  Future<List<Map<String, dynamic>>> getActiveAccounts() async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT id, name
+      FROM accounts
+      WHERE id > 10 AND active = 1
+      ORDER BY name COLLATE NOCASE
+    ''');
+    return rows;
+  }
+  /// Returns total credits and debits for a specific account filtered by currency and date range
+  Future<List<Map<String, dynamic>>> getCreditDebitBalancesForAccount({
+    required int accountId,
+    required String currency,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final db = await database;
+    final sql = '''
+      SELECT
+        ad.transaction_type,
+        SUM(ad.amount) AS total
+      FROM account_details AS ad
+      WHERE ad.account_id = ?
+        AND ad.currency = ?
+        AND ad.date BETWEEN ? AND ?
+      GROUP BY ad.transaction_type;
+    ''';
+    final rows = await db.rawQuery(sql, [
+      accountId,
       currency,
       startDate.toIso8601String(),
       endDate.toIso8601String(),
