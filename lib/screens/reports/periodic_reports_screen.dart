@@ -357,8 +357,8 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                     // Right: Result Summary
                     Expanded(
                       flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                      child: ListView(
+                        padding: EdgeInsets.zero,
                         children: [
                           Text(loc.summary,
                               style: Theme.of(context).textTheme.titleLarge),
@@ -422,6 +422,7 @@ class _PeriodicReportsScreenState extends State<PeriodicReportsScreen> {
                               ),
                             ),
                           ),
+
                           const SizedBox(height: 24),
 
                           // New: Per-Account Filter Section
