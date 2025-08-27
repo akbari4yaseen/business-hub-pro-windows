@@ -466,6 +466,7 @@
   "noMovementsFound": "No movements found",
   "movementType": "Movement Type",
   "movementType_purchase": "Purchase",
+  "purchase": "Purchase",
   "movementType_sale": "Sale",
   "allTypes": "All Types",
   "selectDateRange": "Select Date Range",

@@ -468,6 +468,7 @@
   "noMovementsFound": "هیڅ انتقال ونه موندل شو",
   "movementType": "د انتقال ډول",
   "movementType_purchase": "خرید",
+  "purchase": "خرید",
   "allTypes": "ټول ډولونه",
   "selectDateRange": "د نېټې موده وټاکئ",
   "from": "له",

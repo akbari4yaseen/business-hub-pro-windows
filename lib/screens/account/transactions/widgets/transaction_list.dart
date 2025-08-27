@@ -112,7 +112,8 @@ class TransactionList extends StatelessWidget {
                   // Table Header
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 20),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: const BorderRadius.only(
@@ -134,7 +135,8 @@ class TransactionList extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                                Icon(Icons.calendar_today,
+                                    size: 18, color: AppTheme.primaryColor),
                                 const SizedBox(width: 10),
                                 Text(
                                   loc.date,
@@ -160,15 +162,21 @@ class TransactionList extends StatelessWidget {
                   ...transactions.asMap().entries.map((entry) {
                     final index = entry.key;
                     final transaction = entry.value;
-                    final isCredit = transaction['transaction_type'] == 'credit';
-                    final amountColor = isCredit ? Colors.green[700] : Colors.red[700];
+                    final isCredit =
+                        transaction['transaction_type'] == 'credit';
+                    final amountColor =
+                        isCredit ? Colors.green[700] : Colors.red[700];
 
                     return Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       decoration: BoxDecoration(
-                        color: index.isEven 
-                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                        color: index.isEven
+                            ? Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withValues(alpha: 0.03)
                             : Colors.transparent,
                         border: Border(
                           bottom: BorderSide(
@@ -186,7 +194,8 @@ class TransactionList extends StatelessWidget {
                             _buildDateCell(transaction['date'], context),
                             _buildAmountCell(transaction, amountColor, context),
                             _buildBalanceCell(transaction, context),
-                            _buildDescriptionCell(transaction['description'] ?? ''),
+                            _buildDescriptionCell(
+                                transaction['description'] ?? ''),
                             _buildActionsCell(transaction, loc),
                           ],
                         ),
@@ -250,32 +259,127 @@ class TransactionList extends StatelessWidget {
     );
   }
 
-  Widget _buildAmountCell(Map<String, dynamic> transaction, Color? amountColor, BuildContext context) {
+  Widget _buildAmountCell(Map<String, dynamic> transaction, Color? amountColor,
+      BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     final isEnglish = locale == 'en';
-    
+
+    final amountText =
+        '\u200E${amountFormatter.format(transaction['amount'])} ${transaction['currency']}';
+    final transactionType = (transaction['transaction_type'] ?? '').toString();
+    final isCredit = transactionType.toLowerCase() == 'credit';
+    final badgeBaseColor = isCredit ? Colors.green : Colors.red;
+    final badgeBackground = badgeBaseColor.withValues(alpha: 0.1);
+    final badgeTextColor = isCredit ? Colors.green[700] : Colors.red[700];
+    final typeLabel = _localizedTypeLabel(context, transactionType);
+    final rawGroup = (transaction['transaction_group'] ?? '').toString();
+    final groupLabel = _localizedGroupLabel(context, rawGroup);
+    final hasGroup = groupLabel.isNotEmpty;
+    final groupBaseColor = Colors.blue;
+    final groupBackground = groupBaseColor.withValues(alpha: 0.1);
+    final groupTextColor = Colors.blue[700];
+
     return Expanded(
       flex: 1,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(
-          '\u200E${amountFormatter.format(transaction['amount'])} ${transaction['currency']}',
-          style: TextStyle(
-            color: amountColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-          textAlign: isEnglish ? TextAlign.start : TextAlign.end,
+        child: Column(
+          crossAxisAlignment:
+              isEnglish ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: [
+            Text(
+              amountText,
+              style: TextStyle(
+                color: amountColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              textAlign: isEnglish ? TextAlign.start : TextAlign.end,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeBackground,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    typeLabel,
+                    style: TextStyle(
+                      color: badgeTextColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (hasGroup) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: groupBackground,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      groupLabel,
+                      style: TextStyle(
+                        color: groupTextColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildBalanceCell(Map<String, dynamic> transaction, BuildContext context) {
+  String _localizedGroupLabel(BuildContext context, String group) {
+    final loc = AppLocalizations.of(context)!;
+    switch (group.toLowerCase()) {
+      case 'journal':
+        return loc.journal;
+      case 'sales':
+        return loc.sales;
+      case 'invoice':
+        return loc.sales;
+      case 'purchase':
+        return loc.purchase;
+      case 'exchange':
+        return loc.exchange;
+      default:
+        return group;
+    }
+  }
+
+  String _localizedTypeLabel(BuildContext context, String type) {
+    final loc = AppLocalizations.of(context)!;
+    switch (type.toLowerCase()) {
+      case 'credit':
+        return loc.credit;
+      case 'debit':
+        return loc.debit;
+      default:
+        return type;
+    }
+  }
+
+  Widget _buildBalanceCell(
+      Map<String, dynamic> transaction, BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     final isEnglish = locale == 'en';
-    final balanceColor = transaction['balance'] >= 0 ? Colors.green : Colors.red;
-    
+    final balanceColor =
+        transaction['balance'] >= 0 ? Colors.green : Colors.red;
+
     return Expanded(
       flex: 1,
       child: Padding(
@@ -312,7 +416,8 @@ class TransactionList extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsCell(Map<String, dynamic> transaction, AppLocalizations loc) {
+  Widget _buildActionsCell(
+      Map<String, dynamic> transaction, AppLocalizations loc) {
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -382,4 +487,4 @@ class TransactionList extends StatelessWidget {
       ),
     );
   }
-} 
+}

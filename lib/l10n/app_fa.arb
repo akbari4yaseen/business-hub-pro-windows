@@ -482,6 +482,7 @@
   "confirmDeleteProduct": "آیا مطمئن هستید که می‌خواهید {productName} را حذف کنید؟",
   "movementType_stockIn": "ورود به انبار",
   "movementType_purchase": "خرید",
+  "purchase": "خرید",
   "movementType_stockOut": "خروج از انبار",
   "movementType_transfer": "انتقال",
   "movementType_adjustment": "اصلاح موجودی",
