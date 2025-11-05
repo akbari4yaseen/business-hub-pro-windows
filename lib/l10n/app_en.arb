@@ -102,9 +102,6 @@
   "backupTitle": "Backup Database",
   "backup": "Backup",
   "restore": "Restore",
-  "aboutDescription": "BusinessHubPro is a modern business management app designed to help you track, analyze, and grow your business efficiently. Enjoy a seamless experience and powerful features!",
-  "helpTitle": "Help & Support",
-  "helpDescription": "Need assistance? Contact our support team for help with BusinessHubPro.",
   "exportCanceledNoDirectory": "Export canceled. No directory selected.",
   "databaseExportedSuccessfully": "Database exported successfully to:\n{path}",
   "databaseFileNotFoundOrExportFailed": "Database file not found or export failed!",
@@ -673,5 +670,13 @@
   "allProducts": "All products",
   "na": "N/A",
   "totalProducts": "Total Products",
-  "totalWarehouses": "Total Warehouses"
+  "totalWarehouses": "Total Warehouses",
+  "aboutDescription": "Vetra is a leading technology company specializing in innovative business solutions and digital transformation. We empower businesses with cutting-edge technology to drive growth and success in the digital age.",
+  "companyTagline": "Empowering Business Through Technology",
+  "followUs": "Follow Us",
+  "contactInfo": "Contact Information",
+  "companyAddress": "Kabul, Afghanistan",
+  "allRightsReserved": "All Rights Reserved",
+  "helpTitle": "Help & Support",
+  "helpDescription": "Need assistance? Contact our support team for help with Vetra."
 }
