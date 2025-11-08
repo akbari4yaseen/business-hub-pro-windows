@@ -280,8 +280,9 @@ class InvoiceProvider with ChangeNotifier {
 
       // Update warehouse inventory (skip for pre-sale invoices)
       if (!invoice.isPreSale) {
-        await _updateInventoryForInvoice(invoice.items, invoice.invoiceNumber);
+        await _updateInventoryForInvoice(invoice.items, invoice.id!);
       }
+
       await _db.finalizeInvoice(invoice.id!,
           localizedDescription: localizedDescription);
 
@@ -476,17 +477,24 @@ class InvoiceProvider with ChangeNotifier {
 
   // New method to update warehouse inventory when items are sold
   Future<void> _updateInventoryForInvoice(
-      List<InvoiceItem> items, String invoiceNumber) async {
-    final currentStock = _inventoryProvider.currentStock;
-
+      List<InvoiceItem> items, int invoiceId) async {
     for (final item in items) {
+      if (item.warehouseId == null) {
+        debugPrint('Skipping item with null productId or warehouseId: $item');
+        continue;
+      }
+
       final productId = item.productId;
+      final warehouseId = item.warehouseId!;
+
       // Convert quantity to base unit if different unit was used
       double quantityToDeduct = item.quantity;
-
       if (item.unitId != null) {
-        final product =
-            _inventoryProvider.products.firstWhere((p) => p.id == productId);
+        final product = _inventoryProvider.products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => throw Exception('Product not found: $productId'),
+        );
+
         if (product.baseUnitId != null && item.unitId != product.baseUnitId) {
           // Convert from selected unit to base unit
           quantityToDeduct = _inventoryProvider.convertQuantity(
@@ -498,47 +506,22 @@ class InvoiceProvider with ChangeNotifier {
         }
       }
 
-      var remainingQuantity = quantityToDeduct;
-
-      final productStock = currentStock
-          .where((stock) =>
-              stock['product_id'] == productId &&
-              stock['warehouse_id'] == item.warehouseId)
-          .toList();
-
-      if (productStock.isEmpty) {
-        throw Exception('No stock available for product ID: $productId');
-      }
-
-      for (final stock in productStock) {
-        if (remainingQuantity <= 0) break;
-
-        final stockId = stock['id'] as int?;
-        final availableQuantity = (stock['quantity'] as num?)?.toDouble();
-        final warehouseId = stock['warehouse_id'] as int?;
-
-        if (stockId == null ||
-            availableQuantity == null ||
-            warehouseId == null) {
-          throw Exception('Invalid stock entry with null values');
-        }
-
-        final deduction = remainingQuantity > availableQuantity
-            ? availableQuantity
-            : remainingQuantity;
-
-        await _db.updateStockQuantity(stockId, availableQuantity - deduction,
-            warehouseId, productId, invoiceNumber);
-
-        remainingQuantity -= deduction;
-      }
-
-      if (remainingQuantity > 0) {
-        throw Exception(
-            'Insufficient stock for product ID: $productId. Missing ${remainingQuantity.toStringAsFixed(2)} units');
+      // Use the new method to update stock with stockOut entry
+      try {
+        await _db.updateStockWithStockOut(
+          productId: productId,
+          warehouseId: warehouseId,
+          quantity: quantityToDeduct,
+          invoiceId: invoiceId,
+          notes: 'Sold via invoice #$invoiceId',
+        );
+      } catch (e) {
+        debugPrint('Error updating stock for product $productId: $e');
+        rethrow; // Re-throw to be handled by the caller
       }
     }
 
+    // Refresh inventory data
     await _inventoryProvider.initialize();
   }
 

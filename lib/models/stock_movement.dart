@@ -1,11 +1,4 @@
-enum MovementType {
-  stockIn,
-  stockOut,
-  transfer,
-  adjustment,
-  purchase,
-  sale,
-}
+enum MovementType { stockIn, stockOut, transfer }
 
 class StockMovement {
   final int id;
@@ -56,32 +49,61 @@ class StockMovement {
       'type': type.toString().split('.').last,
       'reference': reference,
       'notes': notes,
-      'expiry_date': expiryDate?.toIso8601String(),
-      'date': date.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'expiry_date': expiryDate?.millisecondsSinceEpoch,
+      'date': date.millisecondsSinceEpoch,
+      'created_at': createdAt.millisecondsSinceEpoch,
+      'updated_at': updatedAt.millisecondsSinceEpoch,
     };
   }
 
   factory StockMovement.fromMap(Map<String, dynamic> map) {
+    DateTime? parseDate(dynamic value) {
+      if (value == null) return null;
+
+      // int (timestamp)
+      if (value is int) {
+        if (value.toString().length == 10) {
+          // secondsSinceEpoch
+          return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+        }
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+
+      // string (ISO or int as string)
+      if (value is String) {
+        final intVal = int.tryParse(value);
+        if (intVal != null) {
+          if (value.length == 10) {
+            return DateTime.fromMillisecondsSinceEpoch(intVal * 1000);
+          }
+          return DateTime.fromMillisecondsSinceEpoch(intVal);
+        }
+        try {
+          return DateTime.parse(value);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      return null;
+    }
+
     return StockMovement(
       id: map['id'] as int,
       productId: map['product_id'] as int,
       sourceWarehouseId: map['source_warehouse_id'] as int?,
       destinationWarehouseId: map['destination_warehouse_id'] as int?,
-      quantity: map['quantity'] as double,
+      quantity: (map['quantity'] as num).toDouble(),
       type: MovementType.values.firstWhere(
         (e) => e.toString().split('.').last == map['type'],
         orElse: () => MovementType.stockIn,
       ),
       reference: map['reference'] as String?,
       notes: map['notes'] as String?,
-      expiryDate: map['expiry_date'] != null 
-          ? DateTime.parse(map['expiry_date'] as String)
-          : null,
-      date: DateTime.parse(map['date'] as String),
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      expiryDate: parseDate(map['expiry_date']),
+      date: parseDate(map['date']) ?? DateTime.now(),
+      createdAt: parseDate(map['created_at']) ?? DateTime.now(),
+      updatedAt: parseDate(map['updated_at']) ?? DateTime.now(),
       productName: map['product_name'] as String?,
       unitName: map['unit_name'] as String?,
       sourceWarehouseName: map['source_warehouse_name'] as String?,

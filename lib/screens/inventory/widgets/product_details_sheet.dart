@@ -121,7 +121,7 @@ class ProductDetailsSheet extends StatelessWidget {
                                               BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          '${_numberFormatter.format(stock['quantity'])} ${provider.getUnitName(product.baseUnitId)}',
+                                          '${_numberFormatter.format(stock['current_quantity'])} ${provider.getUnitName(product.baseUnitId)}',
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold),
                                         ),

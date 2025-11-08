@@ -442,12 +442,6 @@ class StockMovementTable extends StatelessWidget {
         return Colors.red;
       case MovementType.transfer:
         return AppTheme.primaryColor;
-      case MovementType.adjustment:
-        return Colors.orange;
-      case MovementType.purchase:
-        return Colors.blue;
-      case MovementType.sale:
-        return Colors.purple;
     }
   }
 
@@ -459,12 +453,6 @@ class StockMovementTable extends StatelessWidget {
         return Icons.remove_circle;
       case MovementType.transfer:
         return Icons.swap_horiz;
-      case MovementType.adjustment:
-        return Icons.build;
-      case MovementType.purchase:
-        return Icons.shopping_cart;
-      case MovementType.sale:
-        return Icons.sell;
     }
   }
 

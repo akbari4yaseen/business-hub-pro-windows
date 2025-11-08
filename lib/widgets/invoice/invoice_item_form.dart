@@ -13,7 +13,7 @@ class InvoiceItemFormData {
   final descriptionController = TextEditingController();
   int? selectedProductId;
   int? selectedUnitId;
-  int? selectedWarehouseId; 
+  int? selectedWarehouseId;
 
   double get quantity => double.tryParse(quantityController.text) ?? 0;
   double get unitPrice =>
@@ -85,37 +85,48 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                             )
                           : null,
                       optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) {
-                          return products.map((product) {
-                            final stock =
-                                provider.getCurrentStockForProduct(product.id!);
-                            final totalStock = stock.fold<double>(
-                                0,
-                                (sum, item) =>
-                                    sum + (item['quantity'] as double));
+                        // Filter products based on search text if any
+                        final filteredProducts = textEditingValue.text.isEmpty
+                            ? products
+                            : products.where((product) => product.name
+                                .toLowerCase()
+                                .contains(textEditingValue.text.toLowerCase()));
+
+                        return filteredProducts.map((product) {
+                          try {
+                            double totalStock = 0.0;
+
+                            try {
+                              final stockItems = provider
+                                  .getCurrentStockForProduct(product.id!);
+
+                              if (stockItems.isNotEmpty) {
+                                // Calculate total stock across all warehouses
+                                totalStock = stockItems.fold(0.0, (sum, item) {
+                                  final qty = item['quantity'] ?? 0.0;
+                                  return sum +
+                                      (qty is double
+                                          ? qty
+                                          : (double.tryParse(qty.toString()) ??
+                                              0.0));
+                                });
+                              }
+                            } catch (e) {
+                              // Silently handle the error
+                            }
+
                             return {
                               'id': product.id,
-                              'name': product.name,
+                              'name': '${product.name}',
                               'stock': totalStock,
                             };
-                          }).toList();
-                        }
-                        return products.where((product) {
-                          return product.name
-                              .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase());
-                        }).map((product) {
-                          final stock =
-                              provider.getCurrentStockForProduct(product.id!);
-                          final totalStock = stock.fold<double>(
-                              0,
-                              (sum, item) =>
-                                  sum + (item['quantity'] as double));
-                          return {
-                            'id': product.id,
-                            'name': product.name,
-                            'stock': totalStock,
-                          };
+                          } catch (e) {
+                            return {
+                              'id': product.id,
+                              'name': '${product.name} (Stock N/A)',
+                              'stock': 0.0,
+                            };
+                          }
                         }).toList();
                       },
                       displayStringForOption: (option) => option['name'],
@@ -142,19 +153,30 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         }
 
                         // Check if we have stock
-                        final stock =
-                            provider.getCurrentStockForProduct(product.id!);
-                        final totalStock = stock.fold<double>(0,
-                            (sum, item) => sum + (item['quantity'] as double));
+                        try {
+                          final stock =
+                              provider.getCurrentStockForProduct(product.id!);
+                          final totalStock = stock.fold<double>(0, (sum, item) {
+                            final qty = item['quantity'] ?? 0.0;
+                            return sum +
+                                (qty is double
+                                    ? qty
+                                    : (double.tryParse(qty.toString()) ?? 0.0));
+                          });
 
-                        if (totalStock <= 0 && !widget.isPreSale) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  Text(loc.warningNoStockFor(product.name)),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
+                          if (totalStock <= 0 && !widget.isPreSale) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text(loc.warningNoStockFor(product.name)),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          // Silently handle the error
                         }
                       },
                       fieldViewBuilder: (context, textEditingController,
@@ -213,7 +235,7 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                         );
                       },
                     ),
-                    // NEW: Warehouse dropdown
+                    // Warehouse dropdown
                     if (widget.formData.selectedProductId != null)
                       Consumer<InventoryProvider>(
                         builder: (context, warehouseProvider, child) {
@@ -280,7 +302,6 @@ class _InvoiceItemFormState extends State<InvoiceItemForm> {
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ),

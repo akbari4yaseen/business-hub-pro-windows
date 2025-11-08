@@ -111,8 +111,6 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
 
   Future<void> _loadStockValues() async {
     final data = await _db.getStockValues(
-      expiryDateFrom: _expiryDateFrom,
-      expiryDateTo: _expiryDateTo,
       productId: _selectedProduct?.id,
       warehouseId: _selectedWarehouse?.id,
     );
@@ -188,10 +186,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
 
   Future<void> _loadWarehouseSummaries() async {
     // Get detailed data to apply proper unit conversions
-    final detailedData = await _db.getStockValues(
-      expiryDateFrom: _expiryDateFrom,
-      expiryDateTo: _expiryDateTo,
-    );
+    final detailedData = await _db.getStockValues();
 
     // Apply unit conversions and group by warehouse
     final convertedData = await Future.wait(
@@ -257,10 +252,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
 
   Future<void> _loadProductSummaries() async {
     // Get detailed data to apply proper unit conversions
-    final detailedData = await _db.getStockValues(
-      expiryDateFrom: _expiryDateFrom,
-      expiryDateTo: _expiryDateTo,
-    );
+    final detailedData = await _db.getStockValues();
 
     // Apply unit conversions and group by product
     final convertedData = await Future.wait(
@@ -326,10 +318,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
 
   Future<void> _loadCurrencySummaries() async {
     // Get detailed data to apply proper unit conversions
-    final detailedData = await _db.getStockValues(
-      expiryDateFrom: _expiryDateFrom,
-      expiryDateTo: _expiryDateTo,
-    );
+    final detailedData = await _db.getStockValues();
 
     // Apply unit conversions and group by currency
     final convertedData = await Future.wait(
@@ -391,10 +380,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
   }
 
   Future<void> _loadTotalSummary() async {
-    final data = await _db.getTotalStockValue(
-      expiryDateFrom: _expiryDateFrom,
-      expiryDateTo: _expiryDateTo,
-    );
+    final data = await _db.getTotalStockValue();
     setState(() => _totalSummary = data);
   }
 

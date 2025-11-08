@@ -2,20 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
-/// Format full date + time (like: 2025-06-23 • 04:30 PM)
-String formatDateTime(String date) {
-  DateTime parsedDate = DateTime.parse(date);
+/// --- Helpers ---
+
+/// Parse input which can be either:
+/// - String (ISO date)
+/// - int (millisecondsSinceEpoch)
+DateTime _parseToDateTime(dynamic input) {
+  if (input is int) {
+    return DateTime.fromMillisecondsSinceEpoch(input);
+  } else if (input is String) {
+    return DateTime.parse(input);
+  } else if (input is DateTime) {
+    return input;
+  } else {
+    throw ArgumentError('Unsupported date format: $input');
+  }
+}
+
+/// Replace English digits with Persian digits
+String replaceEnglishNumbers(String input) {
+  const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  const persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  for (int i = 0; i < english.length; i++) {
+    input = input.replaceAll(english[i], persian[i]);
+  }
+  return input;
+}
+
+/// --- Gregorian Formatters ---
+
+String formatDateTime(dynamic date) {
+  final parsedDate = _parseToDateTime(date);
   return DateFormat('yyyy-MM-dd • hh:mm a', 'en').format(parsedDate);
 }
 
-String formatDate(String date) {
-  DateTime parsedDate = DateTime.parse(date);
+String formatDate(dynamic date) {
+  final parsedDate = _parseToDateTime(date);
   return DateFormat('yyyy-MM-dd', 'en').format(parsedDate);
 }
 
-String formatJalaliDateTime(String date) {
-  DateTime gregorianDate = DateTime.parse(date);
-  Jalali jalaliDate = Jalali.fromDateTime(gregorianDate);
+/// --- Jalali Formatters ---
+
+String formatJalaliDateTime(dynamic date) {
+  final gregorianDate = _parseToDateTime(date);
+  final jalaliDate = Jalali.fromDateTime(gregorianDate);
 
   int hour =
       gregorianDate.hour > 12 ? gregorianDate.hour - 12 : gregorianDate.hour;
@@ -30,67 +60,58 @@ String formatJalaliDateTime(String date) {
   return '${replaceEnglishNumbers(persianDate)} • ${replaceEnglishNumbers(persianTime)}';
 }
 
-String formatJalaliDate(String date) {
-  DateTime gregorianDate = DateTime.parse(date);
-  Jalali jalaliDate = Jalali.fromDateTime(gregorianDate);
+String formatJalaliDate(dynamic date) {
+  final gregorianDate = _parseToDateTime(date);
+  final jalaliDate = Jalali.fromDateTime(gregorianDate);
   String persianDate =
       '${jalaliDate.year}-${jalaliDate.month.toString().padLeft(2, '0')}-${jalaliDate.day.toString().padLeft(2, '0')}';
   return replaceEnglishNumbers(persianDate);
 }
 
-String replaceEnglishNumbers(String input) {
-  const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-  const persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-  for (int i = 0; i < english.length; i++) {
-    input = input.replaceAll(english[i], persian[i]);
-  }
-  return input;
-}
+/// --- Localized Wrappers ---
 
-/// Localized full date + time
-String formatLocalizedDateTime(BuildContext context, String date) {
+String formatLocalizedDateTime(BuildContext context, dynamic date) {
   final localeCode = Localizations.localeOf(context).languageCode;
   if (localeCode.startsWith('en')) return formatDateTime(date);
   return formatJalaliDateTime(date);
 }
 
-/// Localized date only
-String formatLocalizedDate(BuildContext context, String date) {
+String formatLocalizedDate(BuildContext context, dynamic date) {
   final localeCode = Localizations.localeOf(context).languageCode;
   if (localeCode.startsWith('en')) return formatDate(date);
   return formatJalaliDate(date);
 }
 
-/// Localized short day/month (like 6/23 or ۲/۳)
-String formatLocalizedDateShort(BuildContext context, DateTime date) {
+String formatLocalizedDateShort(BuildContext context, dynamic date) {
+  final parsedDate = _parseToDateTime(date);
   final locale = Localizations.localeOf(context).languageCode;
   if (locale.startsWith('en')) {
-    return DateFormat.Md(locale).format(date);
+    return DateFormat.Md(locale).format(parsedDate);
   } else {
-    final j = Jalali.fromDateTime(date);
+    final j = Jalali.fromDateTime(parsedDate);
     return replaceEnglishNumbers('${j.month}/${j.day}');
   }
 }
 
-/// Localized month + day (e.g., Jun 23 or حمل ۳)
-String formatLocalizedMonthDay(BuildContext context, DateTime date) {
+String formatLocalizedMonthDay(BuildContext context, dynamic date) {
+  final parsedDate = _parseToDateTime(date);
   final locale = Localizations.localeOf(context).languageCode;
   if (locale.startsWith('en')) {
-    return DateFormat.MMMd(locale).format(date);
+    return DateFormat.MMMd(locale).format(parsedDate);
   } else {
-    final j = Jalali.fromDateTime(date);
-    final farsiMonth = j.formatter.mNAf; // Month name in Persian
+    final j = Jalali.fromDateTime(parsedDate);
+    final farsiMonth = j.formatter.mNAf; // Persian month name
     return '${replaceEnglishNumbers(j.day.toString())} $farsiMonth';
   }
 }
 
-/// Localized year (e.g., 2025 or ۱۴۰۳)
-String formatLocalizedYear(BuildContext context, DateTime date) {
+String formatLocalizedYear(BuildContext context, dynamic date) {
+  final parsedDate = _parseToDateTime(date);
   final locale = Localizations.localeOf(context).languageCode;
   if (locale.startsWith('en')) {
-    return DateFormat.y(locale).format(date);
+    return DateFormat.y(locale).format(parsedDate);
   } else {
-    final j = Jalali.fromDateTime(date);
+    final j = Jalali.fromDateTime(parsedDate);
     return replaceEnglishNumbers(j.year.toString());
   }
 }

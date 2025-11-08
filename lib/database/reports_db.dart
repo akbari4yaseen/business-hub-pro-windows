@@ -44,8 +44,6 @@ class ReportsDBHelper {
   /// - Stock: 200 burlap units (50kg each) = 10,000 kg = 10 tons
   /// - Correct calculation: 10 tons × 447 per ton = 4,470
   Future<List<Map<String, dynamic>>> getStockValues({
-    DateTime? expiryDateFrom,
-    DateTime? expiryDateTo,
     int? productId,
     int? warehouseId,
   }) async {
@@ -53,16 +51,6 @@ class ReportsDBHelper {
 
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-
-    if (expiryDateFrom != null) {
-      whereClause += ' AND cs.expiry_date >= ?';
-      whereArgs.add(expiryDateFrom.toIso8601String());
-    }
-
-    if (expiryDateTo != null) {
-      whereClause += ' AND cs.expiry_date <= ?';
-      whereArgs.add(expiryDateTo.toIso8601String());
-    }
 
     if (productId != null) {
       whereClause += ' AND cs.product_id = ?';
@@ -117,7 +105,6 @@ class ReportsDBHelper {
         wh.name AS warehouse_name,
         COALESCE(pi.currency, 'USD') AS currency,
         cs.quantity,
-        cs.expiry_date,
         COALESCE(
           -- Base unit price + additional cost share per unit
           pi.unit_price +
@@ -136,24 +123,35 @@ class ReportsDBHelper {
     ''', whereArgs);
   }
 
-  Future<List<Map<String, dynamic>>> getStockValuesByWarehouse({
-    DateTime? expiryDateFrom,
-    DateTime? expiryDateTo,
-  }) async {
+  /// Returns current stock levels by product and warehouse.
+  Future<List<Map<String, dynamic>>> getCurrentStockLevels() async {
+    final db = await database;
+
+    final sql = '''
+      SELECT 
+        p.id AS product_id,
+        p.name AS product_name,
+        c.name AS category_name,
+        w.id AS warehouse_id,
+        w.name AS warehouse_name,
+        cs.quantity
+      FROM current_stock cs
+      JOIN products p ON cs.product_id = p.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      JOIN warehouses w ON cs.warehouse_id = w.id
+      ORDER BY p.name, w.name
+    ''';
+
+    final result = await db.rawQuery(sql);
+
+    return result;
+  }
+
+  Future<List<Map<String, dynamic>>> getStockValuesByWarehouse() async {
     final db = await database;
 
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-
-    if (expiryDateFrom != null) {
-      whereClause += ' AND cs.expiry_date >= ?';
-      whereArgs.add(expiryDateFrom.toIso8601String());
-    }
-
-    if (expiryDateTo != null) {
-      whereClause += ' AND cs.expiry_date <= ?';
-      whereArgs.add(expiryDateTo.toIso8601String());
-    }
 
     // Step 1: Get purchase items with latest prices and additional costs
     final purchaseItemsQuery = '''
@@ -217,24 +215,11 @@ class ReportsDBHelper {
     ''', whereArgs);
   }
 
-  Future<List<Map<String, dynamic>>> getStockValuesByProduct({
-    DateTime? expiryDateFrom,
-    DateTime? expiryDateTo,
-  }) async {
+  Future<List<Map<String, dynamic>>> getStockValuesByProduct() async {
     final db = await database;
 
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-
-    if (expiryDateFrom != null) {
-      whereClause += ' AND cs.expiry_date >= ?';
-      whereArgs.add(expiryDateFrom.toIso8601String());
-    }
-
-    if (expiryDateTo != null) {
-      whereClause += ' AND cs.expiry_date <= ?';
-      whereArgs.add(expiryDateTo.toIso8601String());
-    }
 
     // Step 1: Get purchase items with latest prices and additional costs
     final purchaseItemsQuery = '''
@@ -297,24 +282,11 @@ class ReportsDBHelper {
     ''', whereArgs);
   }
 
-  Future<Map<String, dynamic>> getTotalStockValue({
-    DateTime? expiryDateFrom,
-    DateTime? expiryDateTo,
-  }) async {
+  Future<Map<String, dynamic>> getTotalStockValue() async {
     final db = await database;
 
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-
-    if (expiryDateFrom != null) {
-      whereClause += ' AND cs.expiry_date >= ?';
-      whereArgs.add(expiryDateFrom.toIso8601String());
-    }
-
-    if (expiryDateTo != null) {
-      whereClause += ' AND cs.expiry_date <= ?';
-      whereArgs.add(expiryDateTo.toIso8601String());
-    }
 
     final result = await db.rawQuery('''
       SELECT 
@@ -347,24 +319,11 @@ class ReportsDBHelper {
           };
   }
 
-  Future<List<Map<String, dynamic>>> getStockValuesByCurrency({
-    DateTime? expiryDateFrom,
-    DateTime? expiryDateTo,
-  }) async {
+  Future<List<Map<String, dynamic>>> getStockValuesByCurrency() async {
     final db = await database;
 
     String whereClause = '1=1';
     List<Object?> whereArgs = [];
-
-    if (expiryDateFrom != null) {
-      whereClause += ' AND cs.expiry_date >= ?';
-      whereArgs.add(expiryDateFrom.toIso8601String());
-    }
-
-    if (expiryDateTo != null) {
-      whereClause += ' AND cs.expiry_date <= ?';
-      whereArgs.add(expiryDateTo.toIso8601String());
-    }
 
     // Step 1: Get purchase items with latest prices and additional costs
     final purchaseItemsQuery = '''
@@ -592,6 +551,7 @@ class ReportsDBHelper {
     ''');
     return rows;
   }
+
   /// Returns total credits and debits for a specific account filtered by currency and date range
   Future<List<Map<String, dynamic>>> getCreditDebitBalancesForAccount({
     required int accountId,

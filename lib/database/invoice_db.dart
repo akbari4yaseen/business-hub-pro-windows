@@ -613,79 +613,92 @@ class InvoiceDBHelper {
   Future<double?> _getMultiStepConversionFactor(
       Transaction txn, int fromUnitId, int toUnitId) async {
     if (fromUnitId == toUnitId) return 1.0;
-    
+
     // Get all unit conversions
     final conversions = await txn.query('unit_conversions');
-    
+
     // Build adjacency list
     final Map<int, List<Map<String, dynamic>>> graph = {};
     for (final conv in conversions) {
       final fromId = conv['from_unit_id'] as int;
       final toId = conv['to_unit_id'] as int;
       final factor = conv['factor'] as double;
-      
-      graph.putIfAbsent(fromId, () => [])
-          .add({'to': toId, 'factor': factor});
+
+      graph.putIfAbsent(fromId, () => []).add({'to': toId, 'factor': factor});
       // Add reverse edge
-      graph.putIfAbsent(toId, () => [])
+      graph
+          .putIfAbsent(toId, () => [])
           .add({'to': fromId, 'factor': 1 / factor});
     }
-    
+
     // BFS to find conversion path
     final queue = <MapEntry<int, double>>[MapEntry(fromUnitId, 1.0)];
     final visited = <int>{fromUnitId};
-    
+
     while (queue.isNotEmpty) {
       final entry = queue.removeAt(0);
       final current = entry.key;
       final factorSoFar = entry.value;
-      
+
       if (current == toUnitId) return factorSoFar;
-      
+
       for (final edge in graph[current] ?? []) {
         final next = edge['to'] as int;
         final nextFactor = edge['factor'] as double;
-        
+
         if (!visited.contains(next)) {
           visited.add(next);
           queue.add(MapEntry(next, factorSoFar * nextFactor));
         }
       }
     }
-    
+
     return null;
   }
 
-  Future<void> updateStockQuantity(int stockId, double newQuantity,
-      int warehouse_id, int productId, String invoiceNumber) async {
+  // Update stock with a stock out entry for an invoice
+  Future<void> updateStockWithStockOut({
+    required int productId,
+    required int warehouseId,
+    required double quantity,
+    required int invoiceId,
+    String? notes,
+  }) async {
+    final db = await _db;
+    final now = DateTime.now();
+    final nowMs = now.millisecondsSinceEpoch;
+
+    await db.transaction((txn) async {
+      // Insert a stock out record for the invoice
+      await txn.insert(
+        'current_stock',
+        {
+          'product_id': productId,
+          'warehouse_id': warehouseId,
+          'quantity': quantity,
+          'type': 'stockOut',
+          'source_type': 'invoice',
+          'source_id': invoiceId,
+          'date': nowMs,
+        },
+      );
+    });
+  }
+
+  Future<void> updateStockQuantity(
+    int invoiceId,
+    double quantity,
+  ) async {
     final db = await _db;
     try {
       await db.transaction((txn) async {
         // Update the stock record
         await txn.update(
           'current_stock',
-          {'quantity': newQuantity},
-          where: 'id = ?',
-          whereArgs: [stockId],
+          {'quantity': quantity},
+          where: 'source_type = ? AND source_id = ?',
+          whereArgs: ['invoice', invoiceId],
         );
-
-        // Insert a stock movement record for tracking
-        // await txn.insert(
-        //   'stock_movements',
-        //   {
-        //     'product_id': productId,
-        //     'source_warehouse_id': warehouse_id,
-        //     'destination_warehouse_id': null,
-        //     'quantity': newQuantity,
-        //     'type': 'SALE',
-        //     'reference': invoiceNumber,
-        //     'notes': '',
-        //     'expiry_date': null,
-        //     'date': DateTime.now().toIso8601String(),
-        //     'created_at': DateTime.now().toIso8601String(),
-        //     'updated_at': DateTime.now().toIso8601String(),
-        //   },
-        // );
       });
     } catch (e) {
       debugPrint('Error updating stock quantity: $e');
@@ -739,6 +752,13 @@ class InvoiceDBHelper {
               'Only finalized or partially paid invoices can be cancelled');
         }
 
+        // Delete related stock records for this invoice
+        await txn.delete(
+          'current_stock',
+          where: 'source_type = ? AND source_id = ?',
+          whereArgs: ['invoice', invoiceId],
+        );
+
         // Update invoice status to cancelled
         await txn.update(
           'invoices',
@@ -776,67 +796,6 @@ class InvoiceDBHelper {
                 'transaction_id': invoiceId,
                 'transaction_group': 'invoice_cancellation',
               },
-            );
-          }
-        }
-
-        // Get invoice items to revert stock
-        final items = await txn.query(
-          'invoice_items',
-          where: 'invoice_id = ?',
-          whereArgs: [invoiceId],
-        );
-
-        // Revert stock for each item
-        for (final item in items) {
-          final productId = item['product_id'] as int;
-          final quantity = item['quantity'] as double;
-          final warehouseId = item['warehouse_id'] as int;
-          final unitId = item['unit_id'] as int?;
-
-          // Get current stock
-          final stockResult = await txn.query(
-            'current_stock',
-            where: 'product_id = ? AND warehouse_id = ?',
-            whereArgs: [productId, warehouseId],
-          );
-
-          if (stockResult.isNotEmpty) {
-            final stock = stockResult.first;
-            final currentQuantity = stock['quantity'] as double;
-            final stockId = stock['id'] as int;
-
-            // Calculate the quantity to add back (convert to base unit if needed)
-            double quantityToAdd = quantity;
-            
-            if (unitId != null) {
-              // Get product base unit
-              final productResult = await txn.query(
-                'products',
-                columns: ['base_unit_id'],
-                where: 'id = ?',
-                whereArgs: [productId],
-              );
-              
-              if (productResult.isNotEmpty) {
-                final baseUnitId = productResult.first['base_unit_id'] as int?;
-                
-                if (baseUnitId != null && unitId != baseUnitId) {
-                  // Use multi-step conversion
-                  final factor = await _getMultiStepConversionFactor(txn, unitId, baseUnitId);
-                  if (factor != null) {
-                    quantityToAdd = quantity * factor;
-                  }
-                }
-              }
-            }
-
-            // Update stock quantity
-            await txn.update(
-              'current_stock',
-              {'quantity': currentQuantity + quantityToAdd},
-              where: 'id = ?',
-              whereArgs: [stockId],
             );
           }
         }

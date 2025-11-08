@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../themes/app_theme.dart';
 import '../../screens/inventory/widgets/stock_alert_card.dart';
+import '../../../utils/date_formatters.dart';
 
 class CurrentStockTable extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -61,7 +62,7 @@ class CurrentStockTable extends StatelessWidget {
         children: [
           // Filters Section
           if (filters != null) filters!,
-          
+
           // Alert Cards
           if (lowStockProducts.isNotEmpty)
             Padding(
@@ -83,7 +84,7 @@ class CurrentStockTable extends StatelessWidget {
                 items: expiringProducts,
               ),
             ),
-          
+
           // Data Table
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -103,7 +104,8 @@ class CurrentStockTable extends StatelessWidget {
                 // Table Header
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
@@ -135,10 +137,14 @@ class CurrentStockTable extends StatelessWidget {
 
                   return Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
                     decoration: BoxDecoration(
-                      color: index.isEven 
-                          ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                      color: index.isEven
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surface
+                              .withValues(alpha: 0.03)
                           : Colors.transparent,
                       border: Border(
                         bottom: BorderSide(
@@ -257,15 +263,15 @@ class CurrentStockTable extends StatelessWidget {
 
   Widget _buildStockCell(Map<String, dynamic> item) {
     final numberFormatter = NumberFormat('#,###.##');
-    final quantity = item['quantity'] ?? 0;
+    final quantity = item['current_quantity'] ?? 0;
     final unitName = item['unit_name'] ?? '';
     final minimumStock = item['minimum_stock'] ?? 0;
-    
+
     Color textColor = Colors.black;
     if (quantity <= minimumStock) {
       textColor = Colors.red;
     }
-    
+
     return Expanded(
       flex: 1,
       child: Padding(
@@ -302,7 +308,7 @@ class CurrentStockTable extends StatelessWidget {
 
   Widget _buildActionsCell(Map<String, dynamic> item, BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    
+
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -381,13 +387,20 @@ class CurrentStockTable extends StatelessWidget {
                           _buildDetailRow(loc.category, item['category_name']),
                           _buildDetailRow(loc.unit, item['unit_name']),
                           _buildDetailRow(loc.currentStock,
-                              numberFormatter.format(item['quantity'])),
-                          _buildDetailRow(loc.minimumStock,
-                              numberFormatter.format(item['minimum_stock'])),
+                              '${numberFormatter.format(item['current_quantity'] ?? 0)}'),
+                          if (item['minimum_stock'] != null)
+                            _buildDetailRow(loc.minimumStock,
+                                '${numberFormatter.format(item['minimum_stock'])}'),
                           if (item['maximum_stock'] != null)
                             _buildDetailRow(loc.maximumStock,
-                                numberFormatter.format(item['maximum_stock'])),
+                                '${numberFormatter.format(item['maximum_stock'])}'),
                           _buildDetailRow(loc.location, item['warehouse_name']),
+                          if (item['expiry_date'] != null &&
+                              item['expiry_date'] > 0)
+                            _buildDetailRow(
+                                loc.expiryDate,
+                                formatLocalizedDate(
+                                    context, item['expiry_date'])),
                           if (item['last_movement'] != null)
                             _buildDetailRow(
                                 loc.lastMovement, item['last_movement']),
@@ -424,4 +437,4 @@ class CurrentStockTable extends StatelessWidget {
       ),
     );
   }
-} 
+}

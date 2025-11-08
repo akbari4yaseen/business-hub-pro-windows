@@ -107,10 +107,9 @@ class _StockMovementReportsScreenState
             unitName: m.unitName ?? '',
           ),
         );
-        if (m.type == MovementType.stockIn || m.type == MovementType.purchase) {
+        if (m.type == MovementType.stockIn) {
           summaryMap[key]!.totalIn += m.quantity;
-        } else if (m.type == MovementType.stockOut ||
-            m.type == MovementType.sale) {
+        } else if (m.type == MovementType.stockOut) {
           summaryMap[key]!.totalOut += m.quantity;
         }
       }

@@ -166,7 +166,7 @@ class PurchaseProvider with ChangeNotifier {
             'currency': purchase.currency,
             'transaction_type': 'credit',
             'description':
-                'Purchase of Invoice ${purchase.invoiceNumber} from $supplierName',
+                'خرید فاکتور  ${purchase.invoiceNumber} از $supplierName',
             'transaction_id': purchase.id,
             'transaction_group': 'purchase',
           });
@@ -179,8 +179,7 @@ class PurchaseProvider with ChangeNotifier {
               'amount': purchase.additionalCost,
               'currency': purchase.currency,
               'transaction_type': 'debit',
-              'description':
-                  'Additional cost for Purchase of Invoice ${purchase.invoiceNumber}',
+              'description': 'مصارف خرید فاکتور ${purchase.invoiceNumber}',
               'transaction_id': purchase.id,
               'transaction_group': 'purchase',
             });

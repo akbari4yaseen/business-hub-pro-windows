@@ -127,7 +127,7 @@ class _ProductsTabState extends State<ProductsTab> {
                         ElevatedButton.icon(
                           onPressed: () => _showManageUnitConversionsDialog(context),
                           icon: const Icon(Icons.swap_horiz, size: 16),
-                          label: Text(loc.unit_conversion_management ?? 'Unit Conversions'),
+                          label: Text(loc.unit_conversion_management),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),

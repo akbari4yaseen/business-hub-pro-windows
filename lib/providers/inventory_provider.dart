@@ -76,7 +76,8 @@ class InventoryProvider with ChangeNotifier {
             id: productId,
             name: item['product_name'] as String,
             categoryId: item['category_id'] as int? ?? 0,
-            baseUnitId: item['unit_id'] as int? ?? 0, // This is correct - the query returns unit_id from the join
+            baseUnitId: item['unit_id'] as int? ??
+                0, // This is correct - the query returns unit_id from the join
             description: item['product_description'] as String? ?? '',
             minimumStock: item['minimum_stock'] as double? ?? 0,
             hasExpiryDate: item['has_expiry_date'] == 1,
@@ -94,10 +95,23 @@ class InventoryProvider with ChangeNotifier {
     return productMap.values.toList();
   }
 
-  // Added method to get current stock for a specific product
+  /// Get current stock for a specific product
+  /// Returns a list of stock entries with warehouse information and quantities
   List<Map<String, dynamic>> getCurrentStockForProduct(int productId) {
+    if (_currentStock.isEmpty) return [];
+
     return _currentStock
-        .where((item) => item['product_id'] == productId)
+        .where((item) => (item['product_id'] as int?) == productId)
+        .map<Map<String, dynamic>>((item) => {
+              'product_id': item['product_id'] as int,
+              'warehouse_id': item['warehouse_id'] as int,
+              'warehouse_name':
+                  (item['warehouse_name'] as String?) ?? 'Unknown',
+              'quantity': (item['current_quantity'] as num?)?.toDouble() ?? 0.0,
+              'unit': (item['unit_symbol'] as String?) ?? 'pcs',
+              'total_in': (item['total_in'] as num?)?.toDouble() ?? 0.0,
+              'total_out': (item['total_out'] as num?)?.toDouble() ?? 0.0,
+            })
         .toList();
   }
 
