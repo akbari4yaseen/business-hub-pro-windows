@@ -216,7 +216,7 @@ class _WarehousesTabState extends State<WarehousesTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${loc.quantity}: ${numberFormatter.format(item['quantity'])} ${item['unit_name'] ?? ''}'),
+                    '${loc.quantity}: ${numberFormatter.format(item['current_quantity'])} ${item['unit_name'] ?? ''}'),
               ],
             ),
             trailing: IconButton(
