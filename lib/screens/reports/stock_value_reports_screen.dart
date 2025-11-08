@@ -159,26 +159,10 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
     switch (currency.toUpperCase()) {
       case 'USD':
         return NumberFormat.currency(symbol: '\$').format(doubleValue);
-      case 'EUR':
-        return NumberFormat.currency(symbol: '€').format(doubleValue);
-      case 'GBP':
-        return NumberFormat.currency(symbol: '£').format(doubleValue);
       case 'AFN':
         return NumberFormat.currency(symbol: '؋').format(doubleValue);
-      case 'INR':
-        return NumberFormat.currency(symbol: '₹').format(doubleValue);
-      case 'JPY':
-        return NumberFormat.currency(symbol: '¥').format(doubleValue);
-      case 'CNY':
-        return NumberFormat.currency(symbol: '¥').format(doubleValue);
-      case 'RUB':
-        return NumberFormat.currency(symbol: '₽').format(doubleValue);
-      case 'TRY':
-        return NumberFormat.currency(symbol: '₺').format(doubleValue);
       case 'PKR':
         return NumberFormat.currency(symbol: '₨').format(doubleValue);
-      case 'IRR':
-        return NumberFormat.currency(symbol: 'تومان').format(doubleValue);
       default:
         return NumberFormat.currency(symbol: currency).format(doubleValue);
     }
@@ -198,7 +182,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
         final productBaseUnitId = item['product_base_unit_id'];
         final warehouseId = item['warehouse_id'];
         final warehouseName = item['warehouse_name'];
-        final currency = item['currency'] ?? 'USD';
+        final currency = item['currency'] ?? 'AFN';
 
         // Get reverse conversion factor and apply proper conversion
         final conversionFactor = await _getReverseConversionFactor(
@@ -264,7 +248,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
         final productBaseUnitId = item['product_base_unit_id'];
         final productId = item['product_id'];
         final productName = item['product_name'];
-        final currency = item['currency'] ?? 'USD';
+        final currency = item['currency'] ?? 'AFN';
 
         // Get reverse conversion factor and apply proper conversion
         final conversionFactor = await _getReverseConversionFactor(
@@ -328,7 +312,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
             (item['unit_price_with_additional_cost'] ?? 0).toDouble();
         final purchaseUnitId = item['purchase_unit_id'];
         final productBaseUnitId = item['product_base_unit_id'];
-        final currency = item['currency'] ?? 'USD';
+        final currency = item['currency'] ?? 'AFN';
 
         // Get reverse conversion factor and apply proper conversion
         final conversionFactor = await _getReverseConversionFactor(
@@ -351,7 +335,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
     final Map<String, Map<String, dynamic>> currencyMap = {};
 
     for (final item in convertedData) {
-      final currency = item['currency'] ?? 'USD';
+      final currency = item['currency'] ?? 'AFN';
 
       if (currencyMap.containsKey(currency)) {
         final existing = currencyMap[currency]!;
@@ -521,7 +505,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                                 ),
                                 child: Center(
                                   child: Text(
-                                    item['currency'] ?? 'USD',
+                                    item['currency'] ?? 'AFN',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.green,
@@ -534,7 +518,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${item['currency'] ?? 'USD'} ${loc.stockValue}',
+                                    '${item['currency'] ?? 'AFN'} ${loc.stockValue}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -555,7 +539,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                             children: [
                               Text(
                                 _formatCurrencyValue(item['total_stock_value'],
-                                    item['currency'] ?? 'USD'),
+                                    item['currency'] ?? 'AFN'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -689,10 +673,10 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                                 .format((item['quantity'] ?? 0).toDouble()))),
                             DataCell(Text(_formatCurrencyValue(
                                 item['unit_price'],
-                                item['currency'] ?? 'USD'))),
+                                item['currency'] ?? 'AFN'))),
                             DataCell(Text(_formatCurrencyValue(
                                 item['total_stock_value'],
-                                item['currency'] ?? 'USD'))),
+                                item['currency'] ?? 'AFN'))),
                             DataCell(Text(item['currency'] ?? '')),
                             DataCell(Text(item['expiry_date'] != null
                                 ? dFormatter.formatLocalizedDate(
@@ -734,7 +718,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'], item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'AFN'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -742,7 +726,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                   ),
                 ),
                 Text(
-                  item['currency'] ?? 'USD',
+                  item['currency'] ?? 'AFN',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
@@ -778,7 +762,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'], item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'AFN'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -786,7 +770,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                   ),
                 ),
                 Text(
-                  item['currency'] ?? 'USD',
+                  item['currency'] ?? 'AFN',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
@@ -807,7 +791,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
         return Card(
           margin: const EdgeInsets.only(bottom: 8.0),
           child: ListTile(
-            title: Text('${item['currency'] ?? 'USD'}'),
+            title: Text('${item['currency'] ?? 'AFN'}'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -823,7 +807,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
               children: [
                 Text(
                   _formatCurrencyValue(
-                      item['total_stock_value'], item['currency'] ?? 'USD'),
+                      item['total_stock_value'], item['currency'] ?? 'AFN'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -831,7 +815,7 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                   ),
                 ),
                 Text(
-                  item['currency'] ?? 'USD',
+                  item['currency'] ?? 'AFN',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
