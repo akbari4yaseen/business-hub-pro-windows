@@ -8,6 +8,7 @@ import 'purchase_reports_screen.dart';
 import 'sales_reports_screen.dart';
 import 'stock_movement_reports_screen.dart';
 import 'stock_value_reports_screen.dart';
+import 'financial_balance_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -31,6 +32,20 @@ class ReportsScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const DailyBalancesChart(),
+                  ),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.account_balance),
+              title: Text(loc.financialBalance),
+              subtitle: Text(loc.financialBalanceDesc),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const FinancialBalanceScreen(),
                   ),
                 );
               },
@@ -124,7 +139,8 @@ class ReportsScreen extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.assessment),
               title: Text(loc.stockValueReports ?? 'Stock Value Reports'),
-              subtitle: Text(loc.stockValueReportsDesc ?? 'View current stock values with pricing and summaries'),
+              subtitle: Text(loc.stockValueReportsDesc ??
+                  'View current stock values with pricing and summaries'),
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(

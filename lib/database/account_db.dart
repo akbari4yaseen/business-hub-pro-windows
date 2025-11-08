@@ -576,6 +576,26 @@ class AccountDBHelper {
     return account;
   }
 
+  /// Get all active accounts with full details (excluding system accounts)
+  Future<List<Map<String, dynamic>>> getAllAccounts() async {
+    Database db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+    SELECT 
+      id,
+      name,
+      account_type,
+      phone,
+      address,
+      active,
+      created_at
+    FROM accounts
+    WHERE id > 10 AND active = 1 
+    ORDER BY 
+      name COLLATE NOCASE;
+  ''');
+    return result;
+  }
+
   /// Returns all active accounts (id > 10) that have had **no** transactions
   /// in the past [days] days.
   Future<List<Map<String, dynamic>>> getAccountsNoTransactionsSince({
