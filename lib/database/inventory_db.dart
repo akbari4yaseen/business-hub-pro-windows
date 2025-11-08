@@ -278,7 +278,7 @@ class InventoryDB {
           'source_warehouse_id': movement.sourceWarehouseId,
           'destination_warehouse_id': movement.destinationWarehouseId,
           'quantity': movement.quantity,
-          'type': dbType, // Use the mapped database type value
+          'type': dbType,
           'reference': movement.reference,
           'notes': movement.notes,
           'date': dateMs,
@@ -288,32 +288,65 @@ class InventoryDB {
         },
       );
 
-      // Update source warehouse stock (out movement)
-      if (movement.sourceWarehouseId != null) {
-        await _updateStockForMovement(
-          txn,
-          movement.productId,
-          movement.sourceWarehouseId!,
-          movement.quantity,
-          'stockOut',
-          now,
-          sourceType: 'stock_movement',
-          sourceId: movementId,
-        );
+      //if movement.type == MovementType.stockIn
+      if (movement.type == MovementType.stockOut) {
+        // Update source warehouse stock (out movement)
+        if (movement.sourceWarehouseId != null) {
+          await _updateStockForMovement(
+            txn,
+            movement.productId,
+            movement.sourceWarehouseId!,
+            movement.quantity,
+            'stockOut',
+            now,
+            sourceType: 'stock_movement',
+            sourceId: movementId,
+          );
+        }
       }
 
       // Update destination warehouse stock (in movement)
-      if (movement.destinationWarehouseId != null) {
-        await _updateStockForMovement(
-          txn,
-          movement.productId,
-          movement.destinationWarehouseId!,
-          movement.quantity,
-          'stockIn',
-          now,
-          sourceType: 'stock_movement',
-          sourceId: movementId,
-        );
+      if (movement.type == MovementType.stockIn) {
+        if (movement.destinationWarehouseId != null) {
+          await _updateStockForMovement(
+            txn,
+            movement.productId,
+            movement.destinationWarehouseId!,
+            movement.quantity,
+            'stockIn',
+            now,
+            sourceType: 'stock_movement',
+            sourceId: movementId,
+          );
+        }
+      }
+
+      // For transfer, update both warehouses
+      if (movement.type == MovementType.transfer) {
+        if (movement.sourceWarehouseId != null) {
+          await _updateStockForMovement(
+            txn,
+            movement.productId,
+            movement.sourceWarehouseId!,
+            movement.quantity,
+            'stockOut',
+            now,
+            sourceType: 'stock_movement',
+            sourceId: movementId,
+          );
+        }
+        if (movement.destinationWarehouseId != null) {
+          await _updateStockForMovement(
+            txn,
+            movement.productId,
+            movement.destinationWarehouseId!,
+            movement.quantity,
+            'stockIn',
+            now,
+            sourceType: 'stock_movement',
+            sourceId: movementId,
+          );
+        }
       }
 
       return movementId;
