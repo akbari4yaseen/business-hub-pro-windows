@@ -169,6 +169,15 @@ class _StockMovementReportsScreenState
     });
   }
 
+  void _applyFilters() {
+    setState(() {
+      _currentPage = 0;
+      _hasMore = true;
+      _summaries.clear();
+    });
+    _fetchNextPage(reset: true);
+  }
+
   void _clearFilters() {
     setState(() {
       _startDate = null;
@@ -176,7 +185,7 @@ class _StockMovementReportsScreenState
       _selectedProduct = null;
       _selectedWarehouse = null;
     });
-    _fetchNextPage(reset: true);
+    _applyFilters();
   }
 
   @override
@@ -206,7 +215,7 @@ class _StockMovementReportsScreenState
                     ElevatedButton.icon(
                       icon: const Icon(Icons.sort),
                       label: Text(loc.filter),
-                      onPressed: _fetchNextPage,
+                      onPressed: _applyFilters,
                     ),
                     const SizedBox(width: 8),
                     OutlinedButton.icon(
