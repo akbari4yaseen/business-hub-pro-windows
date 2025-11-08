@@ -104,7 +104,9 @@ class ReportsDBHelper {
         prod.name AS product_name,
         wh.name AS warehouse_name,
         COALESCE(pi.currency, 'USD') AS currency,
-        cs.quantity,
+        cs.stock_in,
+        cs.stock_out,
+        (cs.stock_in - COALESCE(cs.stock_out, 0)) as quantity,
         COALESCE(
           -- Base unit price + additional cost share per unit
           pi.unit_price +
@@ -113,7 +115,16 @@ class ReportsDBHelper {
         , 0) AS unit_price_with_additional_cost,
         pi.unit_id AS purchase_unit_id,
         prod.base_unit_id AS product_base_unit_id
-      FROM current_stock cs
+      FROM (
+        SELECT 
+          product_id,
+          warehouse_id,
+          SUM(CASE WHEN type = 'stockIn' THEN quantity ELSE 0 END) as stock_in,
+          SUM(CASE WHEN type = 'stockOut' THEN quantity ELSE 0 END) as stock_out,
+          SUM(CASE WHEN type = 'stockIn' THEN quantity ELSE -quantity END) as quantity
+        FROM current_stock
+        GROUP BY product_id, warehouse_id
+      ) cs
       JOIN products prod ON cs.product_id = prod.id
       JOIN warehouses wh ON cs.warehouse_id = wh.id
       LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
@@ -292,7 +303,13 @@ class ReportsDBHelper {
       SELECT 
         COUNT(DISTINCT cs.product_id) AS total_products,
         COUNT(DISTINCT cs.warehouse_id) AS total_warehouses,
-        SUM(cs.quantity) AS total_quantity
+        SUM(
+        CASE 
+          WHEN cs.type = 'stockIn' THEN cs.quantity
+          WHEN cs.type = 'stockOut' THEN -cs.quantity
+          ELSE 0
+        END
+      ) AS total_quantity
       FROM current_stock cs
       JOIN products prod ON cs.product_id = prod.id
       LEFT JOIN (
@@ -355,34 +372,49 @@ class ReportsDBHelper {
 
     // Step 3: Main query with simplified calculations (no unit conversion)
     return await db.rawQuery('''
-      WITH purchase_items_with_costs AS (
-        $purchaseItemsQuery
-      ),
-      purchase_totals AS (
-        $purchaseTotalsQuery
+  WITH purchase_items_with_costs AS (
+    $purchaseItemsQuery
+  ),
+  purchase_totals AS (
+    $purchaseTotalsQuery
+  )
+  SELECT 
+    COALESCE(pi.currency, 'USD') AS currency,
+    COUNT(DISTINCT cs.product_id) AS product_count,
+    COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
+
+    -- ✅ Total quantity considering stockIn / stockOut
+    SUM(
+      CASE 
+        WHEN cs.type = 'stockIn' THEN cs.quantity
+        WHEN cs.type = 'stockOut' THEN -cs.quantity
+        ELSE 0
+      END
+    ) AS total_quantity,
+
+    -- ✅ Total stock value considering in/out quantities
+    SUM(
+      CASE 
+        WHEN cs.type = 'stockIn' THEN cs.quantity
+        WHEN cs.type = 'stockOut' THEN -cs.quantity
+        ELSE 0
+      END * 
+      COALESCE(
+        pi.unit_price +
+        (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
+         COALESCE(pt.total_purchase_value, 1)) / pi.quantity,
+        0
       )
-      SELECT 
-        COALESCE(pi.currency, 'USD') AS currency,
-        COUNT(DISTINCT cs.product_id) AS product_count,
-        COUNT(DISTINCT cs.warehouse_id) AS warehouse_count,
-        SUM(cs.quantity) AS total_quantity,
-        SUM(
-          cs.quantity * 
-          COALESCE(
-            -- Base unit price + additional cost share per unit
-            pi.unit_price +
-            (COALESCE(pi.additional_cost, 0) * pi.unit_price * pi.quantity / 
-             COALESCE(pt.total_purchase_value, 1)) / pi.quantity
-          , 0)
-        ) AS total_stock_value_raw
-      FROM current_stock cs
-      JOIN products prod ON cs.product_id = prod.id
-      LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
-      LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
-      WHERE $whereClause
-      GROUP BY COALESCE(pi.currency, 'USD')
-      ORDER BY total_stock_value_raw DESC
-    ''', whereArgs);
+    ) AS total_stock_value_raw
+
+  FROM current_stock cs
+  JOIN products prod ON cs.product_id = prod.id
+  LEFT JOIN purchase_items_with_costs pi ON pi.product_id = prod.id
+  LEFT JOIN purchase_totals pt ON pt.purchase_id = pi.purchase_id
+  WHERE $whereClause
+  GROUP BY COALESCE(pi.currency, 'USD')
+  ORDER BY total_stock_value_raw DESC
+''', whereArgs);
   }
 
   /// Returns a list of maps: each contains account_type and count, excluding 'system' types.

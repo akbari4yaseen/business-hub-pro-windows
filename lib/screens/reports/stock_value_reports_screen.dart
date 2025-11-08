@@ -658,17 +658,22 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                 columns: [
                   DataColumn(label: Text(loc.product)),
                   DataColumn(label: Text(loc.warehouse)),
-                  DataColumn(label: Text(loc.quantity)),
-                  DataColumn(label: Text(loc.unitPrice)),
-                  DataColumn(label: Text(loc.totalValue)),
+                  DataColumn(label: Text('Stock In'), numeric: true),
+                  DataColumn(label: Text('Stock Out'), numeric: true),
+                  DataColumn(label: Text(loc.quantity), numeric: true),
+                  DataColumn(label: Text(loc.unitPrice), numeric: true),
+                  DataColumn(label: Text(loc.totalValue), numeric: true),
                   DataColumn(label: Text(loc.currency)),
-                  DataColumn(label: Text(loc.expiryDate)),
                 ],
                 rows: _stockValues
                     .map((item) => DataRow(
                           cells: [
                             DataCell(Text(item['product_name'] ?? '')),
                             DataCell(Text(item['warehouse_name'] ?? '')),
+                            DataCell(Text(_numberFormatter
+                                .format((item['stock_in'] ?? 0).toDouble()))),
+                            DataCell(Text(_numberFormatter
+                                .format((item['stock_out'] ?? 0).toDouble()))),
                             DataCell(Text(_numberFormatter
                                 .format((item['quantity'] ?? 0).toDouble()))),
                             DataCell(Text(_formatCurrencyValue(
@@ -678,10 +683,6 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                                 item['total_stock_value'],
                                 item['currency'] ?? 'AFN'))),
                             DataCell(Text(item['currency'] ?? '')),
-                            DataCell(Text(item['expiry_date'] != null
-                                ? dFormatter.formatLocalizedDate(
-                                    context, item['expiry_date'])
-                                : loc.na)),
                           ],
                         ))
                     .toList(),
