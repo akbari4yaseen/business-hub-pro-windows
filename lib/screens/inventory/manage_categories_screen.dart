@@ -262,37 +262,55 @@ class ManageCategoriesScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteCategory(
-      BuildContext context, inventory_models.Category category) {
+  Future<void> _confirmDeleteCategory(
+      BuildContext context, inventory_models.Category category) async {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final inventoryProvider = context.read<InventoryProvider>();
 
-    showDialog(
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(loc.deleteCategory),
         content: Text(loc.confirmDeleteCategory(category.name)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: Text(loc.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: colorScheme.error,
             ),
-            onPressed: () {
-              context.read<InventoryProvider>().deleteCategory(category.id!);
-              Navigator.of(context).pop();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(loc.categoryDeleted)),
-              );
-            },
+            onPressed: () => Navigator.of(context).pop(true),
             child: Text(loc.delete),
           ),
         ],
       ),
     );
+
+    if (shouldDelete == true) {
+      try {
+        await inventoryProvider.deleteCategory(category.id!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.categoryDeleted),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }

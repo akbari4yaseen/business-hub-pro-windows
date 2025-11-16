@@ -784,12 +784,40 @@ class InventoryDB {
   }
 
   Future<int> deleteCategory(int id) async {
-    final db = await _db;
-    return await db.delete(
-      'categories',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      final db = await _db;
+      
+      // Check if there are any products using this category
+      final products = await db.query(
+        'products',
+        where: 'category_id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+
+      if (products.isNotEmpty) {
+        throw Exception('Cannot delete category: There are products associated with this category');
+      }
+
+      // Delete the category
+      final result = await db.delete(
+        'categories',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (result == 0) {
+        throw Exception('Category not found or already deleted');
+      }
+
+      return result;
+    } on DatabaseException catch (e) {
+      debugPrint('Database error in deleteCategory: $e');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error in deleteCategory: $e');
+      rethrow;
+    }
   }
 
   Future<List<Category>> getCategories() async {

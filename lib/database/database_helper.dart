@@ -85,7 +85,7 @@ class DatabaseHelper {
   Future<String> getDatabasePath() async {
     if (Platform.isWindows) {
       final appDir = await getApplicationDocumentsDirectory();
-      return join(appDir.path, _databaseName);
+      return join(appDir.path, 'BusinessHubPro', _databaseName);
     }
     return join(await getDatabasesPath(), _databaseName);
   }

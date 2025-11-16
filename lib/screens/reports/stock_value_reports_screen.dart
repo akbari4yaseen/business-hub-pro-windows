@@ -658,8 +658,10 @@ class _StockValueReportsScreenState extends State<StockValueReportsScreen>
                 columns: [
                   DataColumn(label: Text(loc.product)),
                   DataColumn(label: Text(loc.warehouse)),
-                  DataColumn(label: Text('Stock In'), numeric: true),
-                  DataColumn(label: Text('Stock Out'), numeric: true),
+                  DataColumn(
+                      label: Text(loc.movementType_stockIn), numeric: true),
+                  DataColumn(
+                      label: Text(loc.movementType_stockOut), numeric: true),
                   DataColumn(label: Text(loc.quantity), numeric: true),
                   DataColumn(label: Text(loc.unitPrice), numeric: true),
                   DataColumn(label: Text(loc.totalValue), numeric: true),
