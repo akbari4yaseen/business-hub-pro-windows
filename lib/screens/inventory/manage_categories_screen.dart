@@ -61,7 +61,8 @@ class ManageCategoriesScreen extends StatelessWidget {
                 ),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
@@ -114,10 +115,14 @@ class ManageCategoriesScreen extends StatelessWidget {
 
                           return Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
                             decoration: BoxDecoration(
-                              color: index.isEven 
-                                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                              color: index.isEven
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withValues(alpha: 0.03)
                                   : Colors.transparent,
                               border: Border(
                                 bottom: BorderSide(
@@ -214,7 +219,8 @@ class ManageCategoriesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsCell(inventory_models.Category category, BuildContext context, AppLocalizations loc) {
+  Widget _buildActionsCell(inventory_models.Category category,
+      BuildContext context, AppLocalizations loc) {
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -267,6 +273,13 @@ class ManageCategoriesScreen extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final inventoryProvider = context.read<InventoryProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Clear any existing errors and snackbars
+    if (inventoryProvider.error != null) {
+      inventoryProvider.clearError();
+    }
+    scaffoldMessenger.clearSnackBars();
 
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -289,28 +302,33 @@ class ManageCategoriesScreen extends StatelessWidget {
       ),
     );
 
-    if (shouldDelete == true) {
-      try {
-        await inventoryProvider.deleteCategory(category.id!);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(loc.categoryDeleted),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
+    if (shouldDelete != true) return;
+
+    try {
+      await inventoryProvider.deleteCategory(category.id!);
+
+      if (!context.mounted) return;
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(loc.categoryDeleted),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 }

@@ -35,6 +35,11 @@ class InventoryProvider with ChangeNotifier {
   List<StockMovement> get stockMovements => _stockMovements;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
   bool get isLoadingMovements => _isLoadingMovements;
   bool get hasMoreMovements => _hasMoreMovements;
 
@@ -274,18 +279,29 @@ class InventoryProvider with ChangeNotifier {
   }
 
   Future<void> deleteCategory(int categoryId) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
+    _isLoading = true;
+    _error = null; // Clear any existing error
+    notifyListeners();
 
+    try {
       await _db.deleteCategory(categoryId);
       await _refreshCategories();
+      return; // Success - exit early
     } catch (e) {
       debugPrint('Error deleting category: $e');
       _error = e.toString();
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
+      
+      // Clear the error after a short delay to ensure UI has handled it
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_error != null) {
+          _error = null;
+          notifyListeners();
+        }
+      });
     }
   }
 
