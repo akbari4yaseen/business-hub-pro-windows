@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 class DatabaseHelper {
-  static const _databaseName = 'BusinessHubPro.db';
+  static const _databaseName = 'BusinessHubProDB.db';
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -25,17 +25,17 @@ class DatabaseHelper {
       String dbPath;
 
       if (Platform.isWindows) {
-        // Get the application documents directory
-        final appDocDir = await getApplicationDocumentsDirectory();
-
-        // Create BusinessHubPro directory inside it
-        final businessHubDir =
-            Directory(join(appDocDir.path, 'BusinessHubPro'));
-        if (!await businessHubDir.exists()) {
-          await businessHubDir.create(recursive: true);
+        // Get the directory where the executable is located
+        final exeDir = File(Platform.resolvedExecutable).parent;
+        
+        // Create a Database subdirectory
+        final dbDir = Directory(join(exeDir.path, 'Database'));
+        if (!await dbDir.exists()) {
+          await dbDir.create(recursive: true);
         }
-
-        dbPath = join(businessHubDir.path, _databaseName);
+        
+        // Create the database file path in the Database directory
+        dbPath = join(dbDir.path, _databaseName);
       } else {
         // For other platforms, use the default database path
         dbPath = join(await getDatabasesPath(), _databaseName);
