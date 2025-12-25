@@ -514,7 +514,8 @@ class InvoiceDBHelper {
             'amount': amount,
             'currency': currency,
             'transaction_type': 'credit',
-            'description': '${localizedDescription} $invoiceNumber',
+            'description':
+                '${localizedDescription} $invoiceNumber \n ${invoice['notes']}',
             'transaction_id': invoiceId,
             'transaction_group': 'invoice_payment',
           },
@@ -528,7 +529,8 @@ class InvoiceDBHelper {
             'amount': amount,
             'currency': currency,
             'transaction_type': 'credit',
-            'description': '${localizedDescription} $invoiceNumber',
+            'description':
+                '${localizedDescription} $invoiceNumber \n ${invoice['notes']}',
             'transaction_id': invoiceId,
             'transaction_group': 'invoice_payment',
           },
@@ -598,7 +600,8 @@ class InvoiceDBHelper {
             'amount': totalAmount,
             'currency': currency,
             'transaction_type': 'debit',
-            'description': '${localizedDescription} $invoiceNumber',
+            'description':
+                '${localizedDescription} $invoiceNumber \n ${invoice['notes']}',
             'transaction_id': invoiceId,
             'transaction_group': 'invoice',
           },
