@@ -537,6 +537,7 @@
   "selectBackupLocation": "انتخاب مکان پشتیبان‌گیری",
   "copyBalance": "کاپی بیلانس",
   "balanceCopied": "بیلانس به کلیپ‌بورد کاپی شد",
+  "copiedToClipboard": "به حافظه موقت کپی شد",
   "productAdded": "جنس اضافه شد",
   "productUpdated": "جنس به‌روزرسانی شد",
   "movementRecorded": "جابجایی ثبت شد",
@@ -702,6 +703,12 @@
   "errorLoadingData": "خطا در بارگذاری اطلاعات: {error}",
   "processingAccounts": "در حال پردازش حساب‌ها...",
   "batchProcessing": "پردازش دسته‌ای برای عملکرد بهتر",
-  "receivable": "مطالبات",
-  "payable": "بدهی"
+  "receivable": "دریافتنی‌ها",
+  "payable": "پرداختنی‌ها",
+  "totalSales": "فروش کل",
+  "totalValue": "ارزش کل",
+  "sortByTotalDesc": "جمع کل (بیشترین به کمترین)",
+  "sortByNameAsc": "نام (الف تا ی)",
+  "sortByNameDesc": "نام (ی تا الف)",
+  "sortByQuantityDesc": "تعداد (بیشترین به کمترین)"
 }

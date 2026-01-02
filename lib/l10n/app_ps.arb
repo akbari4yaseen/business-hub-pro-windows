@@ -538,6 +538,7 @@
   "status": "وضعبت",
   "backupCanceledNoLocation": "بیک اپ لغوه شو. موقعیت نه دی ټاکل شوی",
   "selectBackupLocation": "د بیک اپ موقعیت وټاکئ",
+  "copiedToClipboard": "په کلیپ بورډ کې کاپي شو",
   "copyBalance": "بیلانس نقل کړئ",
   "balanceCopied": "بیلانس کلېپبورډ ته نقل شو",
   "productAdded": "جنس اضافه شو",
@@ -706,5 +707,13 @@
   "processingAccounts": "اکاونټونه په پروسس کې...",
   "batchProcessing": "د ډله‌ایي پروسس لپاره د ښه فعالیت",
   "receivable": "مطالبات",
-  "payable": "پورونه"
+  "payable": "پورونه",
+  "totalSales": "ټول خرڅلاو",
+  "totalValue": "ټوله ارزښت",
+  "products": "توکي",
+  "sortByTotalDesc": "ټولټال (ډیر څخه لږ)",
+  "sortByNameAsc": "نوم (الف څخه ې)",
+  "sortByNameDesc": "نوم (ې څخه الف)",
+  "sortByQuantityDesc": "مقدار (ډیر څخه لږ)",
+  "searchProducts": "د توکو لټون..."
 }

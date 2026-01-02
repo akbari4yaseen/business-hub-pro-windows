@@ -1,17 +1,18 @@
+import 'package:BusinessHubPro/utils/date_formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../../utils/utilities.dart';
-import '../../../utils/account_share_helper.dart';
 import '../../../widgets/search_bar.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction/transaction_details_widget.dart';
 import '../../../widgets/journal/journal_form_dialog.dart';
 import '../../../widgets/journal/journal_filter_dialog.dart';
 import '../../../widgets/transaction/transaction_print_settings_dialog.dart';
-import '../../../utils/transaction_share_helper.dart';
 import '../../../database/journal_db.dart';
 import '../../../database/account_db.dart';
 import 'controllers/transactions_screen_controller.dart';
@@ -80,7 +81,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AppLocalizations loc, TransactionsScreenController controller) {
+  PreferredSizeWidget _buildAppBar(
+      AppLocalizations loc, TransactionsScreenController controller) {
     return AppBar(
       title: controller.isSearching
           ? CommonSearchBar(
@@ -88,7 +90,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               debounceDuration: const Duration(milliseconds: 500),
               isLoading: controller.isLoading,
               onChanged: controller.updateSearchQuery,
-              onSubmitted: (_) => controller.updateSearchQuery(_searchController.text),
+              onSubmitted: (_) =>
+                  controller.updateSearchQuery(_searchController.text),
               onCancel: () {
                 _searchController.clear();
                 controller.setSearching(false);
@@ -97,14 +100,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               hintText: loc.search,
             )
           : Text(
-              getLocalizedSystemAccountName(context, controller.account['name']),
+              getLocalizedSystemAccountName(
+                  context, controller.account['name']),
               style: const TextStyle(fontSize: 18),
             ),
       actions: _buildActions(loc, controller),
     );
   }
 
-  List<Widget> _buildActions(AppLocalizations loc, TransactionsScreenController controller) {
+  List<Widget> _buildActions(
+      AppLocalizations loc, TransactionsScreenController controller) {
     if (controller.isSearching) return [];
 
     return [
@@ -155,7 +160,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     ];
   }
 
-  Widget _buildBody(AppLocalizations loc, TransactionsScreenController controller) {
+  Widget _buildBody(
+      AppLocalizations loc, TransactionsScreenController controller) {
     if (controller.isLoading && controller.transactions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -167,14 +173,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       scrollController: _scrollController,
       onDetails: (transaction) => _showTransactionDetails(transaction),
       onEdit: (transaction) => _handleEditTransaction(transaction, controller),
-      onDelete: (transaction) => _handleDeleteTransaction(transaction, controller),
+      onDelete: (transaction) =>
+          _handleDeleteTransaction(transaction, controller),
       onShare: (transaction) => _shareTransaction(transaction),
       amountFormatter: controller.amountFormatter,
       balances: controller.balances,
     );
   }
 
-  void _handleMenuAction(String action, TransactionsScreenController controller) {
+  Future<void> _handleMenuAction(
+      String action, TransactionsScreenController controller) async {
+    final loc = AppLocalizations.of(context)!;
+
     switch (action) {
       case 'filter':
         _showFilterDialog(controller);
@@ -183,10 +193,45 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _onPrintPressed(controller);
         break;
       case 'share':
-        shareAccountBalances(context, controller.account);
+        final accountName = controller.account['name'] as String? ?? '';
+        final balances = controller.balances;
+
+        // Format the balances as a string
+        final buffer = StringBuffer();
+        buffer.writeln('${loc.account}: $accountName\n');
+
+        balances.forEach((currency, data) {
+          final summary = data['summary'] as Map<String, dynamic>? ?? {};
+          final credit = summary['credit'] as num? ?? 0;
+          final debit = summary['debit'] as num? ?? 0;
+          final balance = summary['balance'] as num? ?? 0;
+
+          buffer.writeln('${loc.currency}: $currency');
+          buffer.writeln(
+              '${loc.credit}: ${controller.amountFormatter.format(credit)}');
+          buffer.writeln(
+              '${loc.debit}: ${controller.amountFormatter.format(debit)}');
+          buffer.writeln(
+              '${loc.balance}: ${controller.amountFormatter.format(balance)}\n');
+        });
+
+        await Clipboard.setData(ClipboardData(text: buffer.toString()));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.copiedToClipboard)),
+          );
+        }
         break;
       case 'whatsapp':
-        shareAccountBalances(context, controller.account, viaWhatsApp: true);
+        // Since we're not using WhatsApp on Windows, we'll just copy account name to clipboard
+        final accountName = controller.account['name'] as String? ?? '';
+        await Clipboard.setData(
+            ClipboardData(text: '$accountName ${loc.account} ${loc.balance}'));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.copiedToClipboard)),
+          );
+        }
         break;
     }
   }
@@ -267,44 +312,48 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     try {
       // Get all transactions for the account
-      final allTransactions = await AccountDBHelper().getTransactionsForPrint(controller.account['id']);
-      
+      final allTransactions = await AccountDBHelper()
+          .getTransactionsForPrint(controller.account['id']);
+
       // Filter transactions based on print settings
-      List<Map<String, dynamic>> filteredTransactions = allTransactions.where((tx) {
+      List<Map<String, dynamic>> filteredTransactions =
+          allTransactions.where((tx) {
         // Filter by date range
         if (result.startDate != null || result.endDate != null) {
           final txDate = DateTime.parse(tx['date']);
           final txDateOnly = DateTime(txDate.year, txDate.month, txDate.day);
-          
+
           if (result.startDate != null) {
-            final startDateOnly = DateTime(result.startDate!.year, result.startDate!.month, result.startDate!.day);
+            final startDateOnly = DateTime(result.startDate!.year,
+                result.startDate!.month, result.startDate!.day);
             if (txDateOnly.isBefore(startDateOnly)) {
               return false;
             }
           }
-          
+
           if (result.endDate != null) {
-            final endDateOnly = DateTime(result.endDate!.year, result.endDate!.month, result.endDate!.day);
+            final endDateOnly = DateTime(result.endDate!.year,
+                result.endDate!.month, result.endDate!.day);
             if (txDateOnly.isAfter(endDateOnly)) {
               return false;
             }
           }
         }
-        
+
         // Filter by transaction type
         if (result.transactionType != null && result.transactionType != 'all') {
           if (tx['transaction_type'] != result.transactionType) {
             return false;
           }
         }
-        
+
         // Filter by currency
         if (result.currency != null && result.currency != 'all') {
           if (tx['currency'] != result.currency) {
             return false;
           }
         }
-        
+
         return true;
       }).toList();
 
@@ -333,12 +382,39 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  void _shareTransaction(Map<String, dynamic> transaction) {
-    transaction['account_name'] = _controller.account['name'];
-    shareJournalEntry(context, transaction);
+  void _shareTransaction(Map<String, dynamic> transaction) async {
+    final loc = AppLocalizations.of(context)!;
+    final accountName = _controller.account['name'] as String? ?? '';
+    final rawDate = transaction['date'];
+    final DateTime parsedDate =
+        rawDate is String ? DateTime.parse(rawDate) : rawDate as DateTime;
+    final date = formatLocalizedDate(context, parsedDate.toString());
+    final amount = transaction['amount'] as num? ?? 0;
+    final currency = transaction['currency'] as String? ?? '';
+    final description = transaction['description'] as String? ?? '';
+    final type =
+        (transaction['transaction_type'] as String?)?.toLowerCase() ?? '';
+
+    // Format the amount with the app's standard formatter
+    final formattedAmount = _controller.amountFormatter.format(amount);
+
+    // Create a formatted message
+    final message = '''${loc.account}: $accountName
+${loc.date}: $date
+${loc.amount}: $formattedAmount $currency
+${loc.type}: ${type == 'credit' ? loc.credit : loc.debit}
+${loc.description}: $description''';
+
+    await Clipboard.setData(ClipboardData(text: message));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.copiedToClipboard)),
+      );
+    }
   }
 
-  Future<void> _showAddJournalDialog(TransactionsScreenController controller) async {
+  Future<void> _showAddJournalDialog(
+      TransactionsScreenController controller) async {
     if (!mounted) return;
 
     final result = await showDialog<Map<String, dynamic>>(
@@ -355,7 +431,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(AppLocalizations.of(context)!.errorSavingJournal),
+                  content:
+                      Text(AppLocalizations.of(context)!.errorSavingJournal),
                 ),
               );
             }
@@ -369,15 +446,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
-  Future<void> _handleEditTransaction(Map<String, dynamic> transaction, TransactionsScreenController controller) async {
+  Future<void> _handleEditTransaction(Map<String, dynamic> transaction,
+      TransactionsScreenController controller) async {
     if (transaction['transaction_group'] != 'journal') return;
 
     try {
-      final journal = await JournalDBHelper().getJournalById(transaction['transaction_id']);
+      final journal =
+          await JournalDBHelper().getJournalById(transaction['transaction_id']);
       if (journal == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.transactionNotFound)),
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.transactionNotFound)),
           );
         }
         return;
@@ -395,7 +476,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             } catch (e) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(AppLocalizations.of(context)!.transactionEditError)),
+                  SnackBar(
+                      content: Text(
+                          AppLocalizations.of(context)!.transactionEditError)),
                 );
               }
             }
@@ -409,13 +492,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.transactionEditError)),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.transactionEditError)),
         );
       }
     }
   }
 
-  Future<void> _handleDeleteTransaction(Map<String, dynamic> transaction, TransactionsScreenController controller) async {
+  Future<void> _handleDeleteTransaction(Map<String, dynamic> transaction,
+      TransactionsScreenController controller) async {
     final loc = AppLocalizations.of(context)!;
 
     showDialog(
@@ -445,7 +531,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         } catch (e) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(loc.transactionDeleteError)),
+                              SnackBar(
+                                  content: Text(loc.transactionDeleteError)),
                             );
                           }
                         }

@@ -704,6 +704,7 @@
   "receivable": "Receivable",
   "payable": "Payable",
   "totalSales": "Total Sales",
+  "copiedToClipboard": "Copied to clipboard",
   "totalValue": "Total Value",
   "products": "Products",
   "sortByTotalDesc": "Total (High to Low)",

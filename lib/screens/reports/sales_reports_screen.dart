@@ -37,6 +37,21 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   Map<String, Map<String, double>> _customerTotals = {};
   Map<String, int> _statusCounts = {};
   
+  // Product analysis
+  Map<String, int> _productCounts = {};
+  Map<String, Map<String, double>> _productTotals = {};
+  // Track quantities with units: {productName: {unit1: quantity1, unit2: quantity2, ...}}
+  Map<String, Map<String, double>> _productQuantitiesByUnit = {};
+  // Product pagination and search
+  final int _productPageSize = 20;
+  int _productPage = 0;
+  bool _hasMoreProducts = true;
+  bool _isLoadingMoreProducts = false;
+  final TextEditingController _productSearchController = TextEditingController();
+  final ScrollController _productScrollController = ScrollController();
+  String _currentProductSort = 'total_desc';
+  List<MapEntry<String, Map<String, double>>> _sortedProducts = [];
+  
   // Tab controller
   late TabController _tabController;
   
@@ -60,58 +75,80 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     final now = DateTime.now();
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
     _startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _invoiceScrollController.addListener(_onInvoiceScroll);
     _customerScrollController.addListener(_onCustomerScroll);
+    _productScrollController.addListener(_onProductScroll);
+    _productSearchController.addListener(_onProductSearchChanged);
     _loadInitialData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _productSearchController.dispose();
+    _productScrollController.dispose();
     super.dispose();
   }
 
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
     
     try {
       // Load currencies
       final currencies = await _db.getCurrencies();
-      setState(() => _currencies = currencies);
+      if (mounted) {
+        setState(() => _currencies = currencies);
+      }
       
-      await _fetchInvoices();
+      await _fetchInvoices(reset: true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _fetchInvoices({bool reset = false}) async {
     if (_isLoadingMoreInvoices) return;
-    setState(() {
-      _isLoading = reset ? true : _isLoading;
-      _isLoadingMoreInvoices = !reset;
-      if (reset) {
-        _customerPage = 0;
-      }
-    });
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = reset ? true : _isLoading;
+        _isLoadingMoreInvoices = !reset;
+        if (reset) {
+          _customerPage = 0;
+          _productPage = 0;
+          _hasMoreProducts = true;
+        }
+      });
+    }
+    
     try {
       if (reset) {
         _invoicePage = 0;
         _hasMoreInvoices = true;
         _invoices.clear();
       }
-      if (!_hasMoreInvoices) {
-        setState(() {
-          _isLoading = false;
-          _isLoadingMoreInvoices = false;
-        });
+      
+      if (!_hasMoreInvoices && !reset) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _isLoadingMoreInvoices = false;
+          });
+        }
         return;
       }
+      
       final invoices = await _db.getInvoices(
         startDate: _startDate,
         endDate: _endDate,
@@ -119,24 +156,48 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         status: _selectedStatus,
         limit: _invoicePageSize,
         offset: _invoicePage * _invoicePageSize,
+        includeItems: true, // Make sure to include invoice items
       );
+      
+      if (invoices.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _hasMoreInvoices = false;
+            _isLoading = false;
+            _isLoadingMoreInvoices = false;
+          });
+        }
+        return;
+      }
+      
       // Filter by currency if selected
       final filteredInvoices = _selectedCurrency != null
           ? invoices.where((i) => i['currency'] == _selectedCurrency).toList()
           : invoices;
+          
       if (reset) {
         _invoices = filteredInvoices;
       } else {
         _invoices.addAll(filteredInvoices);
       }
+      
       _calculateSummaries(_invoices);
-      setState(() {
-        _hasMoreInvoices = filteredInvoices.length == _invoicePageSize;
-        _invoicePage++;
-        _hasMoreCustomers = _customerTotals.length > (_customerPage + 1) * _customerPageSize;
-        _isLoading = false;
-        _isLoadingMoreInvoices = false;
-      });
+      
+      if (mounted) {
+        setState(() {
+          _hasMoreInvoices = filteredInvoices.length == _invoicePageSize;
+          _invoicePage++;
+          _hasMoreCustomers = _customerTotals.length > (_customerPage + 1) * _customerPageSize;
+          _isLoading = false;
+          _isLoadingMoreInvoices = false;
+          
+          // Update sorted products when data changes
+          if (_productTotals.isNotEmpty) {
+            _sortedProducts = _sortProducts();
+            _hasMoreProducts = _sortedProducts.length > _productPageSize;
+          }
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -149,28 +210,98 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   }
 
   void _calculateSummaries(List<Map<String, dynamic>> invoices) {
-    // Reset summaries
-    _currencyTotals.clear();
-    _customerCounts.clear();
-    _customerTotals.clear();
-    _statusCounts.clear();
+    if (invoices.isEmpty) return;
+    
+    // Reset summaries if it's a fresh load
+    if (_invoicePage == 0) {
+      _currencyTotals.clear();
+      _customerCounts.clear();
+      _customerTotals.clear();
+      _statusCounts.clear();
+      _productCounts.clear();
+      _productTotals.clear();
+      _productQuantitiesByUnit.clear();
+    }
     
     for (final invoice in invoices) {
-      final amount = (invoice['total_amount'] as num?)?.toDouble() ?? 0;
-      final currency = invoice['currency'] as String? ?? '';
-      final customerName = invoice['account_name'] as String? ?? 'Unknown';
-      final status = invoice['status'] as String? ?? '';
-      
-      // Currency totals
-      _currencyTotals[currency] = (_currencyTotals[currency] ?? 0) + amount;
-      
-      // Customer analysis
-      _customerCounts[customerName] = (_customerCounts[customerName] ?? 0) + 1;
-      _customerTotals[customerName] ??= {};
-      _customerTotals[customerName]![currency] = (_customerTotals[customerName]![currency] ?? 0) + amount;
-      
-      // Status analysis
-      _statusCounts[status] = (_statusCounts[status] ?? 0) + 1;
+      try {
+        final amount = (invoice['total_amount'] as num?)?.toDouble() ?? 0;
+        final currency = invoice['currency'] as String? ?? '';
+        final customerName = (invoice['account_name'] as String?)?.trim() ?? 'Unknown';
+        final status = (invoice['status'] as String?)?.trim() ?? '';
+        
+        // Safely get items, handling different possible formats
+        List<Map<String, dynamic>> items = [];
+        if (invoice['items'] is List) {
+          items = (invoice['items'] as List).whereType<Map<String, dynamic>>().toList();
+        }
+        
+        // Skip if no valid data
+        if (customerName.isEmpty && amount == 0 && items.isEmpty) continue;
+        
+        // Currency totals
+        _currencyTotals[currency] = (_currencyTotals[currency] ?? 0) + amount;
+        
+        // Customer analysis
+        _customerCounts[customerName] = (_customerCounts[customerName] ?? 0) + 1;
+        _customerTotals[customerName] ??= {};
+        _customerTotals[customerName]![currency] = 
+            (_customerTotals[customerName]![currency] ?? 0) + amount;
+        
+        // Status analysis
+        if (status.isNotEmpty) {
+          _statusCounts[status] = (_statusCounts[status] ?? 0) + 1;
+        }
+        
+        // Product analysis
+        if (items.isNotEmpty) {
+          _analyzeProducts(items, currency);
+        }
+      } catch (e) {
+        debugPrint('Error processing invoice: $e');
+        continue;
+      }
+    }
+  }
+  
+  void _analyzeProducts(List<Map<String, dynamic>> items, String currency) {
+    if (items.isEmpty) return;
+    
+    for (final item in items) {
+      try {
+        final productName = (item['product_name'] as String?)?.trim() ?? 'Unknown Product';
+        if (productName.isEmpty) continue;
+        
+        final quantity = (item['quantity'] is num) 
+            ? (item['quantity'] as num).toDouble() 
+            : double.tryParse(item['quantity']?.toString() ?? '0') ?? 0.0;
+            
+        final unitPrice = (item['unit_price'] is num)
+            ? (item['unit_price'] as num).toDouble()
+            : double.tryParse(item['unit_price']?.toString() ?? '0') ?? 0.0;
+            
+        final unitName = (item['unit_name'] as String?)?.trim().isNotEmpty == true
+            ? (item['unit_name'] as String).trim()
+            : 'unit';
+            
+        final total = quantity * unitPrice;
+        
+        if (quantity <= 0 || unitPrice < 0) continue;
+        
+        // Update product counts and totals
+        _productCounts[productName] = (_productCounts[productName] ?? 0) + 1;
+        _productTotals[productName] ??= {};
+        _productTotals[productName]![currency] = 
+            (_productTotals[productName]![currency] ?? 0) + total;
+        
+        // Track quantities by unit
+        _productQuantitiesByUnit[productName] ??= {};
+        _productQuantitiesByUnit[productName]![unitName] = 
+            (_productQuantitiesByUnit[productName]![unitName] ?? 0) + quantity;
+      } catch (e) {
+        debugPrint('Error processing product item: $e');
+        continue;
+      }
     }
   }
 
@@ -219,6 +350,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
             Tab(icon: Icon(Icons.dashboard), text: loc.summary),
             Tab(icon: Icon(Icons.list), text: loc.invoices),
             Tab(icon: Icon(Icons.people), text: loc.customers),
+            Tab(icon: Icon(Icons.inventory), text: loc.products),
           ],
         ),
       ),
@@ -350,6 +482,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                 _buildSummaryTab(loc, theme),
                 _buildInvoicesTab(loc, theme),
                 _buildCustomersTab(loc, theme),
+                _buildProductsTab(loc, theme),
               ],
             ),
           ),
@@ -544,6 +677,307 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     return sortedCustomers.sublist(
       start,
       end > sortedCustomers.length ? sortedCustomers.length : end,
+    );
+  }
+  
+  // Sort products based on current sort option
+  List<MapEntry<String, Map<String, double>>> _sortProducts() {
+    final products = _productTotals.entries.toList();
+    
+    switch (_currentProductSort) {
+      case 'name_asc':
+        products.sort((a, b) => a.key.compareTo(b.key));
+        break;
+      case 'name_desc':
+        products.sort((a, b) => b.key.compareTo(a.key));
+        break;
+      case 'quantity_asc':
+        products.sort((a, b) {
+          final aQty = _productQuantitiesByUnit[a.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          final bQty = _productQuantitiesByUnit[b.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          return aQty.compareTo(bQty);
+        });
+        break;
+      case 'quantity_desc':
+        products.sort((a, b) {
+          final aQty = _productQuantitiesByUnit[a.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          final bQty = _productQuantitiesByUnit[b.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          return bQty.compareTo(aQty);
+        });
+        break;
+      case 'total_desc':
+      default:
+        products.sort((a, b) {
+          final aTotal = a.value.values.fold(0.0, (sum, v) => sum + v);
+          final bTotal = b.value.values.fold(0.0, (sum, v) => sum + v);
+          return bTotal.compareTo(aTotal);
+        });
+    }
+    
+    // Apply search filter
+    final searchQuery = _productSearchController.text.toLowerCase();
+    if (searchQuery.isNotEmpty) {
+      return products.where((entry) => 
+        entry.key.toLowerCase().contains(searchQuery)
+      ).toList();
+    }
+    
+    return products;
+  }
+
+  // Get paginated products
+  List<MapEntry<String, Map<String, double>>> get _paginatedProducts {
+    final start = _productPage * _productPageSize;
+    final end = (_productPage + 1) * _productPageSize;
+    return _sortedProducts.sublist(
+      0,
+      end > _sortedProducts.length ? _sortedProducts.length : end,
+    );
+  }
+
+  // Handle product scroll for pagination
+  void _onProductScroll() {
+    if (_isLoadingMoreProducts || !_hasMoreProducts) return;
+    
+    final maxScroll = _productScrollController.position.maxScrollExtent;
+    final currentScroll = _productScrollController.position.pixels;
+    final delta = MediaQuery.of(context).size.height * 0.2;
+    
+    if (maxScroll - currentScroll <= delta) {
+      _fetchMoreProducts();
+    }
+  }
+  
+  // Handle product search changes
+  void _onProductSearchChanged() {
+    setState(() {
+      _productPage = 0;
+      _sortedProducts = _sortProducts();
+      _hasMoreProducts = _sortedProducts.length > _productPageSize;
+    });
+  }
+  
+  // Fetch more products for pagination
+  void _fetchMoreProducts() {
+    if (_isLoadingMoreProducts || !_hasMoreProducts) return;
+    
+    setState(() {
+      _isLoadingMoreProducts = true;
+      _productPage++;
+      _hasMoreProducts = _sortedProducts.length > _productPage * _productPageSize;
+      _isLoadingMoreProducts = false;
+    });
+  }
+  
+  // Build sort menu
+  Widget _buildSortMenu(AppLocalizations loc) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.sort),
+      onSelected: (value) {
+        setState(() {
+          _currentProductSort = value;
+          _productPage = 0;
+          _sortedProducts = _sortProducts();
+          _hasMoreProducts = _sortedProducts.length > _productPageSize;
+        });
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'total_desc',
+          child: Text(loc.sortByTotalDesc),
+        ),
+        PopupMenuItem(
+          value: 'name_asc',
+          child: Text(loc.sortByNameAsc),
+        ),
+        PopupMenuItem(
+          value: 'name_desc',
+          child: Text(loc.sortByNameDesc),
+        ),
+        PopupMenuItem(
+          value: 'quantity_desc',
+          child: Text(loc.sortByQuantityDesc),
+        ),
+      ],
+    );
+  }
+  
+  // Build product list item widget
+  Widget _buildProductItem(
+    BuildContext context,
+    String productName,
+    Map<String, double> currencyMap,
+    int count,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        leading: CircleAvatar(
+          backgroundColor: Colors.purple.withValues(alpha: 0.1),
+          child: const Icon(Icons.inventory, color: Colors.purple, size: 20),
+        ),
+        title: Text(
+          productName,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            // Show quantities by unit
+            ..._productQuantitiesByUnit[productName]?.entries.map(
+              (unitQty) => Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  '${_amountFormatter.format(unitQty.value)} ${unitQty.key}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ) ?? [const SizedBox.shrink()],
+            // Show sales count
+            Text(
+              '${loc.sales}: $count',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ...currencyMap.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 2.0),
+              child: Text(
+                '${_amountFormatter.format(e.value)} ${e.key}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Build products tab
+  Widget _buildProductsTab(AppLocalizations loc, ThemeData theme) {
+    // Sort products if not already sorted
+    if (_sortedProducts.isEmpty && _productTotals.isNotEmpty) {
+      _sortedProducts = _sortProducts();
+    }
+    
+    return Column(
+      children: [
+        // Search and sort bar
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _productSearchController,
+                  decoration: InputDecoration(
+                    hintText: loc.searchProducts,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildSortMenu(loc),
+            ],
+          ),
+        ),
+        
+        // Summary card removed as per user request
+        
+        // Products list
+        Expanded(
+          child: _productTotals.isEmpty
+              ? Center(
+                  child: _isLoading 
+                      ? const CircularProgressIndicator()
+                      : Text(loc.noDataAvailable),
+                )
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    await _fetchInvoices(reset: true);
+                    setState(() {
+                      _productPage = 0;
+                      _sortedProducts = _sortProducts();
+                      _hasMoreProducts = _sortedProducts.length > _productPageSize;
+                    });
+                  },
+                  child: ListView.builder(
+                    controller: _productScrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    itemCount: _paginatedProducts.length + (_hasMoreProducts ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= _paginatedProducts.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      
+                      final entry = _paginatedProducts[index];
+                      final productName = entry.key;
+                      final currencyMap = entry.value;
+                      final count = _productCounts[productName] ?? 0;
+                      
+                      return _buildProductItem(
+                        context,
+                        productName,
+                        currencyMap,
+                        count,
+                        theme,
+                        loc,
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+  
+  // Helper to build summary items
+  Widget _buildSummaryItem(String value, String label, IconData icon, ThemeData theme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+          ),
+        ),
+      ],
     );
   }
 
