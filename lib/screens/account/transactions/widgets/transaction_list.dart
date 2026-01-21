@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'transaction_balance_header.dart';
 import '../../../../themes/app_theme.dart';
 import '../../../../utils/date_formatters.dart' as dFormatter;
-import 'transaction_balance_header.dart';
 
 class TransactionList extends StatelessWidget {
   final List<Map<String, dynamic>> transactions;
@@ -14,6 +14,8 @@ class TransactionList extends StatelessWidget {
   final void Function(Map<String, dynamic>) onEdit;
   final void Function(Map<String, dynamic>) onDelete;
   final void Function(Map<String, dynamic>) onShare;
+  final void Function(Map<String, dynamic>) onCopy;
+  final void Function(Map<String, dynamic>) onSend;
   final NumberFormat amountFormatter;
   final Map<String, dynamic> balances;
 
@@ -27,6 +29,8 @@ class TransactionList extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onShare,
+    required this.onCopy,
+    required this.onSend,
     required this.amountFormatter,
     required this.balances,
   }) : super(key: key);
@@ -187,7 +191,42 @@ class TransactionList extends StatelessWidget {
                       ),
                       child: InkWell(
                         onTap: () => onDetails(transaction),
-                        onLongPress: () => onDetails(transaction),
+                        onLongPress: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.share),
+                                    title: Text(loc.share),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      onShare(transaction);
+                                    },
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.copy),
+                                    title: Text(loc.copy),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      onCopy(transaction);
+                                    },
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.send),
+                                    title: Text(loc.send),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      onSend(transaction);
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
                         borderRadius: BorderRadius.circular(12),
                         child: Row(
                           children: [
@@ -420,68 +459,80 @@ class TransactionList extends StatelessWidget {
       Map<String, dynamic> transaction, AppLocalizations loc) {
     return Expanded(
       flex: 1,
-      child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, size: 22),
-        tooltip: loc.actions,
-        padding: EdgeInsets.zero,
-        onSelected: (value) {
-          switch (value) {
-            case 'details':
-              onDetails(transaction);
-              break;
-            case 'share':
-              onShare(transaction);
-              break;
-            case 'edit':
-              onEdit(transaction);
-              break;
-            case 'delete':
-              onDelete(transaction);
-              break;
-            default:
-              break;
-          }
-        },
-        itemBuilder: (_) => [
-          PopupMenuItem(
-            value: 'details',
-            child: Row(
-              children: [
-                const Icon(Icons.info, size: 18),
-                const SizedBox(width: 12),
-                Text(loc.details),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'share',
-            child: Row(
-              children: [
-                const Icon(Icons.share, size: 18),
-                const SizedBox(width: 12),
-                Text(loc.share),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'edit',
-            child: Row(
-              children: [
-                Icon(Icons.edit, size: 18, color: AppTheme.primaryColor),
-                const SizedBox(width: 12),
-                Text(loc.edit),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'delete',
-            child: Row(
-              children: [
-                const Icon(Icons.delete, size: 18, color: Colors.redAccent),
-                const SizedBox(width: 12),
-                Text(loc.delete),
-              ],
-            ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+            onSelected: (value) {
+              switch (value) {
+                case 'details':
+                  onDetails(transaction);
+                  break;
+                case 'edit':
+                  onEdit(transaction);
+                  break;
+                case 'delete':
+                  onDelete(transaction);
+                  break;
+                case 'share':
+                  onShare(transaction);
+                  break;
+                case 'copy':
+                  onCopy(transaction);
+                  break;
+                case 'send':
+                  onSend(transaction);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'details',
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline, size: 20),
+                  title: Text(loc.details),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: const Icon(Icons.share, size: 20),
+                  title: Text(loc.share),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'copy',
+                child: ListTile(
+                  leading: const Icon(Icons.copy, size: 20),
+                  title: Text(loc.copy),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'send',
+                child: ListTile(
+                  leading:
+                      const Icon(Icons.send, size: 20, color: Colors.green),
+                  title: Text(loc.send),
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'edit',
+                child: ListTile(
+                  leading: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                  title: Text(loc.edit),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading:
+                      const Icon(Icons.delete, size: 20, color: Colors.red),
+                  title: Text(loc.delete),
+                ),
+              ),
+            ],
           ),
         ],
       ),

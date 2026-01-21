@@ -13,6 +13,8 @@ class TransactionCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback onCopy;
+  final VoidCallback onSend;
 
   const TransactionCard({
     Key? key,
@@ -23,6 +25,8 @@ class TransactionCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onShare,
+    required this.onCopy,
+    required this.onSend,
   }) : super(key: key);
 
   @override
@@ -76,6 +80,12 @@ class TransactionCard extends StatelessWidget {
               case 'share':
                 onShare();
                 break;
+              case 'copy':
+                onCopy();
+                break;
+              case 'send':
+                onSend();
+                break;
               case 'edit':
                 onEdit();
                 break;
@@ -97,6 +107,20 @@ class TransactionCard extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.share),
                 title: Text(loc.share),
+              ),
+            ),
+            PopupMenuItem(
+              value: 'copy',
+              child: ListTile(
+                leading: const Icon(Icons.copy),
+                title: Text(loc.copy),
+              ),
+            ),
+            PopupMenuItem(
+              value: 'send',
+              child: ListTile(
+                leading: const Icon(Icons.send),
+                title: Text(loc.send),
               ),
             ),
             PopupMenuItem(

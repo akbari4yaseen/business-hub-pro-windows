@@ -763,5 +763,7 @@
   "sortByNameAsc": "نوم (الف څخه ې)",
   "sortByNameDesc": "نوم (ې څخه الف)",
   "sortByQuantityDesc": "مقدار (ډیر څخه لږ)",
-  "searchProducts": "د توکو لټون..."
+  "searchProducts": "د توکو لټون...",
+  "send": "لیږل",
+  "copy": "کاپی"
 }

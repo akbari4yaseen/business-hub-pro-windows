@@ -1,5 +1,3 @@
-import 'package:BusinessHubPro/providers/info_provider.dart';
-import 'package:BusinessHubPro/utils/date_formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../widgets/search_bar.dart';
+import '../../../utils/transaction_share_helper.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction/transaction_details_widget.dart';
 import '../../../widgets/journal/journal_form_dialog.dart';
@@ -166,6 +165,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    return _buildTransactionList(controller);
+  }
+
+  Widget _buildTransactionList(TransactionsScreenController controller) {
     return TransactionList(
       transactions: controller.transactions,
       isLoading: controller.isLoading,
@@ -176,6 +179,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       onDelete: (transaction) =>
           _handleDeleteTransaction(transaction, controller),
       onShare: (transaction) => _shareTransaction(transaction),
+      onCopy: (transaction) => _copyTransaction(transaction),
+      onSend: (transaction) => _sendTransaction(transaction),
       amountFormatter: controller.amountFormatter,
       balances: controller.balances,
     );
@@ -382,53 +387,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  void _shareTransaction(Map<String, dynamic> transaction) async {
-    final loc = AppLocalizations.of(context)!;
-    final accountName = _controller.account['name'] as String? ?? '';
-    final rawDate = transaction['date'];
-    final DateTime parsedDate =
-        rawDate is String ? DateTime.parse(rawDate) : rawDate as DateTime;
-    final date =
-        formatLocalizedDateEnglishNumbers(context, parsedDate.toString());
-    final amount = transaction['amount'] as num? ?? 0;
-    final currency = transaction['currency'] as String? ?? '';
-    final description = transaction['description'] as String? ?? '';
-    final type =
-        (transaction['transaction_type'] as String?)?.toLowerCase() ?? '';
+  Future<void> _shareTransaction(Map<String, dynamic> transaction) async {
+    await TransactionShareHelper.shareTransaction(
+      context,
+      transaction,
+      accountName: _controller.account['name'] as String?,
+    );
+  }
 
-    // Format the amount with the app's standard formatter
-    final formattedAmount = _controller.amountFormatter.format(amount);
+  Future<void> _copyTransaction(Map<String, dynamic> transaction) async {
+    await TransactionShareHelper.copyTransaction(
+      context,
+      transaction,
+      accountName: _controller.account['name'] as String?,
+    );
+  }
 
-    // Get company info
-    final infoProvider = Provider.of<InfoProvider>(context, listen: false);
-    await infoProvider.loadInfo();
-    final companyName = infoProvider.info.name;
-
-    // Get all account balances
-    final allBalances = _controller.balances.entries.map((e) {
-      final currency = e.value['currency'] ?? e.key;
-      final balance = e.value['summary']?['balance'] as num? ?? 0;
-      return '${_controller.amountFormatter.format(balance)} $currency';
-    }).join('\n');
-
-    // Create a formatted message using localized strings
-    final transactionType =
-        type == 'credit' ? loc.creditTransactionType : loc.debitTransactionType;
-
-    // Build the message with proper string interpolation and named parameters
-    final message = '''${loc.shareTransactionGreeting(accountName)}
-${loc.shareTransactionMessage(formattedAmount, currency, transactionType, date)}
-${description.isNotEmpty ? '\n${loc.shareTransactionDescription(description)}' : '\n'}
-\n${loc.shareTransactionBalanceHeader}\n${allBalances}\n
-
-${loc.shareTransactionSignature(companyName!)}''';
-
-    await Clipboard.setData(ClipboardData(text: message));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.copiedToClipboard)),
-      );
-    }
+  Future<void> _sendTransaction(Map<String, dynamic> transaction) async {
+    final phoneNumber = _controller.account['phone'] as String?;
+    await TransactionShareHelper.sendTransaction(
+      context,
+      transaction,
+      phoneNumber: phoneNumber,
+      accountName: _controller.account['name'] as String?,
+    );
   }
 
   Future<void> _showAddJournalDialog(

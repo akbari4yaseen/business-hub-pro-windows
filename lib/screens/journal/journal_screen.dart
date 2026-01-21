@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../utils/journal_share_helper.dart';
 
 import '../../database/database_helper.dart';
 import '../../database/journal_db.dart';
 import '../../utils/search_manager.dart';
-import '../../utils/transaction_share_helper.dart';
 import '../../widgets/auth_widget.dart';
 import '../../widgets/journal/journal_details_widget.dart';
 import '../../widgets/journal/journal_filter_dialog.dart';
@@ -234,8 +234,8 @@ class _JournalScreenState extends State<JournalScreen> {
     }
   }
 
-  void _shareJournal(Map<String, dynamic> journal) {
-    shareJournalEntry(context, journal);
+  Future<void> _shareJournal(Map<String, dynamic> journal) async {
+    await JournalShareHelper.shareJournal(context, journal);
   }
 
   Future<void> _addJournal() async {

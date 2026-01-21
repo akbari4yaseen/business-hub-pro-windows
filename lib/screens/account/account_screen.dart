@@ -91,7 +91,7 @@ class _AccountScreenState extends State<AccountScreen>
 
   void _updateScrollPosition() {
     if (!mounted) return;
-    final atTop = _scrollController.position.pixels <= 0;
+    _scrollController.position.pixels <= 0;
   }
 
   Future<void> _loadAccounts() async {
@@ -552,15 +552,10 @@ class _AccountScreenState extends State<AccountScreen>
         onPressed: _addAccount,
         tooltip: AppLocalizations.of(context)!.addAccount,
         mini: false,
-        child: FaIcon(
-            FontAwesomeIcons.userPlus,
-            size: 18),
+        child: FaIcon(FontAwesomeIcons.userPlus, size: 18),
       ),
     );
   }
-
-  void _scrollToTop() => _scrollController.animateTo(0,
-      duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
 
   void _addAccount() async {
     if (!mounted) return;

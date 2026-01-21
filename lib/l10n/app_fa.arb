@@ -758,5 +758,7 @@
   "sortByTotalDesc": "جمع کل (بیشترین به کمترین)",
   "sortByNameAsc": "نام (الف تا ی)",
   "sortByNameDesc": "نام (ی تا الف)",
-  "sortByQuantityDesc": "تعداد (بیشترین به کمترین)"
+  "sortByQuantityDesc": "تعداد (بیشترین به کمترین)",
+  "send": "ارسال",
+  "copy": "کاپی"
 }

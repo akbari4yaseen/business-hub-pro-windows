@@ -759,5 +759,7 @@
   "sortByNameAsc": "Name (A to Z)",
   "sortByNameDesc": "Name (Z to A)",
   "sortByQuantityDesc": "Quantity (High to Low)",
-  "searchProducts": "Search products..."
+  "searchProducts": "Search products...",
+  "send": "Send",
+  "copy": "Copy"
 }
