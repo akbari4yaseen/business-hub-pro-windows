@@ -692,6 +692,54 @@
   "balanceStatus": "Balance Status",
   "lastTransaction": "Last Transaction",
   "noTransactions": "No transactions found",
+  "shareTransactionGreeting": "Dear {accountName}",
+  "@shareTransactionGreeting": {
+    "description": "Greeting for the transaction share message",
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionMessage": "An amount of {amount} {currency} has been {transactionType} to your account on {date}.",
+  "@shareTransactionMessage": {
+    "description": "Main transaction message with amount, currency, type and date",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      },
+      "transactionType": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionBalanceHeader": "Current account balance:",
+  "shareTransactionDescription": "Description: {description}",
+  "@shareTransactionDescription": {
+    "description": "Transaction description text",
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionSignature": "Sincerely,\n{companyName}",
+  "@shareTransactionSignature": {
+    "description": "Signature with company name",
+    "placeholders": {
+      "companyName": {
+        "type": "String"
+      }
+    }
+  },
+  "creditTransactionType": "credited",
+  "debitTransactionType": "debited",
   "filterByAccountType": "Filter by Account Type",
   "filterByCurrency": "Filter by Currency",
   "showAll": "Show All",

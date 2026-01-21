@@ -693,7 +693,55 @@
   "zeroBalance": "بیلانس صفر",
   "balanceStatus": "وضعیت بیلانس",
   "lastTransaction": "آخرین معامله",
-  "noTransactions": "هیچ معامله‌ای یافت نشد",
+  "noTransactions": "معامله‌ای یافت نشد",
+  "shareTransactionGreeting": "محترم {accountName}،\n",
+  "@shareTransactionGreeting": {
+    "description": "Greeting for the transaction share message",
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionMessage": "مبلغ {amount} {currency} در تاریخ \n{date}\n به حساب شما {transactionType} شده است.",
+  "@shareTransactionMessage": {
+    "description": "Main transaction message with amount, currency, type and date",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      },
+      "transactionType": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionBalanceHeader": "بیلانس فعلی حساب:",
+  "shareTransactionDescription": "توضیحات: {description}",
+  "@shareTransactionDescription": {
+    "description": "Transaction description text",
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionSignature": "با احترام،\n{companyName}",
+  "@shareTransactionSignature": {
+    "description": "Signature with company name",
+    "placeholders": {
+      "companyName": {
+        "type": "String"
+      }
+    }
+  },
+  "creditTransactionType": "آوردگی",
+  "debitTransactionType": "بردگی",
   "filterByAccountType": "فیلتر بر اساس نوع حساب",
   "filterByCurrency": "فیلتر بر اساس ارز",
   "showAll": "نمایش همه",

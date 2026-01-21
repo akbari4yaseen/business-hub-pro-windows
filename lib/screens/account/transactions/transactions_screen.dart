@@ -1,10 +1,10 @@
+import 'package:BusinessHubPro/providers/info_provider.dart';
 import 'package:BusinessHubPro/utils/date_formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../widgets/search_bar.dart';
@@ -388,7 +388,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final rawDate = transaction['date'];
     final DateTime parsedDate =
         rawDate is String ? DateTime.parse(rawDate) : rawDate as DateTime;
-    final date = formatLocalizedDate(context, parsedDate.toString());
+    final date =
+        formatLocalizedDateEnglishNumbers(context, parsedDate.toString());
     final amount = transaction['amount'] as num? ?? 0;
     final currency = transaction['currency'] as String? ?? '';
     final description = transaction['description'] as String? ?? '';
@@ -398,12 +399,29 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     // Format the amount with the app's standard formatter
     final formattedAmount = _controller.amountFormatter.format(amount);
 
-    // Create a formatted message
-    final message = '''${loc.account}: $accountName
-${loc.date}: $date
-${loc.amount}: $formattedAmount $currency
-${loc.type}: ${type == 'credit' ? loc.credit : loc.debit}
-${loc.description}: $description''';
+    // Get company info
+    final infoProvider = Provider.of<InfoProvider>(context, listen: false);
+    await infoProvider.loadInfo();
+    final companyName = infoProvider.info.name;
+
+    // Get all account balances
+    final allBalances = _controller.balances.entries.map((e) {
+      final currency = e.value['currency'] ?? e.key;
+      final balance = e.value['summary']?['balance'] as num? ?? 0;
+      return '${_controller.amountFormatter.format(balance)} $currency';
+    }).join('\n');
+
+    // Create a formatted message using localized strings
+    final transactionType =
+        type == 'credit' ? loc.creditTransactionType : loc.debitTransactionType;
+
+    // Build the message with proper string interpolation and named parameters
+    final message = '''${loc.shareTransactionGreeting(accountName)}
+${loc.shareTransactionMessage(formattedAmount, currency, transactionType, date)}
+${description.isNotEmpty ? '\n${loc.shareTransactionDescription(description)}' : '\n'}
+\n${loc.shareTransactionBalanceHeader}\n${allBalances}\n
+
+${loc.shareTransactionSignature(companyName!)}''';
 
     await Clipboard.setData(ClipboardData(text: message));
     if (mounted) {

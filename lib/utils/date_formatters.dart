@@ -82,6 +82,20 @@ String formatLocalizedDate(BuildContext context, dynamic date) {
   return formatJalaliDate(date);
 }
 
+String formatLocalizedDateEnglishNumbers(BuildContext context, dynamic date) {
+  final parsedDate = _parseToDateTime(date);
+  final locale = Localizations.localeOf(context).languageCode;
+
+  if (locale.startsWith('en')) {
+    // Gregorian + English digits
+    return formatDate(parsedDate);
+  } else {
+    // Jalali date but KEEP English digits
+    final j = Jalali.fromDateTime(parsedDate);
+    return '${j.year}-${j.month.toString().padLeft(2, '0')}-${j.day.toString().padLeft(2, '0')}';
+  }
+}
+
 String formatLocalizedDateShort(BuildContext context, dynamic date) {
   final parsedDate = _parseToDateTime(date);
   final locale = Localizations.localeOf(context).languageCode;

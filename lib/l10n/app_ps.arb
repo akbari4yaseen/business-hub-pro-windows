@@ -697,6 +697,54 @@
   "balanceStatus": "د توازن حالت",
   "lastTransaction": "وروستۍ معامله",
   "noTransactions": "هیڅ معامله ونه موندل شوه",
+  "shareTransactionGreeting": "ګرانه {accountName} عزیزه،",
+  "@shareTransactionGreeting": {
+    "description": "Greeting for the transaction share message",
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionMessage": "په تاسو د {amount} {currency} مقدار {transactionType} شوی دی. نېټه: \n{date}\n",
+  "@shareTransactionMessage": {
+    "description": "Main transaction message with amount, currency, type and date",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      },
+      "transactionType": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionBalanceHeader": "اوسنی حساب بیلانس:",
+  "shareTransactionDescription": "تفصیل: {description}",
+  "@shareTransactionDescription": {
+    "description": "Transaction description text",
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTransactionSignature": "د درناوی سره،\n{companyName}",
+  "@shareTransactionSignature": {
+    "description": "Signature with company name",
+    "placeholders": {
+      "companyName": {
+        "type": "String"
+      }
+    }
+  },
+  "creditTransactionType": "اضافه",
+  "debitTransactionType": "واخیستل شو",
   "filterByAccountType": "د حساب د ډول له مخې فلټر",
   "filterByCurrency": "د اسعار له مخې فلټر",
   "showAll": "ټول وښایئ",
