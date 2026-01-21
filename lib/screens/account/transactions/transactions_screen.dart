@@ -402,28 +402,34 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _shareTransaction(Map<String, dynamic> transaction) async {
+    final accountName = _controller.account['name'] as String?;
     await TransactionShareHelper.shareTransaction(
       context,
       transaction,
-      accountName: _controller.account['name'] as String?,
+      accountName: accountName,
+      accountBalances: _controller.balances,
     );
   }
 
   Future<void> _copyTransaction(Map<String, dynamic> transaction) async {
+    final accountName = _controller.account['name'] as String?;
     await TransactionShareHelper.copyTransaction(
       context,
       transaction,
-      accountName: _controller.account['name'] as String?,
+      accountName: accountName,
+      accountBalances: _controller.balances,
     );
   }
 
   Future<void> _sendTransaction(Map<String, dynamic> transaction) async {
-    final phoneNumber = _controller.account['phone'] as String?;
+    final accountName = _controller.account['name'] as String?;
+    final phone = _controller.account['phone'] as String?;
     await TransactionShareHelper.sendTransaction(
       context,
       transaction,
-      phoneNumber: phoneNumber,
-      accountName: _controller.account['name'] as String?,
+      phoneNumber: phone,
+      accountName: accountName,
+      accountBalances: _controller.balances,
     );
   }
 

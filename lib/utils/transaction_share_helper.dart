@@ -13,6 +13,7 @@ class TransactionShareHelper {
     BuildContext context,
     Map<String, dynamic> transaction, {
     String? accountName,
+    Map<String, dynamic>? accountBalances,
   }) async {
     final loc = AppLocalizations.of(context)!;
     final infoProvider = Provider.of<InfoProvider>(context, listen: false);
@@ -31,29 +32,52 @@ class TransactionShareHelper {
     final formattedAmount = NumberFormat('#,###.##').format(amount);
     final currency = transaction['currency'] as String? ?? '';
     final description = transaction['description'] as String? ?? '';
-    final type =
-        (transaction['transaction_type'] as String?)?.toLowerCase() ?? '';
-    final transactionType =
-        type == 'credit' ? loc.creditTransactionType : loc.debitTransactionType;
+    final type = (transaction['transaction_type'] as String?)?.toLowerCase() ?? '';
+    final transactionType = type == 'credit' ? loc.creditTransactionType : loc.debitTransactionType;
 
-    // Build the message using localized strings
-    return '''${loc.shareTransactionGreeting(accountName ?? '')}
-${loc.shareTransactionMessage(formattedAmount, currency, transactionType, date)}
-${description.isNotEmpty ? '\n${loc.shareTransactionDescription(description)}' : ''}
+    // Build transaction details
+    final buffer = StringBuffer();
+    buffer.writeln(loc.shareTransactionGreeting(accountName ?? ''));
+    buffer.writeln(loc.shareTransactionMessage(formattedAmount, currency, transactionType, date));
+    
+    if (description.isNotEmpty) {
+      buffer.writeln('\n${loc.shareTransactionDescription(description)}');
+    }
 
-${loc.shareTransactionBalanceHeader}
-${formattedAmount} $currency
+    // Add account balances if available
+    if (accountBalances != null && accountBalances.isNotEmpty) {
+      buffer.writeln('\n${loc.shareTransactionBalanceHeader}');
+      
+      // Format each balance line
+      accountBalances.forEach((currency, data) {
+        final balance = data['summary']?['balance'] as num? ?? 0.0;
+        final formattedBalance = NumberFormat('#,###.##').format(balance);
+        buffer.writeln('• $formattedBalance $currency');
+      });
+    } else {
+      // Fallback to single transaction amount if no balances available
+      buffer.writeln('\n${loc.shareTransactionBalanceHeader}');
+      buffer.writeln('$formattedAmount $currency');
+    }
 
-${loc.shareTransactionSignature(companyName)}''';
+    // Add company signature
+    buffer.writeln('\n${loc.shareTransactionSignature(companyName)}');
+
+    return buffer.toString();
   }
 
   static Future<void> shareTransaction(
     BuildContext context,
     Map<String, dynamic> transaction, {
     String? accountName,
+    Map<String, dynamic>? accountBalances,
   }) async {
-    final message = await buildTransactionMessage(context, transaction,
-        accountName: accountName);
+    final message = await buildTransactionMessage(
+      context, 
+      transaction,
+      accountName: accountName,
+      accountBalances: accountBalances,
+    );
     await Share.share(message);
   }
 
@@ -61,9 +85,14 @@ ${loc.shareTransactionSignature(companyName)}''';
     BuildContext context,
     Map<String, dynamic> transaction, {
     String? accountName,
+    Map<String, dynamic>? accountBalances,
   }) async {
-    final message = await buildTransactionMessage(context, transaction,
-        accountName: accountName);
+    final message = await buildTransactionMessage(
+      context, 
+      transaction,
+      accountName: accountName,
+      accountBalances: accountBalances,
+    );
     await Clipboard.setData(ClipboardData(text: message));
 
     if (context.mounted) {
@@ -79,9 +108,14 @@ ${loc.shareTransactionSignature(companyName)}''';
     Map<String, dynamic> transaction, {
     String? phoneNumber,
     String? accountName,
+    Map<String, dynamic>? accountBalances,
   }) async {
-    final message = await buildTransactionMessage(context, transaction,
-        accountName: accountName);
+    final message = await buildTransactionMessage(
+      context, 
+      transaction,
+      accountName: accountName,
+      accountBalances: accountBalances,
+    );
 
     // If phone number is provided, try to open WhatsApp
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
@@ -96,6 +130,11 @@ ${loc.shareTransactionSignature(companyName)}''';
     }
 
     // Fall back to regular share if WhatsApp is not available or no phone number
-    await shareTransaction(context, transaction, accountName: accountName);
+    await shareTransaction(
+      context, 
+      transaction, 
+      accountName: accountName,
+      accountBalances: accountBalances,
+    );
   }
 }
