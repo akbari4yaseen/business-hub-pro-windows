@@ -1,3 +1,4 @@
+import 'package:BusinessHubPro/utils/transaction_share_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../widgets/search_bar.dart';
-import '../../../utils/transaction_share_helper.dart';
+import '../../../utils/account_share_helper.dart';
 import '../../../widgets/auth_widget.dart';
 import '../../../widgets/transaction/transaction_details_widget.dart';
 import '../../../widgets/journal/journal_form_dialog.dart';
@@ -148,6 +149,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
           ),
           PopupMenuItem(
+            value: 'copy_balance',
+            child: ListTile(
+              leading: const FaIcon(FontAwesomeIcons.copy),
+              title: Text(loc.copyBalance),
+            ),
+          ),
+          PopupMenuItem(
             value: 'whatsapp',
             child: ListTile(
               leading: const FaIcon(FontAwesomeIcons.whatsapp),
@@ -189,6 +197,26 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Future<void> _handleMenuAction(
       String action, TransactionsScreenController controller) async {
     final loc = AppLocalizations.of(context)!;
+    final accountName = controller.account['name'] as String? ?? '';
+
+    // Format balances to match what buildShareMessage expects
+    final Map<String, dynamic> formattedBalances = {};
+    controller.balances.forEach((currency, data) {
+      formattedBalances[currency] = {
+        'currency': currency,
+        'summary': {
+          'balance': data['summary']?['balance'] ?? 0.0,
+          'credit': data['summary']?['credit'] ?? 0.0,
+          'debit': data['summary']?['debit'] ?? 0.0,
+        }
+      };
+    });
+
+    final account = {
+      ...controller.account,
+      'name': accountName,
+      'balances': formattedBalances,
+    };
 
     switch (action) {
       case 'filter':
@@ -198,45 +226,31 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _onPrintPressed(controller);
         break;
       case 'share':
-        final accountName = controller.account['name'] as String? ?? '';
-        final balances = controller.balances;
-
-        // Format the balances as a string
-        final buffer = StringBuffer();
-        buffer.writeln('${loc.account}: $accountName\n');
-
-        balances.forEach((currency, data) {
-          final summary = data['summary'] as Map<String, dynamic>? ?? {};
-          final credit = summary['credit'] as num? ?? 0;
-          final debit = summary['debit'] as num? ?? 0;
-          final balance = summary['balance'] as num? ?? 0;
-
-          buffer.writeln('${loc.currency}: $currency');
-          buffer.writeln(
-              '${loc.credit}: ${controller.amountFormatter.format(credit)}');
-          buffer.writeln(
-              '${loc.debit}: ${controller.amountFormatter.format(debit)}');
-          buffer.writeln(
-              '${loc.balance}: ${controller.amountFormatter.format(balance)}\n');
-        });
-
-        await Clipboard.setData(ClipboardData(text: buffer.toString()));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(loc.copiedToClipboard)),
-          );
+        await shareAccountBalances(context, account);
+        break;
+      case 'copy_balance':
+        try {
+          final message = await buildShareMessage(context, account);
+          await Clipboard.setData(ClipboardData(text: message));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(loc.copiedToClipboard)),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(loc.error)),
+            );
+          }
         }
         break;
       case 'whatsapp':
-        // Since we're not using WhatsApp on Windows, we'll just copy account name to clipboard
-        final accountName = controller.account['name'] as String? ?? '';
-        await Clipboard.setData(
-            ClipboardData(text: '$accountName ${loc.account} ${loc.balance}'));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(loc.copiedToClipboard)),
-          );
-        }
+        await shareAccountBalances(
+          context,
+          account,
+          viaWhatsApp: true,
+        );
         break;
     }
   }

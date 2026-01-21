@@ -21,10 +21,12 @@ class TransactionShareHelper {
 
     // Extract and format transaction data
     final rawDate = transaction['date'];
-    final DateTime parsedDate =
-        rawDate is String ? DateTime.parse(rawDate) : rawDate as DateTime;
-    final date =
-        formatLocalizedDateEnglishNumbers(context, parsedDate.toString());
+    final DateTime transactionDate = rawDate == null 
+        ? DateTime.now() 
+        : rawDate is String 
+            ? DateTime.parse(rawDate) 
+            : rawDate as DateTime;
+    final date = formatLocalizedDateEnglishNumbers(context, transactionDate.toString());
     final amount = transaction['amount'] as num? ?? 0;
     final formattedAmount = NumberFormat('#,###.##').format(amount);
     final currency = transaction['currency'] as String? ?? '';
