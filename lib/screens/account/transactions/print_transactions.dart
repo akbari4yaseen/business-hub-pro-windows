@@ -1,3 +1,4 @@
+import 'package:BusinessHubPro/utils/utilities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
@@ -46,6 +47,16 @@ class PrintTransactions {
     final localeCode = Localizations.localeOf(context).languageCode;
     final isRTL = localeCode != 'en';
     final pdfDir = isRTL ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+
+    final columnWidths = isRTL
+        ? {
+            5: const pw.FixedColumnWidth(25), // number
+            3: const pw.FlexColumnWidth(4), // desc
+          }
+        : {
+            0: const pw.FixedColumnWidth(25), // number
+            1: const pw.FlexColumnWidth(4), // desc
+          };
 
     final fontDataRegular =
         await rootBundle.load('assets/fonts/Vazirmatn-Regular.ttf');
@@ -146,17 +157,17 @@ class PrintTransactions {
           if (balances.isNotEmpty) {
             final balanceHeaders = [
               loc.currency,
-              loc.credit,
-              loc.debit,
+              // loc.credit,
+              // loc.debit,
               loc.balance,
             ];
             final balanceRows = balances.entries.map((e) {
               final data = e.value as Map<String, dynamic>;
               final summary = (data['summary'] as Map<String, dynamic>?) ?? {};
               return [
-                data['currency'] ?? e.key,
-                _amountFormatter.format(summary['credit'] ?? 0),
-                _amountFormatter.format(summary['debit'] ?? 0),
+                '${getLocalizedCurrencyName(context, data['currency'] ?? e.key)} (${data['currency'] ?? e.key})',
+                // _amountFormatter.format(summary['credit'] ?? 0),
+                // _amountFormatter.format(summary['debit'] ?? 0),
                 _amountFormatter.format(summary['balance'] ?? 0),
               ];
             }).toList();
@@ -196,7 +207,7 @@ class PrintTransactions {
 
           // --- TRANSACTIONS TABLE ---
           final txHeaders = [
-            loc.number,
+            '#',
             loc.date,
             loc.description,
             loc.debit,
@@ -221,8 +232,6 @@ class PrintTransactions {
           final dataToUseTx =
               isRTL ? txRows.map((r) => r.reversed.toList()).toList() : txRows;
 
-          final descIndex = headersToUseTx.indexOf(loc.description);
-
           content.add(
             pw.Text(
               loc.transactions,
@@ -236,11 +245,7 @@ class PrintTransactions {
               child: pw.TableHelper.fromTextArray(
                 headers: headersToUseTx,
                 data: dataToUseTx,
-                columnWidths: {
-                  descIndex: pw.FlexColumnWidth(2),
-                  for (var i = 0; i < headersToUseTx.length; i++)
-                    if (i != descIndex) i: pw.IntrinsicColumnWidth(),
-                },
+                columnWidths: columnWidths,
                 headerStyle:
                     pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                 cellStyle: pw.TextStyle(fontSize: 10),
