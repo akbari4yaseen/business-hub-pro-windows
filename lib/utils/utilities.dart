@@ -114,3 +114,11 @@ String getLocalizedAccountName(
       return fallbackName ?? '';
   }
 }
+
+// get localized currency name based on currency code and current locale
+String getLocalizedCurrencyName(BuildContext context, String currencyCode) {
+  final localeCode = Localizations.localeOf(context).languageCode;
+  return localizedCurrencyNames[currencyCode]?[localeCode] ??
+      localizedCurrencyNames[currencyCode]?['en'] ??
+      currencyCode;
+}

@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'db_export_import.dart';
 import 'db_init.dart';
 import 'package:flutter/foundation.dart';
@@ -27,13 +26,13 @@ class DatabaseHelper {
       if (Platform.isWindows) {
         // Get the directory where the executable is located
         final exeDir = File(Platform.resolvedExecutable).parent;
-        
+
         // Create a Database subdirectory
         final dbDir = Directory(join(exeDir.path, 'Database'));
         if (!await dbDir.exists()) {
           await dbDir.create(recursive: true);
         }
-        
+
         // Create the database file path in the Database directory
         dbPath = join(dbDir.path, _databaseName);
       } else {
@@ -84,8 +83,10 @@ class DatabaseHelper {
   /// Helper to get the database file path
   Future<String> getDatabasePath() async {
     if (Platform.isWindows) {
-      final appDir = await getApplicationDocumentsDirectory();
-      return join(appDir.path, 'BusinessHubPro', _databaseName);
+      // Match the path used in _initDatabase
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      final dbDir = Directory(join(exeDir.path, 'Database'));
+      return join(dbDir.path, _databaseName);
     }
     return join(await getDatabasesPath(), _databaseName);
   }

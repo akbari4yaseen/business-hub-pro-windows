@@ -12,9 +12,9 @@ class DriveBackupService {
   static const _prefsFolderIdKey = 'drive_businesshub_folder_id';
 
   static const _clientId =
-      '436609276204-ti9s0mr3k6f9s3oo9bi76d4ti7tohfuh.apps.googleusercontent.com'; // Web OAuth2 client ID
-  static const _clientSecret =
-      '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'; // Web OAuth2 client secret
+      '436609276204-8bsiurnijn29s0hbmmcni6qiuulelfrd.apps.googleusercontent.com'; // Desktop OAuth2 client ID
+  // For desktop apps with PKCE, client secret is
+  static const String? _clientSecret = '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';
   static final _scopes = [drive.DriveApi.driveFileScope];
 
   drive.DriveApi? _driveApi;
@@ -44,8 +44,6 @@ class DriveBackupService {
   /// Get or create the BusinessHubPro folder
   Future<String> _getBusinessHubFolderId() async {
     final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString(_prefsFolderIdKey);
-    if (cached != null) return cached;
 
     final driveApi = await _ensureDriveApi();
     final result = await driveApi.files.list(
