@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../utils/date_time_picker_helper.dart';
 import '../../../utils/date_formatters.dart' as dFormatter;
 
@@ -9,9 +9,11 @@ class PurchaseFilterDialog extends StatelessWidget {
   final DateTime? selectedDate;
   final List<String> supplierOptions;
   final List<String> currencyOptions;
-  final void Function({String? supplier, String? currency, DateTime? date}) onApply;
+  final void Function({String? supplier, String? currency, DateTime? date})
+      onApply;
   final VoidCallback onReset;
-  final void Function({String? supplier, String? currency, DateTime? date}) onChanged;
+  final void Function({String? supplier, String? currency, DateTime? date})
+      onChanged;
 
   const PurchaseFilterDialog({
     Key? key,
@@ -35,7 +37,8 @@ class PurchaseFilterDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600, minWidth: 500),
         child: Padding(
-          padding: MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(24)),
+          padding:
+              MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(24)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,14 +46,15 @@ class PurchaseFilterDialog extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  Icon(Icons.filter_list, size: 24, color: Theme.of(context).primaryColor),
+                  Icon(Icons.filter_list,
+                      size: 24, color: Theme.of(context).primaryColor),
                   const SizedBox(width: 12),
                   Text(
                     loc.filter,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'VazirBold',
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontFamily: 'VazirBold',
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ],
               ),
@@ -68,15 +72,18 @@ class PurchaseFilterDialog extends StatelessWidget {
                         // Supplier Dropdown
                         Text(
                           loc.supplier,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: selectedSupplier ?? 'all',
                           items: supplierOptions.map((supplier) {
-                            final displayName = supplier == 'all' ? loc.all : supplier.split(' (')[0];
+                            final displayName = supplier == 'all'
+                                ? loc.all
+                                : supplier.split(' (')[0];
                             return DropdownMenuItem(
                               value: supplier,
                               child: Text(
@@ -90,7 +97,8 @@ class PurchaseFilterDialog extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Theme.of(context).colorScheme.surface,
                           ),
@@ -107,9 +115,10 @@ class PurchaseFilterDialog extends StatelessWidget {
                         // Currency Dropdown
                         Text(
                           loc.currency,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
@@ -117,7 +126,8 @@ class PurchaseFilterDialog extends StatelessWidget {
                           items: currencyOptions.map((currency) {
                             return DropdownMenuItem(
                               value: currency,
-                              child: Text(currency == 'all' ? loc.all : currency),
+                              child:
+                                  Text(currency == 'all' ? loc.all : currency),
                             );
                           }).toList(),
                           onChanged: (value) => onChanged(currency: value),
@@ -125,7 +135,8 @@ class PurchaseFilterDialog extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Theme.of(context).colorScheme.surface,
                           ),
@@ -142,8 +153,8 @@ class PurchaseFilterDialog extends StatelessWidget {
               Text(
                 loc.date,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               const SizedBox(height: 8),
               InkWell(
@@ -156,7 +167,8 @@ class PurchaseFilterDialog extends StatelessWidget {
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(8),
@@ -167,13 +179,15 @@ class PurchaseFilterDialog extends StatelessWidget {
                     children: [
                       Text(
                         selectedDate != null
-                            ? dFormatter.formatLocalizedDate(context, selectedDate.toString())
+                            ? dFormatter.formatLocalizedDate(
+                                context, selectedDate.toString())
                             : loc.selectDate,
                         style: TextStyle(
                           color: selectedDate != null ? null : Colors.grey[600],
                         ),
                       ),
-                      Icon(Icons.calendar_today, size: 20, color: Colors.grey[600]),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: Colors.grey[600]),
                     ],
                   ),
                 ),
@@ -223,4 +237,4 @@ class PurchaseFilterDialog extends StatelessWidget {
       ),
     );
   }
-} 
+}

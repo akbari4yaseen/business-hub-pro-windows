@@ -29,7 +29,7 @@ class AppTheme {
       900: primaryColor,
     }),
     primaryColor: primaryColor,
-    cardTheme: CardTheme(color: Colors.white),
+    cardTheme: CardThemeData(color: Colors.white),
     brightness: Brightness.light,
     drawerTheme: DrawerThemeData(backgroundColor: Colors.white),
     fontFamily: "Vazir",
@@ -41,7 +41,7 @@ class AppTheme {
       splashColor: primaryColor.withValues(alpha: 0.9),
       hoverColor: primaryColor.withValues(alpha: 0.3),
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: primaryColor,
       indicatorColor: primaryColor,
     ),
@@ -97,17 +97,17 @@ class AppTheme {
       surface: Colors.grey.shade800,
       onSurface: Colors.white70,
     ),
-    cardTheme: CardTheme(color: Colors.grey.shade800),
+    cardTheme: CardThemeData(color: Colors.grey.shade800),
     drawerTheme:
         DrawerThemeData(backgroundColor: Color.fromRGBO(48, 48, 48, 1)),
     scaffoldBackgroundColor: Colors.grey.shade900,
     bottomSheetTheme:
         BottomSheetThemeData(backgroundColor: Color.fromRGBO(48, 48, 48, 1)),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: primaryColor,
       indicatorColor: primaryColor,
     ),
-    appBarTheme: AppBarTheme(
+    appBarTheme: AppBarThemeData(
       backgroundColor: Colors.grey.shade900,
       surfaceTintColor: Colors.transparent,
       iconTheme: IconThemeData(color: Colors.white),

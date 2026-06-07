@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'date_time_picker_helper.dart';
 import '../providers/info_provider.dart';
 
 /// Builds a localized, formatted message summarizing an account's balances
-Future<String> buildShareMessage(BuildContext context, Map<String, dynamic> account) async {
+Future<String> buildShareMessage(
+    BuildContext context, Map<String, dynamic> account) async {
   final loc = AppLocalizations.of(context)!;
   final now = DateTime.now();
   final formattedDate = formatLocalizedDateTime(context, now);

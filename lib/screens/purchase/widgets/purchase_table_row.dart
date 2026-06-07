@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../models/purchase.dart';
 import '../../../providers/purchase_provider.dart';
 import '../../../themes/app_theme.dart';
@@ -192,7 +192,8 @@ class _PurchaseTableRowState extends State<PurchaseTableRow> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              color:
+                                  AppTheme.primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

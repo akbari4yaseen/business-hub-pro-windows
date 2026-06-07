@@ -2,7 +2,7 @@ import 'account_reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'system_account_reports_screen.dart';
 import 'daily_balances_chart.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'periodic_reports_screen.dart';
 import 'purchase_reports_screen.dart';
 import 'sales_reports_screen.dart';

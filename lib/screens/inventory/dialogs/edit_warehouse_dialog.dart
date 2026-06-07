@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../models/warehouse.dart';
 
@@ -27,7 +27,8 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.warehouse.name);
     _addressController = TextEditingController(text: widget.warehouse.address);
-    _descriptionController = TextEditingController(text: widget.warehouse.description);
+    _descriptionController =
+        TextEditingController(text: widget.warehouse.description);
   }
 
   @override
@@ -104,7 +105,9 @@ class _EditWarehouseDialogState extends State<EditWarehouseDialog> {
                 description: _descriptionController.text,
               );
 
-              await context.read<InventoryProvider>().updateWarehouse(updatedWarehouse);
+              await context
+                  .read<InventoryProvider>()
+                  .updateWarehouse(updatedWarehouse);
               if (mounted) {
                 Navigator.of(context).pop();
               }

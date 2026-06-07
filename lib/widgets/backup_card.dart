@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../database/database_helper.dart';
 import '../../database/settings_db.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../utils/backup_google_drive.dart';
 
 /// Requests MANAGE_EXTERNAL_STORAGE permission on Android 11+.

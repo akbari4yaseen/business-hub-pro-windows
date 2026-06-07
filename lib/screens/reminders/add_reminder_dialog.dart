@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 
 import '../../models/reminder.dart';
 import '../../utils/date_time_picker_helper.dart';
@@ -195,7 +195,8 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
                             repeatInterval:
                                 _isRepeating ? _repeatInterval : null,
                           );
-                          widget.onSave(r); // This will close the dialog and return the reminder
+                          widget.onSave(
+                              r); // This will close the dialog and return the reminder
                         },
                         child: Text(loc.save),
                       ),

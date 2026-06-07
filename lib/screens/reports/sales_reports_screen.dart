@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../database/invoice_db.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
@@ -17,26 +17,32 @@ class SalesReportsScreen extends StatefulWidget {
 class _SalesReportsScreenState extends State<SalesReportsScreen>
     with TickerProviderStateMixin {
   final InvoiceDBHelper _db = InvoiceDBHelper();
-  
+
   // Filters
   DateTime? _startDate;
   DateTime? _endDate;
   String? _searchQuery;
   String? _selectedCurrency;
   String? _selectedStatus;
-  
+
   // Data
   bool _isLoading = false;
   List<Map<String, dynamic>> _invoices = [];
   List<String> _currencies = [];
-  List<String> _statuses = ['draft', 'finalized', 'partially_paid', 'paid', 'cancelled'];
-  
+  List<String> _statuses = [
+    'draft',
+    'finalized',
+    'partially_paid',
+    'paid',
+    'cancelled'
+  ];
+
   // Summary data
   Map<String, double> _currencyTotals = {};
   Map<String, int> _customerCounts = {};
   Map<String, Map<String, double>> _customerTotals = {};
   Map<String, int> _statusCounts = {};
-  
+
   // Product analysis
   Map<String, int> _productCounts = {};
   Map<String, Map<String, double>> _productTotals = {};
@@ -47,14 +53,15 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   int _productPage = 0;
   bool _hasMoreProducts = true;
   bool _isLoadingMoreProducts = false;
-  final TextEditingController _productSearchController = TextEditingController();
+  final TextEditingController _productSearchController =
+      TextEditingController();
   final ScrollController _productScrollController = ScrollController();
   String _currentProductSort = 'total_desc';
   List<MapEntry<String, Map<String, double>>> _sortedProducts = [];
-  
+
   // Tab controller
   late TabController _tabController;
-  
+
   // Pagination state for invoices
   final int _invoicePageSize = 30;
   int _invoicePage = 0;
@@ -68,13 +75,14 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   bool _hasMoreCustomers = true;
   bool _isLoadingMoreCustomers = false;
   final ScrollController _customerScrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-    _startDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    _startDate = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 6));
     _tabController = TabController(length: 4, vsync: this);
     _invoiceScrollController.addListener(_onInvoiceScroll);
     _customerScrollController.addListener(_onCustomerScroll);
@@ -95,14 +103,14 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     if (mounted) {
       setState(() => _isLoading = true);
     }
-    
+
     try {
       // Load currencies
       final currencies = await _db.getCurrencies();
       if (mounted) {
         setState(() => _currencies = currencies);
       }
-      
+
       await _fetchInvoices(reset: true);
     } catch (e) {
       if (mounted) {
@@ -119,7 +127,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
 
   Future<void> _fetchInvoices({bool reset = false}) async {
     if (_isLoadingMoreInvoices) return;
-    
+
     if (mounted) {
       setState(() {
         _isLoading = reset ? true : _isLoading;
@@ -131,14 +139,14 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         }
       });
     }
-    
+
     try {
       if (reset) {
         _invoicePage = 0;
         _hasMoreInvoices = true;
         _invoices.clear();
       }
-      
+
       if (!_hasMoreInvoices && !reset) {
         if (mounted) {
           setState(() {
@@ -148,7 +156,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         }
         return;
       }
-      
+
       final invoices = await _db.getInvoices(
         startDate: _startDate,
         endDate: _endDate,
@@ -158,7 +166,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         offset: _invoicePage * _invoicePageSize,
         includeItems: true, // Make sure to include invoice items
       );
-      
+
       if (invoices.isEmpty) {
         if (mounted) {
           setState(() {
@@ -169,28 +177,29 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         }
         return;
       }
-      
+
       // Filter by currency if selected
       final filteredInvoices = _selectedCurrency != null
           ? invoices.where((i) => i['currency'] == _selectedCurrency).toList()
           : invoices;
-          
+
       if (reset) {
         _invoices = filteredInvoices;
       } else {
         _invoices.addAll(filteredInvoices);
       }
-      
+
       _calculateSummaries(_invoices);
-      
+
       if (mounted) {
         setState(() {
           _hasMoreInvoices = filteredInvoices.length == _invoicePageSize;
           _invoicePage++;
-          _hasMoreCustomers = _customerTotals.length > (_customerPage + 1) * _customerPageSize;
+          _hasMoreCustomers =
+              _customerTotals.length > (_customerPage + 1) * _customerPageSize;
           _isLoading = false;
           _isLoadingMoreInvoices = false;
-          
+
           // Update sorted products when data changes
           if (_productTotals.isNotEmpty) {
             _sortedProducts = _sortProducts();
@@ -211,7 +220,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
 
   void _calculateSummaries(List<Map<String, dynamic>> invoices) {
     if (invoices.isEmpty) return;
-    
+
     // Reset summaries if it's a fresh load
     if (_invoicePage == 0) {
       _currencyTotals.clear();
@@ -222,37 +231,41 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       _productTotals.clear();
       _productQuantitiesByUnit.clear();
     }
-    
+
     for (final invoice in invoices) {
       try {
         final amount = (invoice['total_amount'] as num?)?.toDouble() ?? 0;
         final currency = invoice['currency'] as String? ?? '';
-        final customerName = (invoice['account_name'] as String?)?.trim() ?? 'Unknown';
+        final customerName =
+            (invoice['account_name'] as String?)?.trim() ?? 'Unknown';
         final status = (invoice['status'] as String?)?.trim() ?? '';
-        
+
         // Safely get items, handling different possible formats
         List<Map<String, dynamic>> items = [];
         if (invoice['items'] is List) {
-          items = (invoice['items'] as List).whereType<Map<String, dynamic>>().toList();
+          items = (invoice['items'] as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
         }
-        
+
         // Skip if no valid data
         if (customerName.isEmpty && amount == 0 && items.isEmpty) continue;
-        
+
         // Currency totals
         _currencyTotals[currency] = (_currencyTotals[currency] ?? 0) + amount;
-        
+
         // Customer analysis
-        _customerCounts[customerName] = (_customerCounts[customerName] ?? 0) + 1;
+        _customerCounts[customerName] =
+            (_customerCounts[customerName] ?? 0) + 1;
         _customerTotals[customerName] ??= {};
-        _customerTotals[customerName]![currency] = 
+        _customerTotals[customerName]![currency] =
             (_customerTotals[customerName]![currency] ?? 0) + amount;
-        
+
         // Status analysis
         if (status.isNotEmpty) {
           _statusCounts[status] = (_statusCounts[status] ?? 0) + 1;
         }
-        
+
         // Product analysis
         if (items.isNotEmpty) {
           _analyzeProducts(items, currency);
@@ -263,40 +276,42 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       }
     }
   }
-  
+
   void _analyzeProducts(List<Map<String, dynamic>> items, String currency) {
     if (items.isEmpty) return;
-    
+
     for (final item in items) {
       try {
-        final productName = (item['product_name'] as String?)?.trim() ?? 'Unknown Product';
+        final productName =
+            (item['product_name'] as String?)?.trim() ?? 'Unknown Product';
         if (productName.isEmpty) continue;
-        
-        final quantity = (item['quantity'] is num) 
-            ? (item['quantity'] as num).toDouble() 
+
+        final quantity = (item['quantity'] is num)
+            ? (item['quantity'] as num).toDouble()
             : double.tryParse(item['quantity']?.toString() ?? '0') ?? 0.0;
-            
+
         final unitPrice = (item['unit_price'] is num)
             ? (item['unit_price'] as num).toDouble()
             : double.tryParse(item['unit_price']?.toString() ?? '0') ?? 0.0;
-            
-        final unitName = (item['unit_name'] as String?)?.trim().isNotEmpty == true
-            ? (item['unit_name'] as String).trim()
-            : 'unit';
-            
+
+        final unitName =
+            (item['unit_name'] as String?)?.trim().isNotEmpty == true
+                ? (item['unit_name'] as String).trim()
+                : 'unit';
+
         final total = quantity * unitPrice;
-        
+
         if (quantity <= 0 || unitPrice < 0) continue;
-        
+
         // Update product counts and totals
         _productCounts[productName] = (_productCounts[productName] ?? 0) + 1;
         _productTotals[productName] ??= {};
-        _productTotals[productName]![currency] = 
+        _productTotals[productName]![currency] =
             (_productTotals[productName]![currency] ?? 0) + total;
-        
+
         // Track quantities by unit
         _productQuantitiesByUnit[productName] ??= {};
-        _productQuantitiesByUnit[productName]![unitName] = 
+        _productQuantitiesByUnit[productName]![unitName] =
             (_productQuantitiesByUnit[productName]![unitName] ?? 0) + quantity;
       } catch (e) {
         debugPrint('Error processing product item: $e');
@@ -340,7 +355,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.salesReports),
@@ -381,7 +396,10 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                             labelText: loc.startDate,
                             border: OutlineInputBorder(),
                           ),
-                          child: Text(_startDate != null ? dFormatter.formatLocalizedDate(context, _startDate.toString()) : '-'),
+                          child: Text(_startDate != null
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _startDate.toString())
+                              : '-'),
                         ),
                       ),
                     ),
@@ -394,7 +412,10 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                             labelText: loc.endDate,
                             border: OutlineInputBorder(),
                           ),
-                          child: Text(_endDate != null ? dFormatter.formatLocalizedDate(context, _endDate.toString()) : '-'),
+                          child: Text(_endDate != null
+                              ? dFormatter.formatLocalizedDate(
+                                  context, _endDate.toString())
+                              : '-'),
                         ),
                       ),
                     ),
@@ -427,9 +448,9 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                         items: [
                           DropdownMenuItem(value: null, child: Text(loc.all)),
                           ..._currencies.map((currency) => DropdownMenuItem(
-                            value: currency,
-                            child: Text(currency),
-                          )),
+                                value: currency,
+                                child: Text(currency),
+                              )),
                         ],
                         onChanged: (value) {
                           setState(() => _selectedCurrency = value);
@@ -452,9 +473,9 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                         items: [
                           DropdownMenuItem(value: null, child: Text(loc.all)),
                           ..._statuses.map((status) => DropdownMenuItem(
-                            value: status,
-                            child: Text(_getStatusLabel(loc, status)),
-                          )),
+                                value: status,
+                                child: Text(_getStatusLabel(loc, status)),
+                              )),
                         ],
                         onChanged: (value) {
                           setState(() => _selectedStatus = value);
@@ -473,7 +494,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
               ],
             ),
           ),
-          
+
           // Tab Content
           Expanded(
             child: TabBarView(
@@ -545,9 +566,9 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Currency Breakdown
           Text(
             loc.currencies,
@@ -555,21 +576,21 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
           ),
           const SizedBox(height: 8),
           ..._currencyTotals.entries.map((entry) => Card(
-            child: ListTile(
-              leading: Icon(Icons.monetization_on, color: Colors.green),
-              title: Text(entry.key),
-              trailing: Text(
-                _amountFormatter.format(entry.value),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                child: ListTile(
+                  leading: Icon(Icons.monetization_on, color: Colors.green),
+                  title: Text(entry.key),
+                  trailing: Text(
+                    _amountFormatter.format(entry.value),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )),
-          
+              )),
+
           const SizedBox(height: 24),
-          
+
           // Status Breakdown
           Text(
             loc.status,
@@ -577,18 +598,19 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
           ),
           const SizedBox(height: 8),
           ..._statusCounts.entries.map((entry) => Card(
-            child: ListTile(
-              leading: Icon(_getStatusIcon(entry.key), color: _getStatusColor(entry.key)),
-              title: Text(_getStatusLabel(loc, entry.key)),
-              trailing: Text(
-                entry.value.toString(),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: _getStatusColor(entry.key),
+                child: ListTile(
+                  leading: Icon(_getStatusIcon(entry.key),
+                      color: _getStatusColor(entry.key)),
+                  title: Text(_getStatusLabel(loc, entry.key)),
+                  trailing: Text(
+                    entry.value.toString(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _getStatusColor(entry.key),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -627,7 +649,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(invoice['account_name'] ?? '-'),
-                Text(dFormatter.formatLocalizedDateTime(context, invoice['date'])),
+                Text(dFormatter.formatLocalizedDateTime(
+                    context, invoice['date'])),
                 if (invoice['notes'] != null && invoice['notes'].isNotEmpty)
                   Text(invoice['notes'], style: theme.textTheme.bodySmall),
               ],
@@ -645,7 +668,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(invoice['status']).withValues(alpha: 0.1),
+                    color: _getStatusColor(invoice['status'])
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -679,11 +703,11 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       end > sortedCustomers.length ? sortedCustomers.length : end,
     );
   }
-  
+
   // Sort products based on current sort option
   List<MapEntry<String, Map<String, double>>> _sortProducts() {
     final products = _productTotals.entries.toList();
-    
+
     switch (_currentProductSort) {
       case 'name_asc':
         products.sort((a, b) => a.key.compareTo(b.key));
@@ -693,15 +717,27 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
         break;
       case 'quantity_asc':
         products.sort((a, b) {
-          final aQty = _productQuantitiesByUnit[a.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
-          final bQty = _productQuantitiesByUnit[b.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          final aQty = _productQuantitiesByUnit[a.key]
+                  ?.values
+                  .fold(0.0, (sum, v) => sum + v) ??
+              0;
+          final bQty = _productQuantitiesByUnit[b.key]
+                  ?.values
+                  .fold(0.0, (sum, v) => sum + v) ??
+              0;
           return aQty.compareTo(bQty);
         });
         break;
       case 'quantity_desc':
         products.sort((a, b) {
-          final aQty = _productQuantitiesByUnit[a.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
-          final bQty = _productQuantitiesByUnit[b.key]?.values.fold(0.0, (sum, v) => sum + v) ?? 0;
+          final aQty = _productQuantitiesByUnit[a.key]
+                  ?.values
+                  .fold(0.0, (sum, v) => sum + v) ??
+              0;
+          final bQty = _productQuantitiesByUnit[b.key]
+                  ?.values
+                  .fold(0.0, (sum, v) => sum + v) ??
+              0;
           return bQty.compareTo(aQty);
         });
         break;
@@ -713,15 +749,15 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
           return bTotal.compareTo(aTotal);
         });
     }
-    
+
     // Apply search filter
     final searchQuery = _productSearchController.text.toLowerCase();
     if (searchQuery.isNotEmpty) {
-      return products.where((entry) => 
-        entry.key.toLowerCase().contains(searchQuery)
-      ).toList();
+      return products
+          .where((entry) => entry.key.toLowerCase().contains(searchQuery))
+          .toList();
     }
-    
+
     return products;
   }
 
@@ -738,16 +774,16 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   // Handle product scroll for pagination
   void _onProductScroll() {
     if (_isLoadingMoreProducts || !_hasMoreProducts) return;
-    
+
     final maxScroll = _productScrollController.position.maxScrollExtent;
     final currentScroll = _productScrollController.position.pixels;
     final delta = MediaQuery.of(context).size.height * 0.2;
-    
+
     if (maxScroll - currentScroll <= delta) {
       _fetchMoreProducts();
     }
   }
-  
+
   // Handle product search changes
   void _onProductSearchChanged() {
     setState(() {
@@ -756,19 +792,20 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       _hasMoreProducts = _sortedProducts.length > _productPageSize;
     });
   }
-  
+
   // Fetch more products for pagination
   void _fetchMoreProducts() {
     if (_isLoadingMoreProducts || !_hasMoreProducts) return;
-    
+
     setState(() {
       _isLoadingMoreProducts = true;
       _productPage++;
-      _hasMoreProducts = _sortedProducts.length > _productPage * _productPageSize;
+      _hasMoreProducts =
+          _sortedProducts.length > _productPage * _productPageSize;
       _isLoadingMoreProducts = false;
     });
   }
-  
+
   // Build sort menu
   Widget _buildSortMenu(AppLocalizations loc) {
     return PopupMenuButton<String>(
@@ -801,7 +838,7 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       ],
     );
   }
-  
+
   // Build product list item widget
   Widget _buildProductItem(
     BuildContext context,
@@ -814,7 +851,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         leading: CircleAvatar(
           backgroundColor: Colors.purple.withValues(alpha: 0.1),
           child: const Icon(Icons.inventory, color: Colors.purple, size: 20),
@@ -831,16 +869,18 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
             const SizedBox(height: 4),
             // Show quantities by unit
             ..._productQuantitiesByUnit[productName]?.entries.map(
-              (unitQty) => Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text(
-                  '${_amountFormatter.format(unitQty.value)} ${unitQty.key}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            ) ?? [const SizedBox.shrink()],
+                      (unitQty) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: Text(
+                          '${_amountFormatter.format(unitQty.value)} ${unitQty.key}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.textTheme.bodySmall?.color
+                                ?.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ) ??
+                [const SizedBox.shrink()],
             // Show sales count
             Text(
               '${loc.sales}: $count',
@@ -855,29 +895,29 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             ...currencyMap.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 2.0),
-              child: Text(
-                '${_amountFormatter.format(e.value)} ${e.key}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-                textAlign: TextAlign.right,
-              ),
-            )),
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: Text(
+                    '${_amountFormatter.format(e.value)} ${e.key}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                )),
           ],
         ),
       ),
     );
   }
-  
+
   // Build products tab
   Widget _buildProductsTab(AppLocalizations loc, ThemeData theme) {
     // Sort products if not already sorted
     if (_sortedProducts.isEmpty && _productTotals.isNotEmpty) {
       _sortedProducts = _sortProducts();
     }
-    
+
     return Column(
       children: [
         // Search and sort bar
@@ -905,14 +945,14 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
             ],
           ),
         ),
-        
+
         // Summary card removed as per user request
-        
+
         // Products list
         Expanded(
           child: _productTotals.isEmpty
               ? Center(
-                  child: _isLoading 
+                  child: _isLoading
                       ? const CircularProgressIndicator()
                       : Text(loc.noDataAvailable),
                 )
@@ -922,13 +962,16 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                     setState(() {
                       _productPage = 0;
                       _sortedProducts = _sortProducts();
-                      _hasMoreProducts = _sortedProducts.length > _productPageSize;
+                      _hasMoreProducts =
+                          _sortedProducts.length > _productPageSize;
                     });
                   },
                   child: ListView.builder(
                     controller: _productScrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: _paginatedProducts.length + (_hasMoreProducts ? 1 : 0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    itemCount:
+                        _paginatedProducts.length + (_hasMoreProducts ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= _paginatedProducts.length) {
                         return const Padding(
@@ -936,12 +979,12 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
-                      
+
                       final entry = _paginatedProducts[index];
                       final productName = entry.key;
                       final currencyMap = entry.value;
                       final count = _productCounts[productName] ?? 0;
-                      
+
                       return _buildProductItem(
                         context,
                         productName,
@@ -957,9 +1000,10 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
       ],
     );
   }
-  
+
   // Helper to build summary items
-  Widget _buildSummaryItem(String value, String label, IconData icon, ThemeData theme) {
+  Widget _buildSummaryItem(
+      String value, String label, IconData icon, ThemeData theme) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1014,7 +1058,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
     return ListView.separated(
       controller: _customerScrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: paginatedCustomers.length + ((_hasMoreCustomers && paginatedCustomers.isNotEmpty) ? 1 : 0),
+      itemCount: paginatedCustomers.length +
+          ((_hasMoreCustomers && paginatedCustomers.isNotEmpty) ? 1 : 0),
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         if (index == paginatedCustomers.length) {
@@ -1040,7 +1085,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(customerName),
-                      Text('${loc.invoices}: $count', style: theme.textTheme.bodySmall),
+                      Text('${loc.invoices}: $count',
+                          style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -1049,13 +1095,15 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ...currencyMap.entries.map((e) => Padding(
-                      padding: const EdgeInsets.only(left: 12.0, bottom: 2.0),
-                      child: Text(
-                        '${_amountFormatter.format(e.value)} ${e.key}',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.right,
-                      ),
-                    )),
+                          padding:
+                              const EdgeInsets.only(left: 12.0, bottom: 2.0),
+                          child: Text(
+                            '${_amountFormatter.format(e.value)} ${e.key}',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.right,
+                          ),
+                        )),
                   ],
                 ),
               ],
@@ -1153,7 +1201,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   }
 
   void _onInvoiceScroll() {
-    if (_invoiceScrollController.position.pixels >= _invoiceScrollController.position.maxScrollExtent - 200) {
+    if (_invoiceScrollController.position.pixels >=
+        _invoiceScrollController.position.maxScrollExtent - 200) {
       if (_hasMoreInvoices && !_isLoadingMoreInvoices) {
         _fetchInvoices();
       }
@@ -1161,7 +1210,8 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   }
 
   void _onCustomerScroll() {
-    if (_customerScrollController.position.pixels >= _customerScrollController.position.maxScrollExtent - 200) {
+    if (_customerScrollController.position.pixels >=
+        _customerScrollController.position.maxScrollExtent - 200) {
       if (_hasMoreCustomers && !_isLoadingMoreCustomers) {
         _fetchMoreCustomers();
       }
@@ -1174,4 +1224,4 @@ class _SalesReportsScreenState extends State<SalesReportsScreen>
   //     SnackBar(content: Text('Invoice details: ${invoice['invoice_number']}')),
   //   );
   // }
-} 
+}

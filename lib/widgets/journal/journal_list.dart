@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../themes/app_theme.dart';
 
@@ -101,7 +101,8 @@ class JournalList extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                        Icon(Icons.calendar_today,
+                            size: 18, color: AppTheme.primaryColor),
                         const SizedBox(width: 10),
                         Text(
                           loc.date,
@@ -154,14 +155,19 @@ class JournalList extends StatelessWidget {
                     final index = entry.key;
                     final journal = entry.value;
                     final isCredit = journal['transaction_type'] == 'credit';
-                    final amountColor = isCredit ? Colors.green[700] : Colors.red[700];
+                    final amountColor =
+                        isCredit ? Colors.green[700] : Colors.red[700];
 
                     return Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       decoration: BoxDecoration(
-                        color: index.isEven 
-                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                        color: index.isEven
+                            ? Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withValues(alpha: 0.03)
                             : Colors.transparent,
                         border: Border(
                           bottom: BorderSide(
@@ -178,12 +184,14 @@ class JournalList extends StatelessWidget {
                           children: [
                             _buildDateCell(journal['date'], context),
                             _buildTextCell(
-                              getLocalizedSystemAccountName(context, journal['account_name']),
+                              getLocalizedSystemAccountName(
+                                  context, journal['account_name']),
                               2,
                               fontWeight: FontWeight.w600,
                             ),
                             _buildTextCell(
-                              getLocalizedSystemAccountName(context, journal['track_name']),
+                              getLocalizedSystemAccountName(
+                                  context, journal['track_name']),
                               2,
                               fontWeight: FontWeight.w500,
                             ),
@@ -256,10 +264,11 @@ class JournalList extends StatelessWidget {
     );
   }
 
-  Widget _buildAmountCell(Map<String, dynamic> journal, Color? amountColor, BuildContext context) {
+  Widget _buildAmountCell(
+      Map<String, dynamic> journal, Color? amountColor, BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     final isEnglish = locale == 'en';
-    
+
     return Expanded(
       flex: 1,
       child: Padding(

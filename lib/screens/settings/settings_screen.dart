@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'database_settings_screen.dart';
 import '../../themes/app_theme.dart';
 
@@ -238,7 +238,9 @@ class SettingsScreen extends StatelessWidget {
               ? const Icon(Icons.dark_mode,
                   key: ValueKey('theme_mode'), size: 28, color: Colors.amber)
               : const Icon(Icons.light_mode,
-                  key: ValueKey('theme_mode'), size: 28, color: AppTheme.primaryColor),
+                  key: ValueKey('theme_mode'),
+                  size: 28,
+                  color: AppTheme.primaryColor),
         ),
         title: Text(
           AppLocalizations.of(context)!.themeMode(themeProvider.isDarkMode

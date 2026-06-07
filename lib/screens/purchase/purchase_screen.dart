@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../models/purchase.dart';
 import '../../themes/app_theme.dart';
 import '../../widgets/search_bar.dart';
@@ -26,7 +26,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     super.initState();
     _controller = PurchaseScreenController();
     _controller.initialize();
-    
+
     // Add listener to search controller
     _searchController.addListener(() {
       if (_controller.searchQuery != _searchController.text) {
@@ -66,7 +66,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AppLocalizations loc, PurchaseScreenController controller) {
+  PreferredSizeWidget _buildAppBar(
+      AppLocalizations loc, PurchaseScreenController controller) {
     return AppBar(
       title: controller.isSearching
           ? CommonSearchBar(
@@ -87,7 +88,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  Widget _buildTitle(AppLocalizations loc, PurchaseScreenController controller) {
+  Widget _buildTitle(
+      AppLocalizations loc, PurchaseScreenController controller) {
     return Row(
       children: [
         Icon(Icons.shopping_cart, size: 24, color: AppTheme.primaryColor),
@@ -121,7 +123,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
-  List<Widget> _buildActions(AppLocalizations loc, PurchaseScreenController controller) {
+  List<Widget> _buildActions(
+      AppLocalizations loc, PurchaseScreenController controller) {
     if (controller.isSearching) return [];
 
     return [
@@ -228,7 +231,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       onRefresh: controller.refresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 80), // Add bottom padding for FAB
+        padding:
+            const EdgeInsets.only(bottom: 80), // Add bottom padding for FAB
         child: Column(
           children: [
             PurchaseTable(
@@ -260,7 +264,8 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               selectedDate: tmpDate,
               supplierOptions: controller.supplierOptions,
               currencyOptions: controller.currencyOptions,
-              onChanged: ({String? supplier, String? currency, DateTime? date}) {
+              onChanged: (
+                  {String? supplier, String? currency, DateTime? date}) {
                 setModalState(() {
                   if (supplier != null) tmpSupplier = supplier;
                   if (currency != null) tmpCurrency = currency;

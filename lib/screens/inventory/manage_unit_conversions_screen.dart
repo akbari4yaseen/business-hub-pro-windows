@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/unit.dart';
 import '../../widgets/unit_conversion_edit_dialog.dart';
@@ -62,7 +62,8 @@ class ManageUnitConversionsScreen extends StatelessWidget {
                 ),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
@@ -113,15 +114,23 @@ class ManageUnitConversionsScreen extends StatelessWidget {
                         ...conversions.asMap().entries.map((entry) {
                           final index = entry.key;
                           final conversion = entry.value;
-                          final fromUnit = units.firstWhere((u) => u.id == conversion.fromUnitId, orElse: () => Unit(id: null, name: '?'));
-                          final toUnit = units.firstWhere((u) => u.id == conversion.toUnitId, orElse: () => Unit(id: null, name: '?'));
+                          final fromUnit = units.firstWhere(
+                              (u) => u.id == conversion.fromUnitId,
+                              orElse: () => Unit(id: null, name: '?'));
+                          final toUnit = units.firstWhere(
+                              (u) => u.id == conversion.toUnitId,
+                              orElse: () => Unit(id: null, name: '?'));
 
                           return Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
                             decoration: BoxDecoration(
-                              color: index.isEven 
-                                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                              color: index.isEven
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withValues(alpha: 0.03)
                                   : Colors.transparent,
                               border: Border(
                                 bottom: BorderSide(
@@ -219,7 +228,8 @@ class ManageUnitConversionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildConversionRateCell(UnitConversion conversion, AppLocalizations loc) {
+  Widget _buildConversionRateCell(
+      UnitConversion conversion, AppLocalizations loc) {
     return Expanded(
       flex: 1,
       child: Padding(
@@ -236,7 +246,8 @@ class ManageUnitConversionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsCell(UnitConversion conversion, BuildContext context, AppLocalizations loc) {
+  Widget _buildActionsCell(
+      UnitConversion conversion, BuildContext context, AppLocalizations loc) {
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -276,7 +287,8 @@ class ManageUnitConversionsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showEditDialog(BuildContext context, {UnitConversion? conversion}) async {
+  Future<void> _showEditDialog(BuildContext context,
+      {UnitConversion? conversion}) async {
     await showDialog(
       context: context,
       builder: (context) => UnitConversionEditDialog(conversion: conversion),
@@ -302,7 +314,9 @@ class ManageUnitConversionsScreen extends StatelessWidget {
               backgroundColor: colorScheme.error,
             ),
             onPressed: () {
-              context.read<InventoryProvider>().deleteUnitConversion(conversion.id!);
+              context
+                  .read<InventoryProvider>()
+                  .deleteUnitConversion(conversion.id!);
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(loc.unit_conversion_deleted)),
@@ -314,4 +328,4 @@ class ManageUnitConversionsScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

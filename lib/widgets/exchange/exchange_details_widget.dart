@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
@@ -10,7 +10,8 @@ class ExchangeDetailsWidget extends StatefulWidget {
   final Exchange exchange;
   static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
 
-  const ExchangeDetailsWidget({Key? key, required this.exchange}) : super(key: key);
+  const ExchangeDetailsWidget({Key? key, required this.exchange})
+      : super(key: key);
 
   @override
   State<ExchangeDetailsWidget> createState() => _ExchangeDetailsWidgetState();
@@ -30,9 +31,11 @@ class _ExchangeDetailsWidgetState extends State<ExchangeDetailsWidget> {
 
   Future<void> _loadAccountNames() async {
     try {
-      final fromAccount = await _accountDb.getAccountById(widget.exchange.fromAccountId);
-      final toAccount = await _accountDb.getAccountById(widget.exchange.toAccountId);
-      
+      final fromAccount =
+          await _accountDb.getAccountById(widget.exchange.fromAccountId);
+      final toAccount =
+          await _accountDb.getAccountById(widget.exchange.toAccountId);
+
       if (mounted) {
         setState(() {
           _fromAccountName = fromAccount?['name'];
@@ -88,13 +91,15 @@ class _ExchangeDetailsWidgetState extends State<ExchangeDetailsWidget> {
                     loc.fromAccount,
                     _isLoading
                         ? 'Loading...'
-                        : getLocalizedSystemAccountName(context, _fromAccountName ?? ''),
+                        : getLocalizedSystemAccountName(
+                            context, _fromAccountName ?? ''),
                   ),
                   _detailItem(
                     loc.toAccount,
                     _isLoading
                         ? 'Loading...'
-                        : getLocalizedSystemAccountName(context, _toAccountName ?? ''),
+                        : getLocalizedSystemAccountName(
+                            context, _toAccountName ?? ''),
                   ),
                   _detailItem(loc.fromCurrency, widget.exchange.fromCurrency),
                   _detailItem(loc.toCurrency, widget.exchange.toCurrency),
@@ -102,22 +107,28 @@ class _ExchangeDetailsWidgetState extends State<ExchangeDetailsWidget> {
                     loc.amount,
                     '\u200E${ExchangeDetailsWidget._numberFormatter.format(widget.exchange.amount)} ${widget.exchange.fromCurrency}',
                   ),
-                  _detailItem(loc.rate, '${widget.exchange.rate} (${widget.exchange.operator})'),
+                  _detailItem(loc.rate,
+                      '${widget.exchange.rate} (${widget.exchange.operator})'),
                   _detailItem(
                     loc.resultAmount,
                     '\u200E${ExchangeDetailsWidget._numberFormatter.format(widget.exchange.resultAmount)} ${widget.exchange.toCurrency}',
                   ),
                   if (widget.exchange.expectedRate != null)
-                    _detailItem(loc.expectedRateOptional, widget.exchange.expectedRate.toString()),
+                    _detailItem(loc.expectedRateOptional,
+                        widget.exchange.expectedRate.toString()),
                   if (widget.exchange.profitLoss != 0)
                     _detailItem(
                       loc.profitLoss,
                       '\u200E${ExchangeDetailsWidget._numberFormatter.format(widget.exchange.profitLoss)} ${widget.exchange.toCurrency}',
-                      valueColor: widget.exchange.profitLoss >= 0 ? Colors.green : Colors.red,
+                      valueColor: widget.exchange.profitLoss >= 0
+                          ? Colors.green
+                          : Colors.red,
                     ),
-                  if (widget.exchange.description != null && widget.exchange.description!.isNotEmpty)
+                  if (widget.exchange.description != null &&
+                      widget.exchange.description!.isNotEmpty)
                     _detailItem(loc.description, widget.exchange.description!),
-                  _detailItem(loc.date, formatLocalizedDateTime(context, widget.exchange.date)),
+                  _detailItem(loc.date,
+                      formatLocalizedDateTime(context, widget.exchange.date)),
                 ],
               ),
             ),
@@ -149,4 +160,4 @@ class _ExchangeDetailsWidgetState extends State<ExchangeDetailsWidget> {
       ),
     );
   }
-} 
+}

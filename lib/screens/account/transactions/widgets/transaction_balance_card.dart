@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class TransactionBalanceCard extends StatelessWidget {
@@ -58,7 +58,8 @@ class TransactionBalanceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(loc.credit,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
                     amountFormatter.format(credit),
@@ -73,7 +74,8 @@ class TransactionBalanceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(loc.debit,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
                     amountFormatter.format(debit),
@@ -107,4 +109,4 @@ class TransactionBalanceCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

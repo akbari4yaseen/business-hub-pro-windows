@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 
 import '../../models/invoice.dart';
 import '../../utils/date_time_picker_helper.dart';
@@ -52,11 +52,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _totalController.text = _currencyFormat.format(0);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
       _currency = settingsProvider.defaultCurrency;
-      _dateController.text = dFormatter.formatLocalizedDateTime(context, _date.toString());
+      _dateController.text =
+          dFormatter.formatLocalizedDateTime(context, _date.toString());
       if (_dueDate != null) {
-        _dueDateController.text = dFormatter.formatLocalizedDateTime(context, _dueDate.toString());
+        _dueDateController.text =
+            dFormatter.formatLocalizedDateTime(context, _dueDate.toString());
       }
       setState(() {}); // Only if needed
     });
@@ -193,12 +196,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.orange, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 loc.preSaleWarning,
-                style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    color: Colors.orange.shade700, fontWeight: FontWeight.w500),
               ),
             ),
           ],
@@ -253,7 +258,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.invoice != null ? loc.editInvoice : loc.createInvoice),
+        title:
+            Text(widget.invoice != null ? loc.editInvoice : loc.createInvoice),
         actions: [
           if (widget.invoice != null)
             IconButton(

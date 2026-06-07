@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../database/purchase_db.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
@@ -143,30 +143,32 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
     _productCounts.clear();
     _productTotals.clear();
     _productQuantitiesByUnit.clear();
-    
+
     for (final purchase in purchases) {
       final purchaseId = purchase['id'] as int?;
       if (purchaseId != null) {
         final items = await _db.getPurchaseItems(purchaseId);
         for (final item in items) {
-          final productName = item['product_name'] as String? ?? 'Unknown Product';
+          final productName =
+              item['product_name'] as String? ?? 'Unknown Product';
           final quantity = (item['quantity'] as num?)?.toDouble() ?? 0;
           final unitName = (item['unit_name'] as String?)?.trim() ?? 'unit';
           final unitPrice = (item['unit_price'] as num?)?.toDouble() ?? 0;
-          final currency = item['currency'] as String? ?? 
+          final currency = item['currency'] as String? ??
               (purchase['currency'] as String? ?? '');
           final totalCost = quantity * unitPrice;
-          
+
           // Update product counts and totals
           _productCounts[productName] = (_productCounts[productName] ?? 0) + 1;
           _productTotals[productName] ??= {};
           _productTotals[productName]![currency] =
               (_productTotals[productName]![currency] ?? 0) + totalCost;
-              
+
           // Track quantities by unit
           _productQuantitiesByUnit[productName] ??= {};
-          _productQuantitiesByUnit[productName]![unitName] = 
-              (_productQuantitiesByUnit[productName]![unitName] ?? 0) + quantity;
+          _productQuantitiesByUnit[productName]![unitName] =
+              (_productQuantitiesByUnit[productName]![unitName] ?? 0) +
+                  quantity;
         }
       }
     }
@@ -539,7 +541,8 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(supplierName),
-                      Text('${loc.purchases}: $count', style: theme.textTheme.bodySmall),
+                      Text('${loc.purchases}: $count',
+                          style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -548,13 +551,15 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ...currencyMap.entries.map((e) => Padding(
-                      padding: const EdgeInsets.only(left: 12.0, bottom: 2.0),
-                      child: Text(
-                        '${_amountFormatter.format(e.value)} ${e.key}',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.right,
-                      ),
-                    )),
+                          padding:
+                              const EdgeInsets.only(left: 12.0, bottom: 2.0),
+                          child: Text(
+                            '${_amountFormatter.format(e.value)} ${e.key}',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.right,
+                          ),
+                        )),
                   ],
                 ),
               ],
@@ -608,15 +613,19 @@ class _PurchaseReportsScreenState extends State<PurchaseReportsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Show quantities by unit
-                          ..._productQuantitiesByUnit[productName]?.entries.map((unitQty) => Text(
-                            '${_amountFormatter.format(unitQty.value)} ${unitQty.key}',
-                            style: theme.textTheme.bodySmall,
-                          )) ?? [const SizedBox.shrink()],
+                          ..._productQuantitiesByUnit[productName]
+                                  ?.entries
+                                  .map((unitQty) => Text(
+                                        '${_amountFormatter.format(unitQty.value)} ${unitQty.key}',
+                                        style: theme.textTheme.bodySmall,
+                                      )) ??
+                              [const SizedBox.shrink()],
                           // Show purchase count
                           Text(
                             '${loc.purchases}: $count',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7),
                             ),
                           ),
                         ],

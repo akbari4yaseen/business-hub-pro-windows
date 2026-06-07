@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'record_payment_dialog.dart';
@@ -102,7 +102,8 @@ class InvoiceTable extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                        Icon(Icons.calendar_today,
+                            size: 18, color: AppTheme.primaryColor),
                         const SizedBox(width: 10),
                         Text(
                           loc.date,
@@ -157,10 +158,14 @@ class InvoiceTable extends StatelessWidget {
 
                     return Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       decoration: BoxDecoration(
-                        color: index.isEven 
-                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                        color: index.isEven
+                            ? Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withValues(alpha: 0.03)
                             : Colors.transparent,
                         border: Border(
                           bottom: BorderSide(
@@ -171,7 +176,8 @@ class InvoiceTable extends StatelessWidget {
                       ),
                       child: InkWell(
                         onTap: () => _showInvoiceDetails(context, invoice),
-                        onLongPress: () => _showInvoiceDetails(context, invoice),
+                        onLongPress: () =>
+                            _showInvoiceDetails(context, invoice),
                         borderRadius: BorderRadius.circular(12),
                         child: Row(
                           children: [
@@ -292,7 +298,7 @@ class InvoiceTable extends StatelessWidget {
   Widget _buildStatusCell(Invoice invoice, BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final statusColor = _getStatusColor(invoice.status);
-    
+
     return Expanded(
       flex: 1,
       child: Padding(
@@ -320,7 +326,7 @@ class InvoiceTable extends StatelessWidget {
 
   Widget _buildTotalCell(Invoice invoice) {
     final currencyFormat = NumberFormat('#,###.##');
-    
+
     return Expanded(
       flex: 1,
       child: Padding(
@@ -339,7 +345,7 @@ class InvoiceTable extends StatelessWidget {
 
   Widget _buildActionsCell(Invoice invoice, BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    
+
     return Expanded(
       flex: 1,
       child: PopupMenuButton<String>(
@@ -383,7 +389,8 @@ class InvoiceTable extends StatelessWidget {
               value: 'finalize',
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 18, color: AppTheme.primaryColor),
+                  Icon(Icons.check_circle,
+                      size: 18, color: AppTheme.primaryColor),
                   const SizedBox(width: 12),
                   Text(loc.finalize),
                 ],
@@ -439,4 +446,4 @@ class InvoiceTable extends StatelessWidget {
       ),
     );
   }
-} 
+}

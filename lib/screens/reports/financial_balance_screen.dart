@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../database/account_db.dart';
 import '../../utils/transaction_helper.dart';

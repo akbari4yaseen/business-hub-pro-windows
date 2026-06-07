@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../providers/inventory_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../models/product.dart';
@@ -68,7 +68,8 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
         minimumStock: double.parse(_minimumStockController.text),
         reorderPoint: widget.product?.reorderPoint,
         hasExpiryDate: _hasExpiryDate,
-        barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
+        barcode:
+            _barcodeController.text.isEmpty ? null : _barcodeController.text,
         isActive: true,
       );
 
@@ -78,7 +79,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       } else {
         await provider.updateProduct(product);
       }
-      
+
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -268,7 +269,8 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : Text(loc.save),
                         ),
@@ -283,4 +285,4 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       ),
     );
   }
-} 
+}

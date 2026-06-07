@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../utils/date_time_picker_helper.dart';
 import '../../../utils/date_formatters.dart' as dFormatter;
 import '../add_stock_movement_dialog.dart';
@@ -192,7 +192,7 @@ class _StockMovementsTabState extends State<StockMovementsTab> {
 
   Widget _buildFAB() {
     final loc = AppLocalizations.of(context)!;
-    
+
     return FloatingActionButton.extended(
       heroTag: "stock_movement_fab",
       onPressed: () {

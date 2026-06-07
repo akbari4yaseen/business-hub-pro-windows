@@ -1,7 +1,7 @@
 import 'dart:collection';
 import 'package:flutter/widgets.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 
 import '../database/settings_db.dart';
 import '../models/notification_model.dart';

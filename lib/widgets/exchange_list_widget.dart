@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'exchange/exchange_details_widget.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../models/exchange.dart';
 import '../../utils/date_formatters.dart';
 import '../themes/app_theme.dart';
@@ -102,7 +102,8 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                        Icon(Icons.calendar_today,
+                            size: 18, color: AppTheme.primaryColor),
                         const SizedBox(width: 10),
                         Text(
                           loc.date,
@@ -158,10 +159,14 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
 
                     return Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       decoration: BoxDecoration(
-                        color: index.isEven 
-                            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                        color: index.isEven
+                            ? Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withValues(alpha: 0.03)
                             : Colors.transparent,
                         border: Border(
                           bottom: BorderSide(
@@ -176,12 +181,16 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
                         borderRadius: BorderRadius.circular(12),
                         child: Row(
                           children: [
-                            _buildDateCellFixed(DateTime.parse(exchange.date), context),
-                            _buildAccountCell(exchange.fromAccountName ?? 'No Name (${exchange.fromAccountId})'),
+                            _buildDateCellFixed(
+                                DateTime.parse(exchange.date), context),
+                            _buildAccountCell(exchange.fromAccountName ??
+                                'No Name (${exchange.fromAccountId})'),
                             _buildCurrencyCellSimple(exchange.fromCurrency),
                             _buildCurrencyCellSimple(exchange.toCurrency),
-                            _buildAmountCell(exchange.amount, exchange.fromCurrency, context),
-                            _buildAmountCell(exchange.resultAmount, exchange.toCurrency, context),
+                            _buildAmountCell(exchange.amount,
+                                exchange.fromCurrency, context),
+                            _buildAmountCell(exchange.resultAmount,
+                                exchange.toCurrency, context),
                             _buildActionsCell(exchange, loc),
                           ],
                         ),
@@ -284,10 +293,11 @@ class _ExchangeListWidgetState extends State<ExchangeListWidget> {
     );
   }
 
-  Widget _buildAmountCell(double amount, String currency, BuildContext context) {
+  Widget _buildAmountCell(
+      double amount, String currency, BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode;
     final isEnglish = locale == 'en';
-    
+
     return Expanded(
       flex: 1,
       child: Padding(

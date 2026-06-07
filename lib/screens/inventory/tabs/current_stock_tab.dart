@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 
 import '../widgets/search_filter_bar.dart';
 import '../../../providers/inventory_provider.dart';
@@ -26,7 +26,10 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
   }
 
   List<String> _getUniqueCategories(List<Map<String, dynamic>> stock) {
-    return stock.map((e) => e['category_name'] as String? ?? 'Uncategorized').toSet().toList()
+    return stock
+        .map((e) => e['category_name'] as String? ?? 'Uncategorized')
+        .toSet()
+        .toList()
       ..sort();
   }
 
@@ -111,15 +114,18 @@ class _CurrentStockTabState extends State<CurrentStockTab> {
     );
   }
 
-  Widget _buildFilters(List<String> warehouses, List<String> categories, AppLocalizations loc) {
+  Widget _buildFilters(
+      List<String> warehouses, List<String> categories, AppLocalizations loc) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           SearchFilterBar(
             onSearchChanged: (query) => setState(() => _searchQuery = query),
-            onWarehouseChanged: (warehouse) => setState(() => _selectedWarehouse = warehouse),
-            onCategoryChanged: (category) => setState(() => _selectedCategory = category),
+            onWarehouseChanged: (warehouse) =>
+                setState(() => _selectedWarehouse = warehouse),
+            onCategoryChanged: (category) =>
+                setState(() => _selectedCategory = category),
             warehouses: warehouses,
             categories: categories,
           ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 
 import 'account_tile.dart';
 
@@ -42,7 +42,8 @@ class AccountListView extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView.builder(
         controller: scrollController,
-        padding: const EdgeInsets.fromLTRB(0, 5, 0, 80), // Increased bottom padding for FAB
+        padding: const EdgeInsets.fromLTRB(
+            0, 5, 0, 80), // Increased bottom padding for FAB
         itemCount: totalItems,
         itemBuilder: (context, index) {
           if (index < accounts.length) {

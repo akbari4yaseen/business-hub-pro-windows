@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../models/unit.dart';
 import '../providers/inventory_provider.dart';
 
@@ -9,7 +9,8 @@ class UnitConversionEditDialog extends StatefulWidget {
   const UnitConversionEditDialog({Key? key, this.conversion}) : super(key: key);
 
   @override
-  State<UnitConversionEditDialog> createState() => _UnitConversionEditDialogState();
+  State<UnitConversionEditDialog> createState() =>
+      _UnitConversionEditDialogState();
 }
 
 class _UnitConversionEditDialogState extends State<UnitConversionEditDialog> {
@@ -41,20 +42,26 @@ class _UnitConversionEditDialogState extends State<UnitConversionEditDialog> {
     final units = provider.units;
 
     return AlertDialog(
-      title: Text(widget.conversion == null ? (loc.add_unit_conversion) : (loc.edit_unit_conversion)),
+      title: Text(widget.conversion == null
+          ? (loc.add_unit_conversion)
+          : (loc.edit_unit_conversion)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<int>(
             value: _fromUnitId,
-            items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
+            items: units
+                .map((u) => DropdownMenuItem(value: u.id, child: Text(u.name)))
+                .toList(),
             onChanged: (v) => setState(() => _fromUnitId = v),
             decoration: InputDecoration(labelText: loc.from_unit),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
             value: _toUnitId,
-            items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
+            items: units
+                .map((u) => DropdownMenuItem(value: u.id, child: Text(u.name)))
+                .toList(),
             onChanged: (v) => setState(() => _toUnitId = v),
             decoration: InputDecoration(labelText: loc.to_unit),
           ),
@@ -72,26 +79,30 @@ class _UnitConversionEditDialogState extends State<UnitConversionEditDialog> {
           child: Text(loc.cancel),
         ),
         FilledButton(
-          onPressed: _isSaving ? null : () async {
-            if (_fromUnitId == null || _toUnitId == null || _factorController.text.isEmpty) return;
-            setState(() => _isSaving = true);
-            final factor = double.tryParse(_factorController.text) ?? 1.0;
-            final conversion = UnitConversion(
-              id: widget.conversion?.id,
-              fromUnitId: _fromUnitId!,
-              toUnitId: _toUnitId!,
-              factor: factor,
-            );
-            if (widget.conversion == null) {
-              await provider.addUnitConversion(conversion);
-            } else {
-              await provider.updateUnitConversion(conversion);
-            }
-            if (mounted) Navigator.of(context).pop();
-          },
+          onPressed: _isSaving
+              ? null
+              : () async {
+                  if (_fromUnitId == null ||
+                      _toUnitId == null ||
+                      _factorController.text.isEmpty) return;
+                  setState(() => _isSaving = true);
+                  final factor = double.tryParse(_factorController.text) ?? 1.0;
+                  final conversion = UnitConversion(
+                    id: widget.conversion?.id,
+                    fromUnitId: _fromUnitId!,
+                    toUnitId: _toUnitId!,
+                    factor: factor,
+                  );
+                  if (widget.conversion == null) {
+                    await provider.addUnitConversion(conversion);
+                  } else {
+                    await provider.updateUnitConversion(conversion);
+                  }
+                  if (mounted) Navigator.of(context).pop();
+                },
           child: Text(loc.save),
         ),
       ],
     );
   }
-} 
+}

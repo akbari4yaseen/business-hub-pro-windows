@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../themes/app_theme.dart';
 import 'purchase_table_row.dart';
 
@@ -22,7 +22,8 @@ class PurchaseTable extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
 
     return Container(
-      height: MediaQuery.of(context).size.height - 200, // Provide explicit height
+      height:
+          MediaQuery.of(context).size.height - 200, // Provide explicit height
       child: Column(
         children: [
           // Fixed Header
@@ -66,7 +67,8 @@ class PurchaseTable extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+                          Icon(Icons.calendar_today,
+                              size: 18, color: AppTheme.primaryColor),
                           const SizedBox(width: 10),
                           Text(
                             loc.date,
@@ -120,10 +122,14 @@ class PurchaseTable extends StatelessWidget {
 
                       return Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 16),
                         decoration: BoxDecoration(
-                          color: index.isEven 
-                              ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                          color: index.isEven
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withValues(alpha: 0.03)
                               : Colors.transparent,
                           border: Border(
                             bottom: BorderSide(
@@ -181,4 +187,4 @@ class PurchaseTable extends StatelessWidget {
       ),
     );
   }
-} 
+}

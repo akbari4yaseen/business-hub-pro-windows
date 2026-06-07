@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../providers/inventory_provider.dart';
 import '../../models/unit.dart';
 import '../../widgets/unit_dialog.dart';
@@ -66,7 +66,8 @@ class ManageUnitsScreen extends StatelessWidget {
                 ),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: const BorderRadius.only(
@@ -119,10 +120,14 @@ class ManageUnitsScreen extends StatelessWidget {
 
                           return Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
                             decoration: BoxDecoration(
-                              color: index.isEven 
-                                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.03)
+                              color: index.isEven
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withValues(alpha: 0.03)
                                   : Colors.transparent,
                               border: Border(
                                 bottom: BorderSide(
@@ -219,7 +224,8 @@ class ManageUnitsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsCell(Unit unit, BuildContext context, AppLocalizations loc) {
+  Widget _buildActionsCell(
+      Unit unit, BuildContext context, AppLocalizations loc) {
     return Expanded(
       flex: 1,
       child: Row(
@@ -278,7 +284,8 @@ class ManageUnitsScreen extends StatelessWidget {
 
   void _showUnitConversionDialog(BuildContext context, Unit fromUnit) {
     final provider = context.read<InventoryProvider>();
-    final otherUnits = provider.units.where((u) => u.id != fromUnit.id).toList();
+    final otherUnits =
+        provider.units.where((u) => u.id != fromUnit.id).toList();
 
     if (otherUnits.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

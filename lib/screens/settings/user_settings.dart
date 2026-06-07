@@ -1,6 +1,6 @@
 // lib/screens/user_settings_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../database/database_helper.dart';
 import '../../database/user_dao.dart';
 

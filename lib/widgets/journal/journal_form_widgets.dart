@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../utils/utilities.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../themes/app_theme.dart';
@@ -69,7 +69,8 @@ class JournalToggleButtons extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSel ? AppTheme.primaryColor : Colors.grey[300],
+                backgroundColor:
+                    isSel ? AppTheme.primaryColor : Colors.grey[300],
                 foregroundColor: isSel ? Colors.white : Colors.black,
               ),
               onPressed: () => onChanged(opt.toLowerCase()),
@@ -77,7 +78,9 @@ class JournalToggleButtons extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    isCredit ? FontAwesomeIcons.circlePlus : FontAwesomeIcons.circleMinus,
+                    isCredit
+                        ? FontAwesomeIcons.circlePlus
+                        : FontAwesomeIcons.circleMinus,
                     size: 16,
                   ),
                   const SizedBox(width: 6),

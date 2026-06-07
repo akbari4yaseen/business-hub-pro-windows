@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../manage_categories_screen.dart';
 import '../manage_units_screen.dart';
 import '../manage_unit_conversions_screen.dart';
@@ -125,7 +125,8 @@ class _ProductsTabState extends State<ProductsTab> {
                         ),
                         const SizedBox(width: 4),
                         ElevatedButton.icon(
-                          onPressed: () => _showManageUnitConversionsDialog(context),
+                          onPressed: () =>
+                              _showManageUnitConversionsDialog(context),
                           icon: const Icon(Icons.swap_horiz, size: 16),
                           label: Text(loc.unit_conversion_management),
                           style: ElevatedButton.styleFrom(
@@ -306,7 +307,8 @@ class _ProductsTabState extends State<ProductsTab> {
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 const SizedBox(width: 8),
-                Text('${loc.unit}: ${provider.getUnitName(product.baseUnitId)}'),
+                Text(
+                    '${loc.unit}: ${provider.getUnitName(product.baseUnitId)}'),
               ],
             ),
             if (product.sku != null)
@@ -392,7 +394,8 @@ class _ProductsTabState extends State<ProductsTab> {
   void _showManageUnitConversionsDialog(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ManageUnitConversionsScreen()),
+      MaterialPageRoute(
+          builder: (context) => const ManageUnitConversionsScreen()),
     );
   }
 

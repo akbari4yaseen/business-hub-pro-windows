@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../../themes/app_theme.dart';
 import '../../../../utils/date_formatters.dart' as dFormatter;
@@ -35,15 +35,18 @@ class TransactionCard extends StatelessWidget {
     final isCredit = transaction['transaction_type'] == 'credit';
     final icon = isCredit ? FontAwesomeIcons.plus : FontAwesomeIcons.minus;
     final color = isCredit ? Colors.green : Colors.red;
-    final balanceColor = transaction['balance'] >= 0 ? Colors.green : Colors.red;
-    
-    String formatAmount(num amount) => '\u200E${amountFormatter.format(amount)}';
+    final balanceColor =
+        transaction['balance'] >= 0 ? Colors.green : Colors.red;
+
+    String formatAmount(num amount) =>
+        '\u200E${amountFormatter.format(amount)}';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         onTap: onTap,
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.1),
@@ -142,4 +145,4 @@ class TransactionCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

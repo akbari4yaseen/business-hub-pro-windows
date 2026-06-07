@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/date_formatters.dart';
 import '../../../utils/utilities.dart';
@@ -9,7 +9,8 @@ class JournalDetailsWidget extends StatelessWidget {
   final Map<String, dynamic> journal;
   static final NumberFormat _numberFormatter = NumberFormat('#,###.##');
 
-  const JournalDetailsWidget({Key? key, required this.journal}) : super(key: key);
+  const JournalDetailsWidget({Key? key, required this.journal})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -45,23 +46,29 @@ class JournalDetailsWidget extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Content
-                  _detailItem(loc.description, journal['description'] ?? loc.noDescription),
-                  _detailItem(loc.date, formatLocalizedDateTime(context, journal['date'])),
+                  _detailItem(loc.description,
+                      journal['description'] ?? loc.noDescription),
+                  _detailItem(loc.date,
+                      formatLocalizedDateTime(context, journal['date'])),
                   _detailItem(
                     loc.amount,
                     '\u200E${_numberFormatter.format(journal['amount'])} ${journal['currency']}',
                   ),
                   _detailItem(
                     loc.transactionType,
-                    journal['transaction_type'] == 'credit' ? loc.credit : loc.debit,
+                    journal['transaction_type'] == 'credit'
+                        ? loc.credit
+                        : loc.debit,
                   ),
                   _detailItem(
                     loc.account,
-                    getLocalizedSystemAccountName(context, journal['account_name']),
+                    getLocalizedSystemAccountName(
+                        context, journal['account_name']),
                   ),
                   _detailItem(
                     loc.track,
-                    getLocalizedSystemAccountName(context, journal['track_name']),
+                    getLocalizedSystemAccountName(
+                        context, journal['track_name']),
                   ),
                 ],
               ),

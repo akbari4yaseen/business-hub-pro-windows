@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../../models/purchase.dart';
 import '../../../database/purchase_db.dart';
 
@@ -78,7 +78,7 @@ class PurchaseScreenController extends ChangeNotifier {
         startDate: _selectedDate,
         endDate: _selectedDate,
       );
-      
+
       _purchases.clear();
       _purchases.addAll(purchases);
     } catch (e) {
@@ -119,8 +119,10 @@ class PurchaseScreenController extends ChangeNotifier {
     _selectedSupplier = supplier == 'all' ? null : supplier;
     _selectedCurrency = currency == 'all' ? null : currency;
     _selectedDate = date;
-    _hasActiveFilters = _selectedSupplier != null || _selectedCurrency != null || _selectedDate != null;
-    
+    _hasActiveFilters = _selectedSupplier != null ||
+        _selectedCurrency != null ||
+        _selectedDate != null;
+
     _refreshPurchases();
   }
 
@@ -129,7 +131,7 @@ class PurchaseScreenController extends ChangeNotifier {
     _selectedCurrency = null;
     _selectedDate = null;
     _hasActiveFilters = false;
-    
+
     _refreshPurchases();
   }
 
@@ -160,4 +162,4 @@ class PurchaseScreenController extends ChangeNotifier {
   void dispose() {
     super.dispose();
   }
-} 
+}

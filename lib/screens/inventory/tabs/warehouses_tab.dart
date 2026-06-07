@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../dialogs/add_warehouse_dialog.dart';
 import '../dialogs/edit_warehouse_dialog.dart';
 import '../dialogs/move_stock_dialog.dart';

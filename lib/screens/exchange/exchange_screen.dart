@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'exchange_form_screen.dart';
 import '../../database/exchange_db.dart';
 import '../../models/exchange.dart';
@@ -250,7 +250,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
               )
             : Row(
                 children: [
-                  Icon(Icons.currency_exchange, size: 24, color: AppTheme.primaryColor),
+                  Icon(Icons.currency_exchange,
+                      size: 24, color: AppTheme.primaryColor),
                   const SizedBox(width: 12),
                   Text(
                     loc.exchange,
@@ -262,7 +263,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
                   if (_exchanges.isNotEmpty) ...[
                     const SizedBox(width: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -297,7 +299,8 @@ class _ExchangeScreenState extends State<ExchangeScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.filter_list, size: 16, color: Colors.orange[700]),
+                    Icon(Icons.filter_list,
+                        size: 16, color: Colors.orange[700]),
                     const SizedBox(width: 4),
                     Text(
                       loc.activeFilters,

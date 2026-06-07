@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:BusinessHubPro/localization/app_localizations.dart';
 import '../../utils/date_time_picker_helper.dart';
 import '../../utils/date_formatters.dart' as dFormatter;
 
@@ -11,7 +11,8 @@ class JournalFilterDialog extends StatelessWidget {
   final List<String> currencyOptions;
   final void Function({String? type, String? currency, DateTime? date}) onApply;
   final VoidCallback onReset;
-  final void Function({String? type, String? currency, DateTime? date}) onChanged;
+  final void Function({String? type, String? currency, DateTime? date})
+      onChanged;
 
   const JournalFilterDialog({
     Key? key,
@@ -35,7 +36,8 @@ class JournalFilterDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600, minWidth: 500),
         child: Padding(
-          padding: MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(24)),
+          padding:
+              MediaQuery.of(context).viewInsets.add(const EdgeInsets.all(24)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,14 +45,15 @@ class JournalFilterDialog extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  Icon(Icons.filter_list, size: 24, color: Theme.of(context).primaryColor),
+                  Icon(Icons.filter_list,
+                      size: 24, color: Theme.of(context).primaryColor),
                   const SizedBox(width: 12),
                   Text(
                     loc.filter,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'VazirBold',
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontFamily: 'VazirBold',
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ],
               ),
@@ -68,9 +71,10 @@ class JournalFilterDialog extends StatelessWidget {
                         // Transaction Type Dropdown
                         Text(
                           loc.transactionType,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
@@ -78,7 +82,11 @@ class JournalFilterDialog extends StatelessWidget {
                           items: typeOptions.map((type) {
                             return DropdownMenuItem(
                               value: type,
-                              child: Text(type == 'all' ? loc.all : (type == 'credit' ? loc.credit : loc.debit)),
+                              child: Text(type == 'all'
+                                  ? loc.all
+                                  : (type == 'credit'
+                                      ? loc.credit
+                                      : loc.debit)),
                             );
                           }).toList(),
                           onChanged: (value) => onChanged(type: value),
@@ -86,7 +94,8 @@ class JournalFilterDialog extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Theme.of(context).colorScheme.surface,
                           ),
@@ -103,9 +112,10 @@ class JournalFilterDialog extends StatelessWidget {
                         // Currency Dropdown
                         Text(
                           loc.currency,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
@@ -113,7 +123,8 @@ class JournalFilterDialog extends StatelessWidget {
                           items: currencyOptions.map((currency) {
                             return DropdownMenuItem(
                               value: currency,
-                              child: Text(currency == 'all' ? loc.all : currency),
+                              child:
+                                  Text(currency == 'all' ? loc.all : currency),
                             );
                           }).toList(),
                           onChanged: (value) => onChanged(currency: value),
@@ -121,7 +132,8 @@ class JournalFilterDialog extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Theme.of(context).colorScheme.surface,
                           ),
@@ -138,8 +150,8 @@ class JournalFilterDialog extends StatelessWidget {
               Text(
                 loc.date,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               const SizedBox(height: 8),
               InkWell(
@@ -152,7 +164,8 @@ class JournalFilterDialog extends StatelessWidget {
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(8),
@@ -163,13 +176,15 @@ class JournalFilterDialog extends StatelessWidget {
                     children: [
                       Text(
                         selectedDate != null
-                            ? dFormatter.formatLocalizedDate(context, selectedDate.toString())
+                            ? dFormatter.formatLocalizedDate(
+                                context, selectedDate.toString())
                             : loc.selectDate,
                         style: TextStyle(
                           color: selectedDate != null ? null : Colors.grey[600],
                         ),
                       ),
-                      Icon(Icons.calendar_today, size: 20, color: Colors.grey[600]),
+                      Icon(Icons.calendar_today,
+                          size: 20, color: Colors.grey[600]),
                     ],
                   ),
                 ),
