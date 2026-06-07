@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../models/purchase.dart';
 import '../../../models/product.dart';
 import '../../../models/unit.dart';
@@ -10,6 +12,7 @@ import '../../../providers/account_provider.dart';
 import '../../../constants/currencies.dart';
 import '../../../utils/date_time_picker_helper.dart';
 import '../../../utils/date_formatters.dart' as dFormatter;
+import '../../../themes/app_theme.dart';
 
 class PurchaseFormDialog extends StatefulWidget {
   final Purchase? purchase;
@@ -24,6 +27,8 @@ class PurchaseFormDialog extends StatefulWidget {
 }
 
 class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
+  static final NumberFormat _amountFormat = NumberFormat('#,##0.##');
+
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _invoiceNumberController;
   late TextEditingController _supplierNameController;
@@ -62,7 +67,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       _loadPurchaseItems();
     }
 
-    // Initialize providers
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final inventoryProvider = context.read<InventoryProvider>();
       if (!inventoryProvider.units.isNotEmpty) {
@@ -104,7 +108,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
             (s) => s['id'] == widget.purchase!.supplierId,
             orElse: () => suppliers.first,
           );
-          // Set the supplier name controller text
           if (_selectedSupplier != null) {
             _supplierNameController.text = _selectedSupplier!['name'];
           }
@@ -172,6 +175,41 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     }
     super.dispose();
   }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18) : null,
+      suffixIcon: suffixIcon,
+      suffixText: suffixText,
+      filled: true,
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    );
+  }
+
+  double _lineTotal(int index) {
+    final qty = double.tryParse(_quantityControllers[index].text) ?? 0;
+    final price = double.tryParse(_priceControllers[index].text) ?? 0;
+    return qty * price;
+  }
+
+  double get _itemsSubtotal =>
+      List.generate(_items.length, _lineTotal).fold(0.0, (a, b) => a + b);
+
+  double get _additionalCost =>
+      double.tryParse(_additionalCostController.text) ?? 0;
+
+  double get _grandTotal => _itemsSubtotal + _additionalCost;
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await pickLocalizedDateTime(
@@ -257,7 +295,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         createdAt: _items[index].createdAt,
         updatedAt: DateTime.now(),
       );
-      // Update the product name controller
       _productNameControllers[index].text = product.name;
     });
   }
@@ -265,7 +302,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   Future<void> _savePurchase() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate that all items have valid foreign key references
     for (var item in _items) {
       if (item.productId == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,7 +325,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
 
     final provider = context.read<PurchaseProvider>();
 
-    // Update items before saving
     for (var i = 0; i < _items.length; i++) {
       double quantity = double.tryParse(_quantityControllers[i].text) ?? 0;
 
@@ -297,7 +332,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         id: _items[i].id,
         purchaseId: _items[i].purchaseId,
         productId: _items[i].productId,
-        quantity: quantity, // <-- stored in base unit
+        quantity: quantity,
         unitId: _items[i].unitId,
         unitPrice: double.tryParse(_priceControllers[i].text) ?? 0,
         createdAt: _items[i].createdAt,
@@ -346,455 +381,890 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Consumer<InventoryProvider>(
       builder: (context, inventoryProvider, child) {
         final products = inventoryProvider.products;
+
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 1100,
+              maxHeight: MediaQuery.of(context).size.height * 0.92,
+            ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.purchase == null
-                            ? loc.addPurchase
-                            : loc.editPurchase,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildDialogHeader(context, loc, theme, colorScheme),
                 const Divider(height: 1),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: _isLoadingSuppliers
-                        ? const Center(child: CircularProgressIndicator())
-                        : Form(
+                Expanded(
+                  child: _isLoadingSuppliers
+                      ? const Center(child: CircularProgressIndicator())
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: Form(
                             key: _formKey,
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                TextFormField(
-                                  controller: _invoiceNumberController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.invoice,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return loc.requiredField;
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _additionalCostController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.additionalCost,
-                                  ),
-                                  keyboardType: TextInputType.numberWithOptions(
-                                      decimal: true),
-                                ),
-                                const SizedBox(height: 16),
-                                Autocomplete<Map<String, dynamic>>(
-                                  optionsBuilder:
-                                      (TextEditingValue textEditingValue) {
-                                    if (textEditingValue.text.isEmpty) {
-                                      return _suppliers;
-                                    }
-                                    return _suppliers.where((supplier) {
-                                      return supplier['name']
-                                          .toString()
-                                          .toLowerCase()
-                                          .contains(textEditingValue.text
-                                              .toLowerCase());
-                                    });
-                                  },
-                                  displayStringForOption: (option) =>
-                                      option['name'],
-                                  fieldViewBuilder: (context,
-                                      textEditingController,
-                                      focusNode,
-                                      onFieldSubmitted) {
-                                    // Set the initial text for edit mode
-                                    if (widget.purchase != null &&
-                                        textEditingController.text.isEmpty) {
-                                      textEditingController.text =
-                                          _supplierNameController.text;
-                                    }
-                                    return TextFormField(
-                                      controller: textEditingController,
-                                      focusNode: focusNode,
-                                      decoration: InputDecoration(
-                                        labelText: loc.supplier,
-                                        suffixIcon: _isLoadingSuppliers
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        strokeWidth: 2),
-                                              )
-                                            : null,
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return loc.requiredField;
-                                        }
-                                        return null;
-                                      },
-                                    );
-                                  },
-                                  onSelected: (Map<String, dynamic> supplier) {
-                                    setState(() {
-                                      _selectedSupplier = supplier;
-                                      _supplierNameController.text =
-                                          supplier['name'];
-                                    });
-                                  },
-                                  optionsViewBuilder:
-                                      (context, onSelected, options) {
-                                    return Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Material(
-                                        elevation: 4,
-                                        child: ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                              maxHeight: 200),
-                                          child: ListView.builder(
-                                            padding: EdgeInsets.zero,
-                                            shrinkWrap: true,
-                                            itemCount: options.length,
-                                            itemBuilder: (BuildContext context,
-                                                int index) {
-                                              final option =
-                                                  options.elementAt(index);
-                                              return ListTile(
-                                                title: Text(option['name']),
-                                                onTap: () => onSelected(option),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _dateController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.date,
-                                    suffixIcon: IconButton(
-                                      icon: const Icon(Icons.calendar_today),
-                                      onPressed: () => _selectDate(context),
-                                    ),
-                                  ),
-                                  readOnly: true,
-                                  onTap: () => _selectDate(context),
-                                ),
-                                const SizedBox(height: 16),
-                                DropdownButtonFormField<String>(
-                                  value: _selectedCurrency,
-                                  decoration: InputDecoration(
-                                    labelText: loc.currency,
-                                  ),
-                                  items: currencies.map((currency) {
-                                    return DropdownMenuItem(
-                                      value: currency,
-                                      child: Text(currency),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _selectedCurrency = value;
-                                      });
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _notesController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.notes,
-                                  ),
-                                  maxLines: 3,
-                                ),
+                                _buildMetaSection(
+                                    context, loc, theme, colorScheme),
                                 const SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      loc.items,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    ElevatedButton.icon(
-                                      onPressed: _addItem,
-                                      icon: const Icon(Icons.add),
-                                      label: Text(loc.addItem),
-                                    ),
-                                  ],
+                                _buildItemsSection(
+                                  context,
+                                  loc,
+                                  theme,
+                                  colorScheme,
+                                  inventoryProvider,
+                                  products,
                                 ),
-                                const SizedBox(height: 16),
-                                ...List.generate(_items.length, (index) {
-                                  final item = _items[index];
-                                  final product = products.firstWhere(
-                                    (p) => p.id == item.productId,
-                                    orElse: () => products.first,
-                                  );
-
-                                  final allUnits = inventoryProvider.units;
-                                  final unit = allUnits.firstWhere(
-                                    (u) => u.id == item.unitId,
-                                    orElse: () => allUnits.first,
-                                  );
-
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                '${loc.item} ${index + 1}',
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete),
-                                                onPressed: () =>
-                                                    _removeItem(index),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Autocomplete<Product>(
-                                            optionsBuilder: (TextEditingValue
-                                                textEditingValue) {
-                                              if (textEditingValue
-                                                  .text.isEmpty) {
-                                                return products;
-                                              }
-                                              return products.where((product) {
-                                                return product.name
-                                                    .toLowerCase()
-                                                    .contains(
-                                                      textEditingValue.text
-                                                          .toLowerCase(),
-                                                    );
-                                              });
-                                            },
-                                            displayStringForOption:
-                                                (Product product) =>
-                                                    product.name,
-                                            fieldViewBuilder: (context,
-                                                textEditingController,
-                                                focusNode,
-                                                onFieldSubmitted) {
-                                              // Set the initial text for edit mode
-                                              if (widget.purchase != null &&
-                                                  textEditingController
-                                                      .text.isEmpty) {
-                                                textEditingController.text =
-                                                    _productNameControllers[
-                                                            index]
-                                                        .text;
-                                              }
-                                              return TextFormField(
-                                                controller:
-                                                    textEditingController,
-                                                focusNode: focusNode,
-                                                decoration: InputDecoration(
-                                                  labelText: loc.product,
-                                                ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.isEmpty) {
-                                                    return loc.requiredField;
-                                                  }
-                                                  return null;
-                                                },
-                                              );
-                                            },
-                                            onSelected:
-                                                (Product selectedProduct) {
-                                              final selectedProductUnits =
-                                                  inventoryProvider
-                                                      .getProductUnits(
-                                                          selectedProduct.id!);
-                                              final selectedUnit =
-                                                  selectedProductUnits.first;
-                                              _updateItem(
-                                                  index,
-                                                  selectedProduct,
-                                                  selectedUnit);
-                                            },
-                                            optionsViewBuilder:
-                                                (context, onSelected, options) {
-                                              return Align(
-                                                alignment: Alignment.topLeft,
-                                                child: Material(
-                                                  elevation: 4,
-                                                  child: ConstrainedBox(
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            maxHeight: 200),
-                                                    child: ListView.builder(
-                                                      padding: EdgeInsets.zero,
-                                                      shrinkWrap: true,
-                                                      itemCount: options.length,
-                                                      itemBuilder:
-                                                          (BuildContext context,
-                                                              int index) {
-                                                        final option = options
-                                                            .elementAt(index);
-                                                        return ListTile(
-                                                          title:
-                                                              Text(option.name),
-                                                          onTap: () =>
-                                                              onSelected(
-                                                                  option),
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: TextFormField(
-                                                  controller:
-                                                      _quantityControllers[
-                                                          index],
-                                                  decoration: InputDecoration(
-                                                    labelText: loc.quantity,
-                                                  ),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                  onChanged: (value) {
-                                                    _updateItem(
-                                                        index, product, unit);
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Expanded(
-                                                child: DropdownButtonFormField<
-                                                    int>(
-                                                  value: unit.id,
-                                                  decoration: InputDecoration(
-                                                    labelText: loc.unit,
-                                                  ),
-                                                  items: allUnits.map((u) {
-                                                    return DropdownMenuItem(
-                                                      value: u.id,
-                                                      child: Text(
-                                                          inventoryProvider
-                                                              .getUnitName(
-                                                                  u.id)),
-                                                    );
-                                                  }).toList(),
-                                                  onChanged: (value) {
-                                                    if (value != null) {
-                                                      final selectedUnit =
-                                                          allUnits.firstWhere(
-                                                              (u) =>
-                                                                  u.id ==
-                                                                  value);
-                                                      _updateItem(
-                                                          index,
-                                                          product,
-                                                          selectedUnit);
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: TextFormField(
-                                                  controller:
-                                                      _priceControllers[index],
-                                                  decoration: InputDecoration(
-                                                      labelText: loc.unitPrice,
-                                                      suffixText:
-                                                          _selectedCurrency),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                  onChanged: (value) {
-                                                    _updateItem(
-                                                        index, product, unit);
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }),
                               ],
                             ),
                           ),
-                  ),
+                        ),
                 ),
                 const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(loc.cancel),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _isLoadingSuppliers ? null : _savePurchase,
-                        child: Text(loc.save),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildFooter(context, loc, theme, colorScheme),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDialogHeader(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 8, 16),
+      color: colorScheme.surface,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.shopping_cart_outlined,
+              color: AppTheme.primaryColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.purchase == null ? loc.addPurchase : loc.editPurchase,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: loc.cancel,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaSection(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            loc.invoiceDetails,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _invoiceNumberController,
+                  decoration: _fieldDecoration(
+                    label: loc.invoice,
+                    prefixIcon: Icons.receipt_outlined,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return loc.requiredField;
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _dateController,
+                  decoration: _fieldDecoration(
+                    label: loc.date,
+                    prefixIcon: Icons.calendar_today,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.edit_calendar, size: 18),
+                      onPressed: () => _selectDate(context),
+                    ),
+                  ),
+                  readOnly: true,
+                  onTap: () => _selectDate(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Autocomplete<Map<String, dynamic>>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return _suppliers;
+                    }
+                    return _suppliers.where((supplier) {
+                      return supplier['name']
+                          .toString()
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  displayStringForOption: (option) => option['name'],
+                  fieldViewBuilder: (context, textEditingController, focusNode,
+                      onFieldSubmitted) {
+                    if (widget.purchase != null &&
+                        textEditingController.text.isEmpty) {
+                      textEditingController.text = _supplierNameController.text;
+                    }
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: _fieldDecoration(
+                        label: loc.supplier,
+                        prefixIcon: Icons.local_shipping_outlined,
+                        suffixIcon: _isLoadingSuppliers
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : null,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return loc.requiredField;
+                        }
+                        return null;
+                      },
+                    );
+                  },
+                  onSelected: (Map<String, dynamic> supplier) {
+                    setState(() {
+                      _selectedSupplier = supplier;
+                      _supplierNameController.text = supplier['name'];
+                    });
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 6,
+                        borderRadius: BorderRadius.circular(10),
+                        clipBehavior: Clip.antiAlias,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 240),
+                          child: ListView.separated(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              color: colorScheme.outlineVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                            itemBuilder: (context, index) {
+                              final option = options.elementAt(index);
+                              return ListTile(
+                                dense: true,
+                                leading: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: AppTheme.primaryColor
+                                      .withValues(alpha: 0.1),
+                                  child: Icon(
+                                    Icons.business_outlined,
+                                    size: 16,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                                title: Text(option['name']),
+                                onTap: () => onSelected(option),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedCurrency,
+                  decoration: _fieldDecoration(
+                    label: loc.currency,
+                    prefixIcon: Icons.payments_outlined,
+                  ),
+                  items: currencies.map((currency) {
+                    return DropdownMenuItem(
+                      value: currency,
+                      child: Text(currency),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedCurrency = value);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _additionalCostController,
+                  decoration: _fieldDecoration(
+                    label: loc.additionalCost,
+                    prefixIcon: Icons.add_circle_outline,
+                    suffixText: _selectedCurrency,
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}')),
+                  ],
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _notesController,
+                  decoration: _fieldDecoration(
+                    label: loc.notes,
+                    prefixIcon: Icons.notes_outlined,
+                  ),
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemsSection(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    InventoryProvider inventoryProvider,
+    List<Product> products,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.items,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_items.isNotEmpty)
+                      Text(
+                        '${_items.length} ${_items.length == 1 ? loc.item : loc.items}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: _addItem,
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(loc.addItem),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_items.isEmpty)
+            _buildEmptyItemsState(loc, theme, colorScheme)
+          else ...[
+            _buildItemsColumnHeader(loc, theme, colorScheme),
+            const SizedBox(height: 12),
+            ...List.generate(_items.length, (index) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index < _items.length - 1 ? 10 : 0,
+                ),
+                child: _buildPurchaseItemRow(
+                  context,
+                  loc,
+                  theme,
+                  colorScheme,
+                  inventoryProvider,
+                  products,
+                  index,
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyItemsState(
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.playlist_add_outlined,
+            size: 48,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            loc.noItemsAdded,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _addItem,
+            icon: const Icon(Icons.add),
+            label: Text(loc.addItem),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemsColumnHeader(
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onSurfaceVariant,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(loc.product, style: labelStyle),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(flex: 2, child: Text(loc.quantity, style: labelStyle)),
+              const SizedBox(width: 12),
+              Expanded(flex: 2, child: Text(loc.unitPrice, style: labelStyle)),
+              const SizedBox(width: 12),
+              Expanded(flex: 2, child: Text(loc.subtotal, style: labelStyle)),
+              const SizedBox(width: 12),
+              Expanded(flex: 2, child: Text(loc.unit, style: labelStyle)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchaseItemRow(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    InventoryProvider inventoryProvider,
+    List<Product> products,
+    int index,
+  ) {
+    final item = _items[index];
+    final product = products.firstWhere(
+      (p) => p.id == item.productId,
+      orElse: () => products.first,
+    );
+    final productUnits = inventoryProvider.getProductUnits(product.id!);
+    if (productUnits.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.errorContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          '${loc.item} ${index + 1}: ${loc.no_units}',
+          style: TextStyle(color: colorScheme.onErrorContainer),
+        ),
+      );
+    }
+    final unit = productUnits.firstWhere(
+      (u) => u.id == item.unitId,
+      orElse: () => productUnits.first,
+    );
+    final lineTotal = _lineTotal(index);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.06),
+              border: Border(
+                bottom: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '${loc.item} ${index + 1}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (lineTotal > 0) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    '${loc.subtotal}: ${_amountFormat.format(lineTotal)} $_selectedCurrency',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                IconButton(
+                  onPressed: () => _removeItem(index),
+                  tooltip: loc.remove,
+                  visualDensity: VisualDensity.compact,
+                  style: IconButton.styleFrom(
+                    foregroundColor: colorScheme.error,
+                    backgroundColor:
+                        colorScheme.errorContainer.withValues(alpha: 0.35),
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Autocomplete<Product>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return products;
+                    }
+                    return products.where((product) {
+                      return product.name.toLowerCase().contains(
+                            textEditingValue.text.toLowerCase(),
+                          );
+                    });
+                  },
+                  displayStringForOption: (Product product) => product.name,
+                  fieldViewBuilder: (context, textEditingController, focusNode,
+                      onFieldSubmitted) {
+                    if (widget.purchase != null &&
+                        textEditingController.text.isEmpty) {
+                      textEditingController.text =
+                          _productNameControllers[index].text;
+                    }
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: _fieldDecoration(
+                        label: loc.product,
+                        prefixIcon: Icons.search,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return loc.requiredField;
+                        }
+                        return null;
+                      },
+                    );
+                  },
+                  onSelected: (Product selectedProduct) {
+                    final selectedProductUnits =
+                        inventoryProvider.getProductUnits(selectedProduct.id!);
+                    final selectedUnit = selectedProductUnits.first;
+                    _updateItem(index, selectedProduct, selectedUnit);
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 6,
+                        borderRadius: BorderRadius.circular(10),
+                        clipBehavior: Clip.antiAlias,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(),
+                          child: ListView.separated(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              color: colorScheme.outlineVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                            itemBuilder: (context, optionIndex) {
+                              final option = options.elementAt(optionIndex);
+                              return ListTile(
+                                dense: true,
+                                leading: Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 18,
+                                  color: colorScheme.primary,
+                                ),
+                                title: Text(option.name),
+                                onTap: () => onSelected(option),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _quantityControllers[index],
+                        decoration: _fieldDecoration(
+                          label: loc.quantity,
+                          prefixIcon: Icons.numbers,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,3}')),
+                        ],
+                        onChanged: (_) => _updateItem(index, product, unit),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: productUnits.isEmpty
+                          ? InputDecorator(
+                              decoration: _fieldDecoration(
+                                label: loc.unit,
+                                prefixIcon: Icons.straighten_outlined,
+                              ),
+                              child: Text(
+                                '—',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            )
+                          : DropdownButtonFormField<int>(
+                              decoration: _fieldDecoration(
+                                label: loc.unit,
+                                prefixIcon: Icons.straighten_outlined,
+                              ),
+                              value: unit.id,
+                              items: productUnits.map((u) {
+                                return DropdownMenuItem(
+                                  value: u.id,
+                                  child: Text(
+                                    inventoryProvider.getUnitName(u.id),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  final selectedUnit = productUnits.firstWhere(
+                                    (u) => u.id == value,
+                                  );
+                                  _updateItem(index, product, selectedUnit);
+                                }
+                              },
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _priceControllers[index],
+                        decoration: _fieldDecoration(
+                          label: loc.unitPrice,
+                          prefixIcon: Icons.attach_money,
+                          suffixText: _selectedCurrency,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,3}')),
+                        ],
+                        onChanged: (_) => _updateItem(index, product, unit),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: InputDecorator(
+                        decoration: _fieldDecoration(label: loc.subtotal),
+                        child: Text(
+                          _amountFormat.format(lineTotal),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      child: Row(
+        children: [
+          if (_items.isNotEmpty) ...[
+            _buildTotalChip(
+              label: loc.subtotal,
+              value: _amountFormat.format(_itemsSubtotal),
+              currency: _selectedCurrency,
+              theme: theme,
+              colorScheme: colorScheme,
+              emphasized: false,
+            ),
+            const SizedBox(width: 12),
+            _buildTotalChip(
+              label: loc.additionalCost,
+              value: _amountFormat.format(_additionalCost),
+              currency: _selectedCurrency,
+              theme: theme,
+              colorScheme: colorScheme,
+              emphasized: false,
+            ),
+            const SizedBox(width: 12),
+            _buildTotalChip(
+              label: loc.total,
+              value: _amountFormat.format(_grandTotal),
+              currency: _selectedCurrency,
+              theme: theme,
+              colorScheme: colorScheme,
+              emphasized: true,
+            ),
+            const Spacer(),
+          ] else
+            const Spacer(),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(loc.cancel),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _isLoadingSuppliers ? null : _savePurchase,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: Text(loc.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalChip({
+    required String label,
+    required String value,
+    required String currency,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    required bool emphasized,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: emphasized
+            ? AppTheme.primaryColor.withValues(alpha: 0.1)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: emphasized
+              ? AppTheme.primaryColor.withValues(alpha: 0.25)
+              : colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$value $currency',
+            style: (emphasized
+                    ? theme.textTheme.titleSmall
+                    : theme.textTheme.bodyMedium)
+                ?.copyWith(
+              fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
+              color: emphasized ? AppTheme.primaryColor : null,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
