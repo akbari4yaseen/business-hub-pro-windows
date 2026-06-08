@@ -391,6 +391,8 @@ class TransactionList extends StatelessWidget {
         return loc.sales;
       case 'invoice':
         return loc.sales;
+      case 'invoice_payment':
+        return loc.sales;
       case 'purchase':
         return loc.purchase;
       case 'exchange':
@@ -516,22 +518,30 @@ class TransactionList extends StatelessWidget {
                   title: Text(loc.send),
                 ),
               ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'edit',
-                child: ListTile(
-                  leading: const Icon(Icons.edit, size: 20, color: Colors.blue),
-                  title: Text(loc.edit),
+
+              // the edit and delete options should only be shown for transactions that are only linked to a journal entry, not those linked to an invoice or purchase, because those should be edited/deleted from their respective screens for data integrity reasons
+              if ((transaction['transaction_group'] ?? '')
+                      .toString()
+                      .toLowerCase() ==
+                  'journal') ...[
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading:
+                        const Icon(Icons.edit, size: 20, color: Colors.blue),
+                    title: Text(loc.edit),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: ListTile(
-                  leading:
-                      const Icon(Icons.delete, size: 20, color: Colors.red),
-                  title: Text(loc.delete),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading:
+                        const Icon(Icons.delete, size: 20, color: Colors.red),
+                    title: Text(loc.delete),
+                  ),
                 ),
-              ),
+              ]
             ],
           ),
         ],
