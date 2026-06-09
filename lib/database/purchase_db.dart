@@ -145,7 +145,8 @@ class PurchaseDBHelper {
 
     if (result.isEmpty) return null;
 
-    final purchase = result.first;
+    // Copy the result map to a mutable Map before modification
+    final purchase = Map<String, dynamic>.from(result.first);
     final items = await getPurchaseItems(id);
     purchase['items'] = items;
 

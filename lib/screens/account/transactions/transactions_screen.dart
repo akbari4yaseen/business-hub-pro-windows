@@ -6,6 +6,9 @@ import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:BusinessHubPro/screens/invoice/invoice_detail_screen.dart';
 import 'package:BusinessHubPro/providers/invoice_provider.dart';
+import 'package:BusinessHubPro/screens/purchase/purchase_detail_screen.dart';
+import 'package:BusinessHubPro/providers/purchase_provider.dart';
+import 'package:BusinessHubPro/models/purchase.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../widgets/search_bar.dart';
@@ -397,8 +400,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _showTransactionDetails(Map<String, dynamic> transaction) async {
-    // If this transaction refers to an invoice, open the invoice detail screen
     try {
+      // If this transaction refers to an invoice, open the invoice detail screen instead of transaction details sheet
       if (transaction['transaction_group'] == 'invoice' &&
           transaction['transaction_id'] != null) {
         final invoiceId = transaction['transaction_id'] as int;
@@ -417,8 +420,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           return;
         }
       }
+      // If this transaction refers to a purchase, load and show purchase details
+      else if (transaction['transaction_group'] == 'purchase' &&
+          transaction['transaction_id'] != null) {
+        final purchaseId = transaction['transaction_id'] as int;
+        final purchaseProvider =
+            Provider.of<PurchaseProvider>(context, listen: false);
+        final purchaseMap = await purchaseProvider.getPurchaseById(purchaseId);
+        if (purchaseMap != null) {
+          final purchase = Purchase.fromMap(purchaseMap);
+          if (!mounted) return;
+          showDialog(
+            context: context,
+            builder: (_) => PurchaseDetailScreen(purchase: purchase),
+          );
+          return;
+        }
+      }
     } catch (e) {
       // Fall back to transaction details sheet if anything fails
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     // Default behaviour: show transaction details dialog

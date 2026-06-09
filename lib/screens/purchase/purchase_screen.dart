@@ -5,7 +5,7 @@ import '../../models/purchase.dart';
 import '../../themes/app_theme.dart';
 import '../../widgets/search_bar.dart';
 import 'dialogs/purchase_form_dialog.dart';
-import 'widgets/purchase_details_sheet.dart';
+import 'purchase_detail_screen.dart';
 import 'widgets/purchase_table.dart';
 import 'dialogs/purchase_filter_dialog.dart';
 import 'controllers/purchase_screen_controller.dart';
@@ -311,9 +311,11 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
 
   void _showPurchaseDetails(Map<String, dynamic> purchase) {
     final purchaseObj = Purchase.fromMap(purchase);
-    showDialog(
-      context: context,
-      builder: (context) => PurchaseDetailsSheet(purchase: purchaseObj),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PurchaseDetailScreen(purchase: purchaseObj),
+      ),
     );
   }
 
