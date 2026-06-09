@@ -241,9 +241,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
     }
 
     final product = products.first;
-    final productUnits = inventoryProvider.getProductUnits(product.id!);
+    final allUnits = inventoryProvider.units;
 
-    if (productUnits.isEmpty) {
+    if (allUnits.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(loc.no_units),
@@ -253,12 +253,19 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       return;
     }
 
+    final defaultUnit = product.baseUnitId != null
+        ? allUnits.firstWhere(
+            (u) => u.id == product.baseUnitId,
+            orElse: () => allUnits.first,
+          )
+        : allUnits.first;
+
     setState(() {
       _items.add(PurchaseItem(
         purchaseId: 0,
         productId: product.id!,
         quantity: 0,
-        unitId: productUnits.first.id!,
+        unitId: defaultUnit.id!,
         unitPrice: 0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -845,8 +852,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
       (p) => p.id == item.productId,
       orElse: () => products.first,
     );
-    final productUnits = inventoryProvider.getProductUnits(product.id!);
-    if (productUnits.isEmpty) {
+    final allUnits = inventoryProvider.units;
+    if (allUnits.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -859,9 +866,9 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
         ),
       );
     }
-    final unit = productUnits.firstWhere(
+    final unit = allUnits.firstWhere(
       (u) => u.id == item.unitId,
-      orElse: () => productUnits.first,
+      orElse: () => allUnits.first,
     );
     final lineTotal = _lineTotal(index);
 
@@ -978,9 +985,13 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                     );
                   },
                   onSelected: (Product selectedProduct) {
-                    final selectedProductUnits =
-                        inventoryProvider.getProductUnits(selectedProduct.id!);
-                    final selectedUnit = selectedProductUnits.first;
+                    final allUnits = inventoryProvider.units;
+                    final selectedUnit = selectedProduct.baseUnitId != null
+                        ? allUnits.firstWhere(
+                            (u) => u.id == selectedProduct.baseUnitId,
+                            orElse: () => allUnits.first,
+                          )
+                        : allUnits.first;
                     _updateItem(index, selectedProduct, selectedUnit);
                   },
                   optionsViewBuilder: (context, onSelected, options) {
@@ -1045,7 +1056,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       flex: 2,
-                      child: productUnits.isEmpty
+                      child: allUnits.isEmpty
                           ? InputDecorator(
                               decoration: _fieldDecoration(
                                 label: loc.unit,
@@ -1064,7 +1075,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                                 prefixIcon: Icons.straighten_outlined,
                               ),
                               value: unit.id,
-                              items: productUnits.map((u) {
+                              items: allUnits.map((u) {
                                 return DropdownMenuItem(
                                   value: u.id,
                                   child: Text(
@@ -1074,7 +1085,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                               }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
-                                  final selectedUnit = productUnits.firstWhere(
+                                  final selectedUnit = allUnits.firstWhere(
                                     (u) => u.id == value,
                                   );
                                   _updateItem(index, product, selectedUnit);
