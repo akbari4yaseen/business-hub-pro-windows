@@ -68,7 +68,7 @@ class _WindowsDrawerMenuState extends State<WindowsDrawerMenu> {
                   themeProvider: themeProvider,
                 ),
                 _buildNavItem(
-                  icon: Icons.receipt_long_outlined,
+                  icon: Icons.warehouse,
                   label: loc.inventory,
                   isSelected: bottomNavProvider.currentIndex == 4,
                   onTap: () => bottomNavProvider.updateIndex(4),

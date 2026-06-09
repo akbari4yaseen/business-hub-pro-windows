@@ -19,6 +19,8 @@ import '../../widgets/search_bar.dart';
 import '../../widgets/auth_widget.dart';
 import '../../utils/search_manager.dart';
 import '../../widgets/account/account_form_dialog.dart';
+import '../../themes/app_theme.dart';
+import '../../utils/utilities.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -64,7 +66,9 @@ class _AccountScreenState extends State<AccountScreen>
     _searchManager = SearchManager();
     _searchController = TextEditingController();
     _tabController = TabController(length: 2, vsync: this);
-    _scrollController.addListener(_updateScrollPosition);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _scrollController.addListener(_onScroll);
     _searchManager.searchStream.listen((searchState) {
       setState(() {
@@ -89,10 +93,12 @@ class _AccountScreenState extends State<AccountScreen>
     super.dispose();
   }
 
-  void _updateScrollPosition() {
-    if (!mounted) return;
-    _scrollController.position.pixels <= 0;
-  }
+  bool get _hasActiveFilters =>
+      (_selectedAccountType != null && _selectedAccountType != 'all') ||
+      (_selectedCurrency != null && _selectedCurrency != 'all');
+
+  List<Map<String, dynamic>> get _currentAccounts =>
+      _tabController.index == 0 ? _activeAccounts : _deactivatedAccounts;
 
   Future<void> _loadAccounts() async {
     if (!mounted) return;
@@ -464,95 +470,273 @@ class _AccountScreenState extends State<AccountScreen>
                 }),
                 onSubmitted: (_) => _loadAccounts(),
               )
-            : Text(loc.accounts, style: const TextStyle(fontSize: 20)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => setState(() => _isSearching = true),
-            tooltip: loc.search,
-          ),
-          if (!_isSearching)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadAccounts,
-              tooltip: loc.refresh,
-            ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'filter':
-                  _showFilterModal();
-                  break;
-                case 'print':
-                  _showPrintModal();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'filter',
-                child: ListTile(
-                  leading: const Icon(Icons.filter_list),
-                  title: Text(loc.filter),
-                ),
+            : _buildTitle(loc),
+        actions: _buildActions(loc),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle_outline, size: 18),
+                  const SizedBox(width: 8),
+                  Text(loc.activeAccounts),
+                  if (_activeAccounts.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    _tabBadge('${_activeAccounts.length}'),
+                  ],
+                ],
               ),
-              PopupMenuItem(
-                value: 'print',
-                child: ListTile(
-                  leading: const Icon(Icons.print),
-                  title: Text(loc.print),
+            ),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.person_off_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Text(loc.deactivatedAccounts),
+                  if (_deactivatedAccounts.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    _tabBadge('${_deactivatedAccounts.length}'),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Container(
+        width: double.infinity,
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: _isLoading && _activeAccounts.isEmpty && _deactivatedAccounts.isEmpty
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                  ],
+                ),
+              )
+            : Column(
+                children: [
+                  if (_hasActiveFilters) _buildActiveFiltersBar(loc),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        AccountListView(
+                          accounts: _activeAccounts,
+                          isActive: true,
+                          isLoadingMore: _isLoadingMoreActive,
+                          hasMore: _activeHasMore,
+                          onLoadMore: _loadMoreActiveAccounts,
+                          onRefresh: _loadAccounts,
+                          onActionSelected: _handleAccountAction,
+                          scrollController: _scrollController,
+                        ),
+                        AccountListView(
+                          accounts: _deactivatedAccounts,
+                          isActive: false,
+                          isLoadingMore: _isLoadingMoreDeactivated,
+                          hasMore: _deactivatedHasMore,
+                          onLoadMore: _loadMoreDeactivatedAccounts,
+                          onRefresh: _loadAccounts,
+                          onActionSelected: _handleAccountAction,
+                          scrollController: _scrollController,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'accounts_add_fab',
+        onPressed: _addAccount,
+        tooltip: loc.addAccount,
+        icon: const FaIcon(FontAwesomeIcons.userPlus, size: 18),
+        label: Text(loc.addAccount),
+      ),
+    );
+  }
+
+  Widget _buildTitle(AppLocalizations loc) {
+    return Row(
+      children: [
+        Icon(Icons.people, size: 24, color: AppTheme.primaryColor),
+        const SizedBox(width: 12),
+        Text(
+          loc.accounts,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'VazirBold',
+          ),
+        ),
+        if (_currentAccounts.isNotEmpty) ...[
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_currentAccounts.length}',
+              style: TextStyle(
+                color: AppTheme.primaryColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildActions(AppLocalizations loc) {
+    if (_isSearching) return [];
+
+    return [
+      if (_hasActiveFilters)
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.filter_list, size: 16, color: Colors.orange[700]),
+              const SizedBox(width: 4),
+              Text(
+                loc.activeFilters,
+                style: TextStyle(
+                  color: Colors.orange[700],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: loc.activeAccounts),
-            Tab(text: loc.deactivatedAccounts)
-          ],
+        ),
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: _isLoading ? null : _loadAccounts,
+        tooltip: loc.refresh,
+      ),
+      IconButton(
+        icon: const Icon(Icons.search),
+        onPressed: () => setState(() => _isSearching = true),
+        tooltip: loc.search,
+      ),
+      IconButton(
+        icon: const Icon(Icons.filter_list),
+        tooltip: loc.filter,
+        onPressed: _showFilterModal,
+      ),
+      IconButton(
+        icon: const Icon(Icons.print_outlined),
+        tooltip: loc.print,
+        onPressed: _showPrintModal,
+      ),
+      const SizedBox(width: 8),
+    ];
+  }
+
+  Widget _tabBadge(String count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        count,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.primaryColor,
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      AccountListView(
-                        accounts: _activeAccounts,
-                        isActive: true,
-                        isLoadingMore: _isLoadingMoreActive,
-                        hasMore: _activeHasMore,
-                        onLoadMore: _loadMoreActiveAccounts,
-                        onRefresh: _loadAccounts,
-                        onActionSelected: _handleAccountAction,
-                        scrollController: _scrollController,
-                      ),
-                      AccountListView(
-                        accounts: _deactivatedAccounts,
-                        isActive: false,
-                        isLoadingMore: _isLoadingMoreDeactivated,
-                        hasMore: _deactivatedHasMore,
-                        onLoadMore: _loadMoreDeactivatedAccounts,
-                        onRefresh: _loadAccounts,
-                        onActionSelected: _handleAccountAction,
-                        scrollController: _scrollController,
-                      )
-                    ],
-                  ),
-                ),
-              ],
+    );
+  }
+
+  Widget _buildActiveFiltersBar(AppLocalizations loc) {
+    final chips = <Widget>[];
+
+    if (_selectedAccountType != null && _selectedAccountType != 'all') {
+      chips.add(_filterChip(
+        label: getLocalizedAccountType(context, _selectedAccountType!),
+        onRemove: () {
+          setState(() => _selectedAccountType = null);
+          _loadAccounts();
+        },
+      ));
+    }
+
+    if (_selectedCurrency != null && _selectedCurrency != 'all') {
+      chips.add(_filterChip(
+        label: _selectedCurrency!,
+        onRemove: () {
+          setState(() => _selectedCurrency = null);
+          _loadAccounts();
+        },
+      ));
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            '${loc.activeFilters}:',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'accounts_add_fab',
-        onPressed: _addAccount,
-        tooltip: AppLocalizations.of(context)!.addAccount,
-        mini: false,
-        child: FaIcon(FontAwesomeIcons.userPlus, size: 18),
+          ),
+          ...chips,
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _selectedAccountType = null;
+                _selectedCurrency = null;
+              });
+              _loadAccounts();
+            },
+            icon: const Icon(Icons.clear_all, size: 16),
+            label: Text(loc.reset),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({required String label, required VoidCallback onRemove}) {
+    return Chip(
+      label: Text(label),
+      deleteIcon: const Icon(Icons.close, size: 16),
+      onDeleted: onRemove,
+      backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.08),
+      side: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+      labelStyle: TextStyle(
+        color: AppTheme.primaryColor,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
       ),
     );
   }

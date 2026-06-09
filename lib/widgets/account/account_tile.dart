@@ -14,7 +14,7 @@ class AccountTile extends StatelessWidget {
   final bool isActive;
   final void Function(String) onActionSelected;
 
-  static final NumberFormat _amountFormatter = NumberFormat('#,###.##');
+  static final NumberFormat _amountFormatter = NumberFormat('#,###.###');
 
   const AccountTile({
     Key? key,

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:BusinessHubPro/localization/app_localizations.dart';
-import '../../../models/purchase.dart';
 import '../../../database/purchase_db.dart';
 
 class PurchaseScreenController extends ChangeNotifier {
