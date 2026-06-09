@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:BusinessHubPro/localization/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:BusinessHubPro/screens/invoice/invoice_detail_screen.dart';
+import 'package:BusinessHubPro/providers/invoice_provider.dart';
 
 import '../../../utils/utilities.dart';
 import '../../../widgets/search_bar.dart';
@@ -394,7 +396,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
-  void _showTransactionDetails(Map<String, dynamic> transaction) {
+  Future<void> _showTransactionDetails(Map<String, dynamic> transaction) async {
+    // If this transaction refers to an invoice, open the invoice detail screen
+    try {
+      if (transaction['transaction_group'] == 'invoice' &&
+          transaction['transaction_id'] != null) {
+        final invoiceId = transaction['transaction_id'] as int;
+        // Use InvoiceProvider to load invoice (provider should be available in app)
+        final invoiceProvider =
+            Provider.of<InvoiceProvider>(context, listen: false);
+        final invoice = await invoiceProvider.getInvoice(invoiceId);
+        if (invoice != null) {
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => InvoiceDetailScreen(invoice: invoice),
+            ),
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      // Fall back to transaction details sheet if anything fails
+    }
+
+    // Default behaviour: show transaction details dialog
     showDialog(
       context: context,
       builder: (_) => TransactionDetailsSheet(transaction: transaction),

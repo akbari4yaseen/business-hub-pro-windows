@@ -768,7 +768,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
           if (_items.isEmpty)
             _buildEmptyItemsState(loc, theme, colorScheme)
           else ...[
-            _buildItemsColumnHeader(loc, theme, colorScheme),
             const SizedBox(height: 12),
             ...List.generate(_items.length, (index) {
               return Padding(
@@ -826,45 +825,6 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
             onPressed: _addItem,
             icon: const Icon(Icons.add),
             label: Text(loc.addItem),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemsColumnHeader(
-    AppLocalizations loc,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    final labelStyle = theme.textTheme.labelMedium?.copyWith(
-      fontWeight: FontWeight.w600,
-      color: colorScheme.onSurfaceVariant,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(loc.product, style: labelStyle),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(flex: 2, child: Text(loc.quantity, style: labelStyle)),
-              const SizedBox(width: 12),
-              Expanded(flex: 2, child: Text(loc.unitPrice, style: labelStyle)),
-              const SizedBox(width: 12),
-              Expanded(flex: 2, child: Text(loc.subtotal, style: labelStyle)),
-              const SizedBox(width: 12),
-              Expanded(flex: 2, child: Text(loc.unit, style: labelStyle)),
-            ],
           ),
         ],
       ),
@@ -1084,6 +1044,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
+                      flex: 2,
                       child: productUnits.isEmpty
                           ? InputDecorator(
                               decoration: _fieldDecoration(
