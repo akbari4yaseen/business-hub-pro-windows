@@ -430,9 +430,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         if (purchaseMap != null) {
           final purchase = Purchase.fromMap(purchaseMap);
           if (!mounted) return;
-          showDialog(
-            context: context,
-            builder: (_) => PurchaseDetailScreen(purchase: purchase),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PurchaseDetailScreen(purchase: purchase),
+            ),
           );
           return;
         }

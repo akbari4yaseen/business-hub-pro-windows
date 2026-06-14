@@ -49,16 +49,34 @@ class _BackupCardState extends State<BackupCard> {
     int? onlineDays;
     int? offlineDays;
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     if (onlineStr != null) {
       try {
         final onlineDate = DateTime.parse(onlineStr);
-        onlineDays = DateTime.now().difference(onlineDate).inDays;
+
+        final backupDay = DateTime(
+          onlineDate.year,
+          onlineDate.month,
+          onlineDate.day,
+        );
+
+        onlineDays = today.difference(backupDay).inDays;
       } catch (_) {}
     }
+
     if (offlineStr != null) {
       try {
         final offlineDate = DateTime.parse(offlineStr);
-        offlineDays = DateTime.now().difference(offlineDate).inDays;
+
+        final backupDay = DateTime(
+          offlineDate.year,
+          offlineDate.month,
+          offlineDate.day,
+        );
+
+        offlineDays = today.difference(backupDay).inDays;
       } catch (_) {}
     }
 
